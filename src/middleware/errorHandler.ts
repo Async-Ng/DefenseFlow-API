@@ -7,7 +7,7 @@ import { errorResponse, notFoundResponse } from "@utils/apiResponse.js";
 
 interface CustomError extends Error {
   statusCode?: number;
-  details?: any;
+  details?: unknown;
 }
 
 export const errorHandler = (

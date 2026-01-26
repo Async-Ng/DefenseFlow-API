@@ -4,6 +4,7 @@
  */
 
 import prisma from "@config/prisma.js";
+import { Prisma } from "@prisma/client";
 import type {
   Session,
   CreateSessionInput,
@@ -96,7 +97,7 @@ export const findAll = async (
   filters: SessionFilters = {},
 ): Promise<PaginatedResult<any>> => {
   const skip = (page - 1) * limit;
-  const where: any = {};
+  const where: Prisma.SessionWhereInput = {};
 
   // Apply filters
   if (filters.sessionCode) {
@@ -130,7 +131,7 @@ export const findById = async (
   id: number,
   include: IncludeOptions = {},
 ): Promise<any | null> => {
-  const includeOptions: any = {
+  const includeOptions: Prisma.SessionInclude = {
     semester: true,
   };
 
@@ -166,7 +167,7 @@ export const update = async (
   id: number,
   data: UpdateSessionInput,
 ): Promise<Session> => {
-  const updateData: any = {};
+  const updateData: Prisma.SessionUpdateInput = {};
 
   if (data.sessionCode !== undefined) updateData.sessionCode = data.sessionCode;
   if (data.name !== undefined) updateData.name = data.name;

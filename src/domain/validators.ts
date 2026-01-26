@@ -139,7 +139,7 @@ export const validateSemesterData = (
     "semesterCode",
     "name",
   ]);
-  if (!requiredValidation.isValid) {
+  if (!requiredValidation.isValid && requiredValidation.error) {
     errors.push(requiredValidation.error);
   }
 
@@ -149,7 +149,7 @@ export const validateSemesterData = (
       data.startDate as string,
       data.endDate as string,
     );
-    if (!dateValidation.isValid) {
+    if (!dateValidation.isValid && dateValidation.error) {
       errors.push(dateValidation.error);
     }
   }
@@ -174,7 +174,7 @@ export const validateSessionData = (
     "semesterId",
     "name",
   ]);
-  if (!requiredValidation.isValid) {
+  if (!requiredValidation.isValid && requiredValidation.error) {
     errors.push(requiredValidation.error);
   }
 

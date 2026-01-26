@@ -13,11 +13,14 @@ import {
   paginatedResponse,
   errorResponse,
 } from "@utils/apiResponse.js";
-import type {
-  CreateSessionInput,
-  UpdateSessionInput,
-  SessionFilters,
-} from "../types/index.js";
+import { getErrorMessage } from "@utils/typeGuards.js";
+import {
+  getIdParam,
+  getPaginationParams,
+  getIncludeOptions,
+  getSessionFilters,
+} from "@utils/requestHelpers.js";
+import type { CreateSessionInput, UpdateSessionInput } from "../types/index.js";
 
 /**
  * @swagger
@@ -31,20 +34,24 @@ export const createSession = async (
   res: Response,
 ): Promise<Response> => {
   try {
+    // Extract input data
     const data: CreateSessionInput = req.body;
+
+    // Process
     const session = await sessionService.createSession(data);
     return createdResponse(res, session, "Session created successfully");
-  } catch (error: any) {
+  } catch (error: unknown) {
+    const message = getErrorMessage(error);
     if (
-      error.message.includes("already exists") ||
-      error.message.includes("required") ||
-      error.message.includes("not found") ||
-      error.message.includes("validation failed") ||
-      error.message.includes("fall within")
+      message.includes("already exists") ||
+      message.includes("required") ||
+      message.includes("not found") ||
+      message.includes("validation failed") ||
+      message.includes("fall within")
     ) {
-      return validationErrorResponse(res, { message: error.message });
+      return validationErrorResponse(res, { message });
     }
-    return errorResponse(res, error.message, 500);
+    return errorResponse(res, message, 500);
   }
 };
 
@@ -60,16 +67,11 @@ export const getAllSessions = async (
   res: Response,
 ): Promise<Response> => {
   try {
-    const page = parseInt(req.query.page as string) || 1;
-    const limit = parseInt(req.query.limit as string) || 10;
-    const filters: SessionFilters = {
-      semesterId: req.query.semesterId
-        ? parseInt(req.query.semesterId as string)
-        : undefined,
-      sessionCode: req.query.sessionCode as string,
-      type: req.query.type as "Main" | "Resit",
-    };
+    // Extract input data
+    const { page, limit } = getPaginationParams(req);
+    const filters = getSessionFilters(req);
 
+    // Process
     const result = await sessionService.getAllSessions(page, limit, filters);
     return paginatedResponse(
       res,
@@ -79,8 +81,8 @@ export const getAllSessions = async (
       result.total,
       "Sessions retrieved successfully",
     );
-  } catch (error: any) {
-    return errorResponse(res, error.message, 500);
+  } catch (error: unknown) {
+    return errorResponse(res, getErrorMessage(error), 500);
   }
 };
 
@@ -96,24 +98,19 @@ export const getSessionById = async (
   res: Response,
 ): Promise<Response> => {
   try {
-    const include: any = {};
-    if (req.query.include) {
-      const includes = (req.query.include as string).split(",");
-      includes.forEach((inc) => {
-        include[inc.trim()] = true;
-      });
-    }
+    // Extract input data
+    const id = getIdParam(req);
+    const include = getIncludeOptions(req);
 
-    const session = await sessionService.getSessionById(
-      parseInt(req.params.id),
-      include,
-    );
+    // Process
+    const session = await sessionService.getSessionById(id, include);
     return successResponse(res, session, "Session retrieved successfully");
-  } catch (error: any) {
-    if (error.message.includes("not found")) {
-      return notFoundResponse(res, error.message);
+  } catch (error: unknown) {
+    const message = getErrorMessage(error);
+    if (message.includes("not found")) {
+      return notFoundResponse(res, message);
     }
-    return errorResponse(res, error.message, 500);
+    return errorResponse(res, message, 500);
   }
 };
 
@@ -129,23 +126,22 @@ export const updateSession = async (
   res: Response,
 ): Promise<Response> => {
   try {
+    // Extract input data
+    const id = getIdParam(req);
     const data: UpdateSessionInput = req.body;
-    const session = await sessionService.updateSession(
-      parseInt(req.params.id),
-      data,
-    );
+
+    // Process
+    const session = await sessionService.updateSession(id, data);
     return successResponse(res, session, "Session updated successfully");
-  } catch (error: any) {
-    if (error.message.includes("not found")) {
-      return notFoundResponse(res, error.message);
+  } catch (error: unknown) {
+    const message = getErrorMessage(error);
+    if (message.includes("not found")) {
+      return notFoundResponse(res, message);
     }
-    if (
-      error.message.includes("already exists") ||
-      error.message.includes("must be")
-    ) {
-      return validationErrorResponse(res, { message: error.message });
+    if (message.includes("already exists") || message.includes("must be")) {
+      return validationErrorResponse(res, { message });
     }
-    return errorResponse(res, error.message, 500);
+    return errorResponse(res, message, 500);
   }
 };
 
@@ -161,15 +157,20 @@ export const deleteSession = async (
   res: Response,
 ): Promise<Response> => {
   try {
-    await sessionService.deleteSession(parseInt(req.params.id));
-    return successResponse(res, null, "Session deleted successfully");
-  } catch (error: any) {
-    if (error.message.includes("not found")) {
-      return notFoundResponse(res, error.message);
+    // Extract input data
+    const id = getIdParam(req);
+
+    // Process
+    await sessionService.deleteSession(id);
+    return successResponse(res, {}, "Session deleted successfully");
+  } catch (error: unknown) {
+    const message = getErrorMessage(error);
+    if (message.includes("not found")) {
+      return notFoundResponse(res, message);
     }
-    if (error.message.includes("Cannot delete")) {
-      return validationErrorResponse(res, { message: error.message });
+    if (message.includes("Cannot delete")) {
+      return validationErrorResponse(res, { message });
     }
-    return errorResponse(res, error.message, 500);
+    return errorResponse(res, message, 500);
   }
 };

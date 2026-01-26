@@ -13,10 +13,16 @@ import {
   paginatedResponse,
   errorResponse,
 } from "@utils/apiResponse.js";
+import { getErrorMessage } from "@utils/typeGuards.js";
+import {
+  getIdParam,
+  getPaginationParams,
+  getIncludeOptions,
+  getSemesterFilters,
+} from "@utils/requestHelpers.js";
 import type {
   CreateSemesterInput,
   UpdateSemesterInput,
-  SemesterFilters,
 } from "../types/index.js";
 
 /**
@@ -31,17 +37,18 @@ export const createSemester = async (
   res: Response,
 ): Promise<Response> => {
   try {
+    // Extract input data
     const data: CreateSemesterInput = req.body;
+
+    // Process
     const semester = await semesterService.createSemester(data);
     return createdResponse(res, semester, "Semester created successfully");
-  } catch (error: any) {
-    if (
-      error.message.includes("already exists") ||
-      error.message.includes("required")
-    ) {
-      return validationErrorResponse(res, { message: error.message });
+  } catch (error: unknown) {
+    const message = getErrorMessage(error);
+    if (message.includes("already exists") || message.includes("required")) {
+      return validationErrorResponse(res, { message });
     }
-    return errorResponse(res, error.message, 500);
+    return errorResponse(res, message, 500);
   }
 };
 
@@ -57,13 +64,11 @@ export const getAllSemesters = async (
   res: Response,
 ): Promise<Response> => {
   try {
-    const page = parseInt(req.query.page as string) || 1;
-    const limit = parseInt(req.query.limit as string) || 10;
-    const filters: SemesterFilters = {
-      semesterCode: req.query.semesterCode as string,
-      name: req.query.name as string,
-    };
+    // Extract input data
+    const { page, limit } = getPaginationParams(req);
+    const filters = getSemesterFilters(req);
 
+    // Process
     const result = await semesterService.getAllSemesters(page, limit, filters);
     return paginatedResponse(
       res,
@@ -73,8 +78,8 @@ export const getAllSemesters = async (
       result.total,
       "Semesters retrieved successfully",
     );
-  } catch (error: any) {
-    return errorResponse(res, error.message, 500);
+  } catch (error: unknown) {
+    return errorResponse(res, getErrorMessage(error), 500);
   }
 };
 
@@ -90,24 +95,19 @@ export const getSemesterById = async (
   res: Response,
 ): Promise<Response> => {
   try {
-    const include: any = {};
-    if (req.query.include) {
-      const includes = (req.query.include as string).split(",");
-      includes.forEach((inc) => {
-        include[inc.trim()] = true;
-      });
-    }
+    // Extract input data
+    const id = getIdParam(req);
+    const include = getIncludeOptions(req);
 
-    const semester = await semesterService.getSemesterById(
-      parseInt(req.params.id),
-      include,
-    );
+    // Process
+    const semester = await semesterService.getSemesterById(id, include);
     return successResponse(res, semester, "Semester retrieved successfully");
-  } catch (error: any) {
-    if (error.message.includes("not found")) {
-      return notFoundResponse(res, error.message);
+  } catch (error: unknown) {
+    const message = getErrorMessage(error);
+    if (message.includes("not found")) {
+      return notFoundResponse(res, message);
     }
-    return errorResponse(res, error.message, 500);
+    return errorResponse(res, message, 500);
   }
 };
 
@@ -123,23 +123,22 @@ export const updateSemester = async (
   res: Response,
 ): Promise<Response> => {
   try {
+    // Extract input data
+    const id = getIdParam(req);
     const data: UpdateSemesterInput = req.body;
-    const semester = await semesterService.updateSemester(
-      parseInt(req.params.id),
-      data,
-    );
+
+    // Process
+    const semester = await semesterService.updateSemester(id, data);
     return successResponse(res, semester, "Semester updated successfully");
-  } catch (error: any) {
-    if (error.message.includes("not found")) {
-      return notFoundResponse(res, error.message);
+  } catch (error: unknown) {
+    const message = getErrorMessage(error);
+    if (message.includes("not found")) {
+      return notFoundResponse(res, message);
     }
-    if (
-      error.message.includes("already exists") ||
-      error.message.includes("conflict")
-    ) {
-      return validationErrorResponse(res, { message: error.message });
+    if (message.includes("already exists") || message.includes("conflict")) {
+      return validationErrorResponse(res, { message });
     }
-    return errorResponse(res, error.message, 500);
+    return errorResponse(res, message, 500);
   }
 };
 
@@ -155,15 +154,20 @@ export const deleteSemester = async (
   res: Response,
 ): Promise<Response> => {
   try {
-    await semesterService.deleteSemester(parseInt(req.params.id));
-    return successResponse(res, null, "Semester deleted successfully");
-  } catch (error: any) {
-    if (error.message.includes("not found")) {
-      return notFoundResponse(res, error.message);
+    // Extract input data
+    const id = getIdParam(req);
+
+    // Process
+    await semesterService.deleteSemester(id);
+    return successResponse(res, {}, "Semester deleted successfully");
+  } catch (error: unknown) {
+    const message = getErrorMessage(error);
+    if (message.includes("not found")) {
+      return notFoundResponse(res, message);
     }
-    if (error.message.includes("Cannot delete")) {
-      return validationErrorResponse(res, { message: error.message });
+    if (message.includes("Cannot delete")) {
+      return validationErrorResponse(res, { message });
     }
-    return errorResponse(res, error.message, 500);
+    return errorResponse(res, message, 500);
   }
 };

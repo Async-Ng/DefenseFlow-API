@@ -7,10 +7,10 @@ import { successResponse } from "@utils/apiResponse.js";
 import semesterRoutes from "./semesterRoutes.js";
 import sessionRoutes from "./sessionRoutes.js";
 
-const router = express.Router();
+const router: express.Router = express.Router();
 
 // Health check route
-router.get("/health", (req: Request, res: Response) => {
+router.get("/health", (_req: Request, res: Response) => {
   return successResponse(
     res,
     { status: "OK", timestamp: new Date().toISOString() },

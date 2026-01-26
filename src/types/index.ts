@@ -3,40 +3,19 @@
  * Central type definitions for the application
  */
 
-import { Prisma } from "@prisma/client";
-
 // ============================================================================
 // Database Models
 // ============================================================================
-
-export type Semester = {
-  id: number;
-  semesterCode: string;
-  name: string;
-  startDate: Date | null;
-  endDate: Date | null;
-};
-
-export type Session = {
-  id: number;
-  sessionCode: string;
-  semesterId: number;
-  name: string | null;
-  type: "Main" | "Resit" | null;
-  timePerTopic: number | null;
-  workStartTime: Date | null;
-};
-
-export type SessionDay = {
-  id: number;
-  sessionDayCode: string;
-  sessionId: number;
-  dayDate: Date;
-  note: string | null;
-};
+export type {
+  Semester,
+  Session,
+  SessionDay,
+  Topic,
+  Council,
+} from "@prisma/client";
 
 // ============================================================================
-// Request/Response Types
+// Input Types
 // ============================================================================
 
 export type CreateSemesterInput = {

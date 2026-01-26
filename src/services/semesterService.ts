@@ -96,7 +96,7 @@ export const updateSemester = async (
 
   if (newStartDate && newEndDate) {
     const dateValidation = validateDateRange(newStartDate, newEndDate);
-    if (!dateValidation.isValid) {
+    if (!dateValidation.isValid && dateValidation.error) {
       throw new Error(dateValidation.error);
     }
 
@@ -145,7 +145,7 @@ const checkSessionConflicts = async (
   }
 
   // Collect all session days
-  const allSessionDays: any[] = [];
+  const allSessionDays: Array<{ sessionDayCode: string; dayDate: Date }> = [];
   for (const session of sessions) {
     if (session.sessionDays) {
       allSessionDays.push(...session.sessionDays);
@@ -155,9 +155,9 @@ const checkSessionConflicts = async (
   // Validate session days against new semester dates
   if (allSessionDays.length > 0) {
     const validation = validateSessionDaysInSemester(
-      allSessionDays.map((d: any) => ({
+      allSessionDays.map((d) => ({
         sessionDayCode: d.sessionDayCode,
-        dayDate: d.dayDate,
+        dayDate: d.dayDate.toISOString(),
       })),
       newStartDate,
       newEndDate,

@@ -4,17 +4,31 @@
 
 import { Response } from "express";
 
+// Response type definitions
+interface ApiResponse<T = unknown> {
+  success: boolean;
+  message: string;
+  data: T;
+  meta?: Record<string, unknown>;
+}
+
+interface ApiErrorResponse {
+  success: boolean;
+  message: string;
+  errors?: Record<string, unknown>;
+}
+
 /**
  * Success response format
  */
-export const successResponse = (
+export const successResponse = <T = unknown>(
   res: Response,
-  data: any = null,
+  data: T | null = null,
   message: string = "Success",
   statusCode: number = 200,
-  meta: any = null,
+  meta: Record<string, unknown> | null = null,
 ): Response => {
-  const response: any = {
+  const response: ApiResponse<T | null> = {
     success: true,
     message,
     data,
@@ -34,9 +48,9 @@ export const errorResponse = (
   res: Response,
   message: string = "Error occurred",
   statusCode: number = 400,
-  errors: any = null,
+  errors: Record<string, unknown> | null = null,
 ): Response => {
-  const response: any = {
+  const response: ApiErrorResponse = {
     success: false,
     message,
   };
@@ -51,9 +65,9 @@ export const errorResponse = (
 /**
  * Paginated response format
  */
-export const paginatedResponse = (
+export const paginatedResponse = <T = unknown>(
   res: Response,
-  data: any[],
+  data: T[],
   page: number,
   limit: number,
   total: number,
@@ -61,7 +75,7 @@ export const paginatedResponse = (
 ): Response => {
   const totalPages = Math.ceil(total / limit);
 
-  return successResponse(res, data, message, 200, {
+  return successResponse<T[]>(res, data, message, 200, {
     pagination: {
       currentPage: page,
       pageSize: limit,
@@ -76,12 +90,12 @@ export const paginatedResponse = (
 /**
  * Created response (201)
  */
-export const createdResponse = (
+export const createdResponse = <T = unknown>(
   res: Response,
-  data: any,
+  data: T,
   message: string = "Resource created successfully",
 ): Response => {
-  return successResponse(res, data, message, 201);
+  return successResponse<T>(res, data, message, 201);
 };
 
 /**
@@ -106,7 +120,7 @@ export const notFoundResponse = (
  */
 export const validationErrorResponse = (
   res: Response,
-  errors: any,
+  errors: Record<string, unknown>,
   message: string = "Validation failed",
 ): Response => {
   return errorResponse(res, message, 422, errors);
