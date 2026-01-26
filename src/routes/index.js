@@ -1,5 +1,7 @@
 import express from "express";
 import { successResponse } from "../utils/apiResponse.js";
+import semesterRoutes from "./semesterRoutes.js";
+import sessionRoutes from "./sessionRoutes.js";
 
 const router = express.Router();
 
@@ -8,9 +10,12 @@ router.get("/health", (req, res) => {
   return successResponse(
     res,
     { status: "OK", timestamp: new Date().toISOString() },
-    "Server is running"
+    "Server is running",
   );
 });
 
+// Register routes
+router.use("/semesters", semesterRoutes);
+router.use("/sessions", sessionRoutes);
 
 export default router;

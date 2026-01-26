@@ -5,7 +5,11 @@ import dotenv from "dotenv";
 
 dotenv.config();
 
-const connectionString = process.env.DATABASE_URL;
+// Sử dụng pooler connection cho production, direct connection cho development
+const connectionString = process.env.NODE_ENV === 'production' 
+  ? process.env.DATABASE_POOLER_URL 
+  : process.env.DATABASE_URL;
+
 const pool = new Pool({ connectionString });
 const adapter = new PrismaPg(pool);
 
