@@ -23,7 +23,7 @@ router.get("/", getAllSessions);
 router.get("/:id", getSessionById);
 
 // Update session
-router.put("/:id", updateSession);
+router.patch("/:id", updateSession);
 
 // Delete session
 router.delete("/:id", deleteSession);

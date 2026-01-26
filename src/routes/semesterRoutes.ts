@@ -23,7 +23,7 @@ router.get("/", getAllSemesters);
 router.get("/:id", getSemesterById);
 
 // Update semester
-router.put("/:id", updateSemester);
+router.patch("/:id", updateSemester);
 
 // Delete semester
 router.delete("/:id", deleteSemester);

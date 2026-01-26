@@ -28,6 +28,28 @@ import type { CreateSessionInput, UpdateSessionInput } from "../types/index.js";
  *   post:
  *     summary: Create a new session with session days
  *     tags: [Sessions]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             $ref: '#/components/schemas/CreateSessionInput'
+ *     responses:
+ *       201:
+ *         description: Session created successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               allOf:
+ *                 - $ref: '#/components/schemas/ApiResponse'
+ *                 - type: object
+ *                   properties:
+ *                     data:
+ *                       $ref: '#/components/schemas/Session'
+ *       400:
+ *         description: Validation error
+ *       500:
+ *         description: Server error
  */
 export const createSession = async (
   req: Request,
@@ -61,6 +83,44 @@ export const createSession = async (
  *   get:
  *     summary: Get all sessions
  *     tags: [Sessions]
+ *     parameters:
+ *       - in: query
+ *         name: page
+ *         schema:
+ *           type: integer
+ *           default: 1
+ *       - in: query
+ *         name: limit
+ *         schema:
+ *           type: integer
+ *           default: 10
+ *       - in: query
+ *         name: sessionCode
+ *         schema:
+ *           type: string
+ *       - in: query
+ *         name: semesterId
+ *         schema:
+ *           type: integer
+ *       - in: query
+ *         name: type
+ *         schema:
+ *           type: string
+ *           enum: [Main, Resit]
+ *     responses:
+ *       200:
+ *         description: List of sessions
+ *         content:
+ *           application/json:
+ *             schema:
+ *               allOf:
+ *                 - $ref: '#/components/schemas/ApiResponse'
+ *                 - type: object
+ *                   properties:
+ *                     data:
+ *                       type: array
+ *                       items:
+ *                         $ref: '#/components/schemas/Session'
  */
 export const getAllSessions = async (
   req: Request,
@@ -92,6 +152,26 @@ export const getAllSessions = async (
  *   get:
  *     summary: Get session by ID
  *     tags: [Sessions]
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: integer
+ *     responses:
+ *       200:
+ *         description: Session details
+ *         content:
+ *           application/json:
+ *             schema:
+ *               allOf:
+ *                 - $ref: '#/components/schemas/ApiResponse'
+ *                 - type: object
+ *                   properties:
+ *                     data:
+ *                       $ref: '#/components/schemas/Session'
+ *       404:
+ *         description: Session not found
  */
 export const getSessionById = async (
   req: Request,
@@ -117,9 +197,35 @@ export const getSessionById = async (
 /**
  * @swagger
  * /api/sessions/{id}:
- *   put:
+ *   patch:
  *     summary: Update session
  *     tags: [Sessions]
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: integer
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             $ref: '#/components/schemas/UpdateSessionInput'
+ *     responses:
+ *       200:
+ *         description: Session updated successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               allOf:
+ *                 - $ref: '#/components/schemas/ApiResponse'
+ *                 - type: object
+ *                   properties:
+ *                     data:
+ *                       $ref: '#/components/schemas/Session'
+ *       404:
+ *         description: Session not found
  */
 export const updateSession = async (
   req: Request,
@@ -151,6 +257,19 @@ export const updateSession = async (
  *   delete:
  *     summary: Delete session
  *     tags: [Sessions]
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: integer
+ *     responses:
+ *       200:
+ *         description: Session deleted successfully
+ *       404:
+ *         description: Session not found
+ *       422:
+ *         description: Cannot delete session
  */
 export const deleteSession = async (
   req: Request,

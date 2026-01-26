@@ -31,6 +31,28 @@ import type {
  *   post:
  *     summary: Create a new semester
  *     tags: [Semesters]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             $ref: '#/components/schemas/CreateSemesterInput'
+ *     responses:
+ *       201:
+ *         description: Semester created successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               allOf:
+ *                 - $ref: '#/components/schemas/ApiResponse'
+ *                 - type: object
+ *                   properties:
+ *                     data:
+ *                       $ref: '#/components/schemas/Semester'
+ *       400:
+ *         description: Validation error
+ *       500:
+ *         description: Server error
  */
 export const createSemester = async (
   req: Request,
@@ -58,6 +80,39 @@ export const createSemester = async (
  *   get:
  *     summary: Get all semesters
  *     tags: [Semesters]
+ *     parameters:
+ *       - in: query
+ *         name: page
+ *         schema:
+ *           type: integer
+ *           default: 1
+ *       - in: query
+ *         name: limit
+ *         schema:
+ *           type: integer
+ *           default: 10
+ *       - in: query
+ *         name: semesterCode
+ *         schema:
+ *           type: string
+ *       - in: query
+ *         name: name
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: List of semesters
+ *         content:
+ *           application/json:
+ *             schema:
+ *               allOf:
+ *                 - $ref: '#/components/schemas/ApiResponse'
+ *                 - type: object
+ *                   properties:
+ *                     data:
+ *                       type: array
+ *                       items:
+ *                         $ref: '#/components/schemas/Semester'
  */
 export const getAllSemesters = async (
   req: Request,
@@ -89,6 +144,26 @@ export const getAllSemesters = async (
  *   get:
  *     summary: Get semester by ID
  *     tags: [Semesters]
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: integer
+ *     responses:
+ *       200:
+ *         description: Semester details
+ *         content:
+ *           application/json:
+ *             schema:
+ *               allOf:
+ *                 - $ref: '#/components/schemas/ApiResponse'
+ *                 - type: object
+ *                   properties:
+ *                     data:
+ *                       $ref: '#/components/schemas/Semester'
+ *       404:
+ *         description: Semester not found
  */
 export const getSemesterById = async (
   req: Request,
@@ -114,9 +189,35 @@ export const getSemesterById = async (
 /**
  * @swagger
  * /api/semesters/{id}:
- *   put:
+ *   patch:
  *     summary: Update semester
  *     tags: [Semesters]
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: integer
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             $ref: '#/components/schemas/UpdateSemesterInput'
+ *     responses:
+ *       200:
+ *         description: Semester updated successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               allOf:
+ *                 - $ref: '#/components/schemas/ApiResponse'
+ *                 - type: object
+ *                   properties:
+ *                     data:
+ *                       $ref: '#/components/schemas/Semester'
+ *       404:
+ *         description: Semester not found
  */
 export const updateSemester = async (
   req: Request,
@@ -148,6 +249,19 @@ export const updateSemester = async (
  *   delete:
  *     summary: Delete semester
  *     tags: [Semesters]
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: integer
+ *     responses:
+ *       200:
+ *         description: Semester deleted successfully
+ *       404:
+ *         description: Semester not found
+ *       422:
+ *         description: Cannot delete semester (e.g., has active sessions)
  */
 export const deleteSemester = async (
   req: Request,
