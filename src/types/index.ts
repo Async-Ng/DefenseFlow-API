@@ -15,6 +15,66 @@ export type {
 } from "@prisma/client";
 
 // ============================================================================
+// Enum Types
+// ============================================================================
+
+/**
+ * Session type enumeration
+ */
+export type SessionType = "Main" | "Resit";
+
+/**
+ * Session type values as const
+ */
+export const SESSION_TYPES = {
+  MAIN: "Main" as const,
+  RESIT: "Resit" as const,
+};
+
+// ============================================================================
+// Request Parameter Types
+// ============================================================================
+
+/**
+ * ID parameter from route params
+ */
+export type IdParam = {
+  id: string;
+};
+
+/**
+ * Pagination query parameters
+ */
+export type PaginationQuery = {
+  page?: string | string[];
+  limit?: string | string[];
+};
+
+/**
+ * Include options query parameter
+ */
+export type IncludeQuery = {
+  include?: string | string[];
+};
+
+/**
+ * Semester filter query parameters
+ */
+export type SemesterFilterQuery = {
+  semesterCode?: string | string[];
+  name?: string | string[];
+};
+
+/**
+ * Session filter query parameters
+ */
+export type SessionFilterQuery = {
+  semesterId?: string | string[];
+  sessionCode?: string | string[];
+  type?: string | string[];
+};
+
+// ============================================================================
 // Input Types
 // ============================================================================
 
@@ -31,7 +91,7 @@ export type CreateSessionInput = {
   sessionCode: string;
   semesterId: number;
   name: string;
-  type?: "Main" | "Resit";
+  type?: SessionType;
   timePerTopic?: number;
   workStartTime?: string;
   sessionDays?: CreateSessionDayInput[];
@@ -46,10 +106,27 @@ export type CreateSessionDayInput = {
 export type UpdateSessionInput = {
   sessionCode?: string;
   name?: string;
-  type?: "Main" | "Resit";
+  type?: SessionType;
   timePerTopic?: number;
   workStartTime?: string;
 };
+
+// ============================================================================
+// Parsed/Validated Types
+// ============================================================================
+
+/**
+ * Validated pagination parameters
+ */
+export type ValidatedPagination = {
+  page: number;
+  limit: number;
+};
+
+/**
+ * Validated include options
+ */
+export type ValidatedIncludeOptions = Record<string, boolean>;
 
 // ============================================================================
 // Pagination & Filtering
@@ -84,7 +161,7 @@ export type SemesterFilters = {
 export type SessionFilters = {
   sessionCode?: string;
   semesterId?: number;
-  type?: "Main" | "Resit";
+  type?: SessionType;
 };
 
 // ============================================================================
