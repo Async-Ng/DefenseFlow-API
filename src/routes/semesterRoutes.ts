@@ -11,7 +11,7 @@ import {
   deleteSemester,
 } from "@controllers/semesterController.js";
 
-const router = express.Router();
+const router: express.Router = express.Router();
 
 // Create semester
 router.post("/", createSemester);

@@ -1,9 +1,0 @@
-node_modules
-dist
-tests
-.git
-.env
-.gitignore
-README.md
-Dockerfile
-fly.toml

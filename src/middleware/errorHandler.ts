@@ -12,9 +12,9 @@ interface CustomError extends Error {
 
 export const errorHandler = (
   err: CustomError,
-  req: Request,
+  _req: Request,
   res: Response,
-  next: NextFunction,
+  _next: NextFunction,
 ): Response => {
   const statusCode = err.statusCode || 500;
   const message = err.message || "Internal Server Error";
@@ -33,7 +33,7 @@ export const errorHandler = (
 export const notFound = (
   req: Request,
   res: Response,
-  next: NextFunction,
+  _next: NextFunction,
 ): Response => {
   return notFoundResponse(res, `Route not found - ${req.originalUrl}`);
 };
