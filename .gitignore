@@ -70,4 +70,7 @@ tmp/
 temp/
 *.tmp
 
+# Tests
+tests/
+
 /src/generated/prisma
