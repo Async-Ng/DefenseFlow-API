@@ -1,6 +1,5 @@
 /**
- * Semester Routes
- * Define routes for semester endpoints
+ * Semester Routes (TypeScript)
  */
 
 import express from "express";
@@ -10,16 +9,9 @@ import {
   getSemesterById,
   updateSemester,
   deleteSemester,
-} from "../controllers/semesterController.js";
+} from "@controllers/semesterController.js";
 
 const router = express.Router();
-
-/**
- * @swagger
- * tags:
- *   name: Semesters
- *   description: Semester management endpoints
- */
 
 // Create semester
 router.post("/", createSemester);

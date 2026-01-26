@@ -1,6 +1,5 @@
 /**
- * Session Routes
- * Define routes for session endpoints
+ * Session Routes (TypeScript)
  */
 
 import express from "express";
@@ -10,16 +9,9 @@ import {
   getSessionById,
   updateSession,
   deleteSession,
-} from "../controllers/sessionController.js";
+} from "@controllers/sessionController.js";
 
 const router = express.Router();
-
-/**
- * @swagger
- * tags:
- *   name: Sessions
- *   description: Session management endpoints
- */
 
 // Create session
 router.post("/", createSession);

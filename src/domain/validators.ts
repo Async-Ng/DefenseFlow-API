@@ -3,13 +3,22 @@
  * Business rule validations for Semesters and Sessions
  */
 
+import type {
+  DateValidationResult,
+  SessionDaysValidationResult,
+  FieldValidationResult,
+  SemesterValidationResult,
+  SessionValidationResult,
+  CreateSessionDayInput,
+} from "../types/index.js";
+
 /**
  * Validate date range
- * @param {Date|string} startDate - Start date
- * @param {Date|string} endDate - End date
- * @returns {Object} { isValid: boolean, error: string|null }
  */
-export const validateDateRange = (startDate, endDate) => {
+export const validateDateRange = (
+  startDate: string | Date | null | undefined,
+  endDate: string | Date | null | undefined,
+): DateValidationResult => {
   if (!startDate || !endDate) {
     return { isValid: false, error: "Start date and end date are required" };
   }
@@ -33,28 +42,32 @@ export const validateDateRange = (startDate, endDate) => {
 
 /**
  * Validate session days fall within semester date range
- * @param {Array} sessionDays - Array of session day objects with dayDate
- * @param {Date|string} semesterStartDate - Semester start date
- * @param {Date|string} semesterEndDate - Semester end date
- * @returns {Object} { isValid: boolean, error: string|null, invalidDates: Array }
  */
 export const validateSessionDaysInSemester = (
-  sessionDays,
-  semesterStartDate,
-  semesterEndDate,
-) => {
+  sessionDays: CreateSessionDayInput[],
+  semesterStartDate: string | Date | null | undefined,
+  semesterEndDate: string | Date | null | undefined,
+): SessionDaysValidationResult => {
   if (!sessionDays || sessionDays.length === 0) {
     return {
       isValid: false,
       error: "At least one session day is required",
-      invalidDates: [],
+      details: { invalidDates: [] },
+    };
+  }
+
+  if (!semesterStartDate || !semesterEndDate) {
+    return {
+      isValid: false,
+      error: "Semester dates are required for validation",
+      details: { invalidDates: [] },
     };
   }
 
   const semesterStart = new Date(semesterStartDate);
   const semesterEnd = new Date(semesterEndDate);
 
-  const invalidDates = [];
+  const invalidDates: Array<{ date: string; reason: string }> = [];
 
   for (const sessionDay of sessionDays) {
     const dayDate = new Date(sessionDay.dayDate);
@@ -79,28 +92,25 @@ export const validateSessionDaysInSemester = (
     return {
       isValid: false,
       error: "Some session days fall outside the semester date range",
-      invalidDates,
+      details: { invalidDates },
     };
   }
 
-  return { isValid: true, error: null, invalidDates: [] };
+  return { isValid: true, error: null, details: { invalidDates: [] } };
 };
 
 /**
  * Validate required fields
- * @param {Object} data - Data object to validate
- * @param {Array} requiredFields - Array of required field names
- * @returns {Object} { isValid: boolean, error: string|null, missingFields: Array }
  */
-export const validateRequiredFields = (data, requiredFields) => {
-  const missingFields = [];
+export const validateRequiredFields = (
+  data: Record<string, unknown>,
+  requiredFields: string[],
+): FieldValidationResult => {
+  const missingFields: string[] = [];
 
   for (const field of requiredFields) {
-    if (
-      data[field] === undefined ||
-      data[field] === null ||
-      data[field] === ""
-    ) {
+    const value = data[field];
+    if (value === undefined || value === null || value === "") {
       missingFields.push(field);
     }
   }
@@ -109,20 +119,20 @@ export const validateRequiredFields = (data, requiredFields) => {
     return {
       isValid: false,
       error: `Missing required fields: ${missingFields.join(", ")}`,
-      missingFields,
+      details: { missingFields },
     };
   }
 
-  return { isValid: true, error: null, missingFields: [] };
+  return { isValid: true, error: null, details: { missingFields: [] } };
 };
 
 /**
  * Validate semester data
- * @param {Object} data - Semester data
- * @returns {Object} { isValid: boolean, errors: Array }
  */
-export const validateSemesterData = (data) => {
-  const errors = [];
+export const validateSemesterData = (
+  data: Record<string, unknown>,
+): SemesterValidationResult => {
+  const errors: string[] = [];
 
   // Check required fields
   const requiredValidation = validateRequiredFields(data, [
@@ -135,7 +145,10 @@ export const validateSemesterData = (data) => {
 
   // Validate date range if dates are provided
   if (data.startDate && data.endDate) {
-    const dateValidation = validateDateRange(data.startDate, data.endDate);
+    const dateValidation = validateDateRange(
+      data.startDate as string,
+      data.endDate as string,
+    );
     if (!dateValidation.isValid) {
       errors.push(dateValidation.error);
     }
@@ -149,11 +162,11 @@ export const validateSemesterData = (data) => {
 
 /**
  * Validate session data
- * @param {Object} data - Session data
- * @returns {Object} { isValid: boolean, errors: Array }
  */
-export const validateSessionData = (data) => {
-  const errors = [];
+export const validateSessionData = (
+  data: Record<string, unknown>,
+): SessionValidationResult => {
+  const errors: string[] = [];
 
   // Check required fields
   const requiredValidation = validateRequiredFields(data, [
@@ -167,7 +180,10 @@ export const validateSessionData = (data) => {
 
   // Validate timePerTopic if provided
   if (data.timePerTopic !== undefined && data.timePerTopic !== null) {
-    if (typeof data.timePerTopic !== "number" || data.timePerTopic <= 0) {
+    if (
+      typeof data.timePerTopic !== "number" ||
+      (data.timePerTopic as number) <= 0
+    ) {
       errors.push("Time per topic must be a positive number");
     }
   }

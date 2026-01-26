@@ -1,6 +1,10 @@
+/**
+ * Swagger Configuration (TypeScript)
+ */
+
 import swaggerJsdoc from "swagger-jsdoc";
 
-const options = {
+const options: swaggerJsdoc.Options = {
   definition: {
     openapi: "3.0.0",
     info: {
@@ -21,7 +25,7 @@ const options = {
       schemas: {},
     },
   },
-  apis: ["./src/routes/*.js", "./src/controllers/*.js"], // Path to API docs
+  apis: ["./src/routes/*.ts", "./src/controllers/*.ts"], // Path to API docs
 };
 
 export const swaggerSpec = swaggerJsdoc(options);
