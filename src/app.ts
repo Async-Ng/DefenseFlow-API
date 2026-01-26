@@ -1,4 +1,8 @@
-import express from "express";
+/**
+ * Main Application (TypeScript)
+ */
+
+import express, { Request, Response } from "express";
 import swaggerUi from "swagger-ui-express";
 import routes from "./routes/index.js";
 import { errorHandler } from "./middleware/errorHandler.js";
@@ -15,7 +19,7 @@ app.use(express.static("public"));
 app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerSpec));
 
 // API Info Route
-app.get("/", (req, res) => {
+app.get("/", (req: Request, res: Response) => {
   res.json({
     message: "Welcome to DefenseFlow API",
     documentation: "/api-docs",
