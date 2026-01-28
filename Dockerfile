@@ -21,4 +21,5 @@ COPY --from=build /app/.prisma-build /app/node_modules/.prisma
 COPY --from=build /app/dist /app/dist
 COPY --from=build /app/public /app/public
 EXPOSE 3000
+ENV NODE_ENV=production
 CMD [ "node", "dist/server.js" ]
