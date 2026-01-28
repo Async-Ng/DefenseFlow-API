@@ -22,6 +22,10 @@ COPY tsconfig.json ./
 # Copy source code
 COPY . .
 
+# Set a dummy database URL for prisma generate (not actually used during generation)
+ARG DIRECT_URL="postgresql://dummy:dummy@localhost:5432/dummy"
+ENV DIRECT_URL=${DIRECT_URL}
+
 # Generate Prisma Client
 RUN pnpm prisma generate
 
@@ -32,4 +36,4 @@ RUN pnpm run build
 EXPOSE 3000
 
 # Chạy ứng dụng
-CMD ["pnpm", "start"]
+CMD ["node", "dist/src/server.js"]
