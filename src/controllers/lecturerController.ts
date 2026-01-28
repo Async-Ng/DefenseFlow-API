@@ -1,0 +1,455 @@
+import { Request, Response } from "express";
+import * as lecturerService from "../services/lecturerService.js";
+import { successResponse, errorResponse } from "../utils/apiResponse.js";
+import { getErrorMessage } from "../utils/typeGuards.js";
+import type {
+  IdParam,
+  PaginationQuery,
+  UpdateLecturerRolesInput,
+  UpdateLecturerSkillsInput,
+} from "../types/index.js";
+
+// Define filter query type
+type LecturerFilterQuery = {
+  lecturerCode?: string | string[];
+  fullName?: string | string[];
+  email?: string | string[];
+};
+
+/**
+ * @swagger
+ * /api/lecturers/{id}:
+ *   get:
+ *     summary: Get lecturer by ID
+ *     tags: [Lecturers]
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: integer
+ *         description: Lecturer ID
+ *     responses:
+ *       200:
+ *         description: Lecturer details with skills
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 message:
+ *                   type: string
+ *                   example: "Lecturer retrieved successfully"
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     id:
+ *                       type: integer
+ *                       example: 1
+ *                     lecturerCode:
+ *                       type: string
+ *                       example: "LEC001"
+ *                     fullName:
+ *                       type: string
+ *                       nullable: true
+ *                       example: "Nguyen Van A"
+ *                     email:
+ *                       type: string
+ *                       nullable: true
+ *                       example: "nguyenvana@fpt.edu.vn"
+ *                     isPresidentQualified:
+ *                       type: boolean
+ *                       example: true
+ *                     isSecretaryQualified:
+ *                       type: boolean
+ *                       example: false
+ *                     lecturerSkills:
+ *                       type: array
+ *                       items:
+ *                         type: object
+ *                         properties:
+ *                           id:
+ *                             type: integer
+ *                             example: 1
+ *                           lecturerId:
+ *                             type: integer
+ *                             example: 1
+ *                           skillId:
+ *                             type: integer
+ *                             example: 1
+ *                           score:
+ *                             type: integer
+ *                             example: 4
+ *                           skill:
+ *                             type: object
+ *                             properties:
+ *                               id:
+ *                                 type: integer
+ *                                 example: 1
+ *                               skillCode:
+ *                                 type: string
+ *                                 example: "JAVA"
+ *                               name:
+ *                                 type: string
+ *                                 example: "Java Programming"
+ *       404:
+ *         description: Lecturer not found
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ *       500:
+ *         description: Server Error
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ */
+export const getLecturerById = async (
+  req: Request<IdParam>,
+  res: Response,
+): Promise<Response> => {
+  try {
+    const id = parseInt(req.params.id);
+    if (isNaN(id)) {
+      return errorResponse(res, "Invalid lecturer ID", 400);
+    }
+
+    const lecturer = await lecturerService.getLecturerById(id);
+    return successResponse(res, lecturer, "Lecturer retrieved successfully");
+  } catch (error: unknown) {
+    const message = getErrorMessage(error);
+    if (message.includes("not found")) {
+      return errorResponse(res, message, 404);
+    }
+    return errorResponse(res, message, 500);
+  }
+};
+
+/**
+ * @swagger
+ * /api/lecturers:
+ *   get:
+ *     summary: Get all lecturers with pagination
+ *     tags: [Lecturers]
+ *     parameters:
+ *       - in: query
+ *         name: page
+ *         schema:
+ *           type: integer
+ *           default: 1
+ *         description: Page number
+ *       - in: query
+ *         name: limit
+ *         schema:
+ *           type: integer
+ *           default: 10
+ *         description: Items per page
+ *       - in: query
+ *         name: lecturerCode
+ *         schema:
+ *           type: string
+ *         description: Filter by lecturer code (partial match)
+ *       - in: query
+ *         name: fullName
+ *         schema:
+ *           type: string
+ *         description: Filter by full name (partial match)
+ *       - in: query
+ *         name: email
+ *         schema:
+ *           type: string
+ *         description: Filter by email (partial match)
+ *     responses:
+ *       200:
+ *         description: Paginated list of lecturers
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 message:
+ *                   type: string
+ *                   example: "Lecturers retrieved successfully"
+ *                 data:
+ *                   type: array
+ *                   items:
+ *                     type: object
+ *                     properties:
+ *                       id:
+ *                         type: integer
+ *                         example: 1
+ *                       lecturerCode:
+ *                         type: string
+ *                         example: "LEC001"
+ *                       fullName:
+ *                         type: string
+ *                         example: "Nguyen Van A"
+ *                       email:
+ *                         type: string
+ *                         example: "nguyenvana@fpt.edu.vn"
+ *                       isPresidentQualified:
+ *                         type: boolean
+ *                         example: true
+ *                       isSecretaryQualified:
+ *                         type: boolean
+ *                         example: false
+ *                       lecturerSkills:
+ *                         type: array
+ *                         items:
+ *                           type: object
+ *                 meta:
+ *                   type: object
+ *                   properties:
+ *                     pagination:
+ *                       type: object
+ *                       properties:
+ *                         currentPage:
+ *                           type: integer
+ *                           example: 1
+ *                         pageSize:
+ *                           type: integer
+ *                           example: 10
+ *                         totalItems:
+ *                           type: integer
+ *                           example: 50
+ *                         totalPages:
+ *                           type: integer
+ *                           example: 5
+ *                         hasNextPage:
+ *                           type: boolean
+ *                           example: true
+ *                         hasPreviousPage:
+ *                           type: boolean
+ *                           example: false
+ *       500:
+ *         description: Server Error
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ */
+export const getAllLecturers = async (
+  req: Request<{}, {}, {}, PaginationQuery & LecturerFilterQuery>,
+  res: Response,
+): Promise<Response> => {
+  try {
+    const page = parseInt(req.query.page as string) || 1;
+    const limit = parseInt(req.query.limit as string) || 10;
+
+    const filters = {
+      lecturerCode: req.query.lecturerCode as string | undefined,
+      fullName: req.query.fullName as string | undefined,
+      email: req.query.email as string | undefined,
+    };
+
+    const result = await lecturerService.getAllLecturers(page, limit, filters);
+
+    const totalPages = Math.ceil(result.total / result.limit);
+
+    return successResponse(
+      res,
+      result.data,
+      "Lecturers retrieved successfully",
+      200,
+      {
+        pagination: {
+          currentPage: result.page,
+          pageSize: result.limit,
+          totalItems: result.total,
+          totalPages,
+          hasNextPage: result.page < totalPages,
+          hasPreviousPage: result.page > 1,
+        },
+      },
+    );
+  } catch (error: unknown) {
+    const message = getErrorMessage(error);
+    return errorResponse(res, message, 500);
+  }
+};
+
+/**
+ * @swagger
+ * /api/lecturers/{id}/roles:
+ *   patch:
+ *     summary: Update lecturer role eligibility
+ *     tags: [Lecturers]
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: integer
+ *         description: Lecturer ID
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               isPresidentQualified:
+ *                 type: boolean
+ *               isSecretaryQualified:
+ *                 type: boolean
+ *     responses:
+ *       200:
+ *         description: Roles updated successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 message:
+ *                   type: string
+ *                   example: "Lecturer roles updated successfully"
+ *                 data:
+ *                   $ref: '#/components/schemas/Lecturer'
+ *       404:
+ *         description: Lecturer not found
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ *       500:
+ *         description: Server Error
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ */
+export const updateLecturerRoles = async (
+  req: Request<IdParam, {}, UpdateLecturerRolesInput>,
+  res: Response,
+): Promise<Response> => {
+  try {
+    const id = parseInt(req.params.id);
+    if (isNaN(id)) {
+      return errorResponse(res, "Invalid lecturer ID", 400);
+    }
+
+    const lecturer = await lecturerService.updateLecturerRoles(id, req.body);
+    return successResponse(
+      res,
+      lecturer,
+      "Lecturer roles updated successfully",
+    );
+  } catch (error: unknown) {
+    const message = getErrorMessage(error);
+    if (message.includes("not found")) {
+      return errorResponse(res, message, 404);
+    }
+    return errorResponse(res, message, 500);
+  }
+};
+
+/**
+ * @swagger
+ * /api/lecturers/{id}/skills:
+ *   patch:
+ *     summary: Update lecturer skill scores
+ *     tags: [Lecturers]
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: integer
+ *         description: Lecturer ID
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               skills:
+ *                 type: array
+ *                 items:
+ *                   type: object
+ *                   properties:
+ *                     skillId:
+ *                       type: integer
+ *                     score:
+ *                       type: integer
+ *                       minimum: 0
+ *                       maximum: 5
+ *     responses:
+ *       200:
+ *         description: Skills updated successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 message:
+ *                   type: string
+ *                   example: "Lecturer skills updated successfully"
+ *                 data:
+ *                   $ref: '#/components/schemas/Lecturer'
+ *       404:
+ *         description: Lecturer or skill not found
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ *       422:
+ *         description: Validation error (invalid score range)
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: false
+ *                 message:
+ *                   type: string
+ *                   example: "Invalid skill score 6 for skill ID 1. Score must be between 0 and 5."
+ *       500:
+ *         description: Server Error
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ */
+export const updateLecturerSkills = async (
+  req: Request<IdParam, {}, UpdateLecturerSkillsInput>,
+  res: Response,
+): Promise<Response> => {
+  try {
+    const id = parseInt(req.params.id);
+    if (isNaN(id)) {
+      return errorResponse(res, "Invalid lecturer ID", 400);
+    }
+
+    const lecturer = await lecturerService.updateLecturerSkills(id, req.body);
+    return successResponse(
+      res,
+      lecturer,
+      "Lecturer skills updated successfully",
+    );
+  } catch (error: unknown) {
+    const message = getErrorMessage(error);
+    if (message.includes("not found")) {
+      return errorResponse(res, message, 404);
+    }
+    if (message.includes("Invalid skill score")) {
+      return errorResponse(res, message, 422);
+    }
+    return errorResponse(res, message, 500);
+  }
+};

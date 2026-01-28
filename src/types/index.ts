@@ -6,13 +6,27 @@
 // ============================================================================
 // Database Models
 // ============================================================================
+import type {
+  Semester,
+  Session,
+  SessionDay,
+  Topic,
+  Council,
+  Lecturer,
+  LecturerSkill,
+  Skill,
+} from "@prisma/client";
+
 export type {
   Semester,
   Session,
   SessionDay,
   Topic,
   Council,
-} from "@prisma/client";
+  Lecturer,
+  LecturerSkill,
+  Skill,
+};
 
 // ============================================================================
 // Enum Types
@@ -111,6 +125,26 @@ export type UpdateSessionInput = {
   workStartTime?: string;
 };
 
+export type UpdateLecturerRolesInput = {
+  isPresidentQualified?: boolean;
+  isSecretaryQualified?: boolean;
+};
+
+export type LecturerSkillInput = {
+  skillId: number;
+  score: number;
+};
+
+export type UpdateLecturerSkillsInput = {
+  skills: LecturerSkillInput[];
+};
+
+export type LecturerWithSkills = Lecturer & {
+  lecturerSkills: (LecturerSkill & {
+    skill: Skill;
+  })[];
+};
+
 // ============================================================================
 // Parsed/Validated Types
 // ============================================================================
@@ -162,6 +196,12 @@ export type SessionFilters = {
   sessionCode?: string;
   semesterId?: number;
   type?: SessionType;
+};
+
+export type LecturerFilters = {
+  lecturerCode?: string;
+  fullName?: string;
+  email?: string;
 };
 
 // ============================================================================

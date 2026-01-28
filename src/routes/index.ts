@@ -7,6 +7,7 @@ import { successResponse } from "../utils/apiResponse.js";
 import semesterRoutes from "./semesterRoutes.js";
 import sessionRoutes from "./sessionRoutes.js";
 import importRoutes from "./importRoutes.js";
+import lecturerRoutes from "./lecturerRoutes.js";
 
 const router: express.Router = express.Router();
 
@@ -23,5 +24,6 @@ router.get("/health", (_req: Request, res: Response) => {
 router.use("/semesters", semesterRoutes);
 router.use("/sessions", sessionRoutes);
 router.use("/import", importRoutes);
+router.use("/lecturers", lecturerRoutes);
 
 export default router;
