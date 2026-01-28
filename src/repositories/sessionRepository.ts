@@ -3,7 +3,7 @@
  * Data access layer for Session entity (Functional)
  */
 
-import prisma from "../config/prisma.js";
+import {prisma} from "../config/prisma.js";
 import { Prisma } from "@prisma/client";
 import type {
   Session,
