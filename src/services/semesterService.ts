@@ -3,12 +3,12 @@
  * Business logic layer for Semester operations (Functional)
  */
 
-import * as semesterRepository from "@repositories/semesterRepository.js";
+import * as semesterRepository from "../repositories/semesterRepository.js";
 import {
   validateSemesterData,
   validateDateRange,
   validateSessionDaysInSemester,
-} from "@domain/validators.js";
+} from "../domain/validators.js";
 import type {
   Semester,
   CreateSemesterInput,

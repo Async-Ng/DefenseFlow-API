@@ -3,7 +3,7 @@
  */
 
 import express, { Request, Response } from "express";
-import { successResponse } from "@utils/apiResponse.js";
+import { successResponse } from "../utils/apiResponse.js";
 import semesterRoutes from "./semesterRoutes.js";
 import sessionRoutes from "./sessionRoutes.js";
 import importRoutes from "./importRoutes.js";

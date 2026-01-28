@@ -9,7 +9,7 @@ import {
   getSessionById,
   updateSession,
   deleteSession,
-} from "@controllers/sessionController.js";
+} from "../controllers/sessionController.js";
 
 const router: express.Router = express.Router();
 

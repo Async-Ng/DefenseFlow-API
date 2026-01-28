@@ -4,22 +4,22 @@
  */
 
 import { Request, Response } from "express";
-import * as sessionService from "@services/sessionService.js";
+import * as sessionService from "../services/sessionService.js";
 import {
   successResponse,
-  createdResponse,
+  errorResponse,
   notFoundResponse,
+  createdResponse,
   validationErrorResponse,
   paginatedResponse,
-  errorResponse,
-} from "@utils/apiResponse.js";
-import { getErrorMessage } from "@utils/typeGuards.js";
+} from "../utils/apiResponse.js";
+import { getErrorMessage } from "../utils/typeGuards.js";
 import {
   getIdParam,
   getPaginationParams,
   getIncludeOptions,
   getSessionFilters,
-} from "@utils/requestHelpers.js";
+} from "../utils/requestHelpers.js";
 import type { CreateSessionInput, UpdateSessionInput } from "../types/index.js";
 
 /**

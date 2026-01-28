@@ -1,7 +1,7 @@
 import { Request, Response } from "express";
 import importService from "../services/importService.js";
-import { successResponse, errorResponse } from "@utils/apiResponse.js";
-import { getErrorMessage } from "@utils/typeGuards.js";
+import { successResponse, errorResponse } from "../utils/apiResponse.js";
+import { getErrorMessage } from "../utils/typeGuards.js";
 
 /**
  * @swagger

@@ -3,13 +3,13 @@
  * Business logic layer for Session operations (Functional)
  */
 
-import * as sessionRepository from "@repositories/sessionRepository.js";
-import * as semesterRepository from "@repositories/semesterRepository.js";
+import * as sessionRepository from "../repositories/sessionRepository.js";
+import * as semesterRepository from "../repositories/semesterRepository.js";
 import {
   validateSessionData,
   validateSessionDaysInSemester,
   validateRequiredFields,
-} from "@domain/validators.js";
+} from "../domain/validators.js";
 import type {
   Session,
   CreateSessionInput,

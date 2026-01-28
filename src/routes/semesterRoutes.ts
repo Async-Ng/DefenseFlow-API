@@ -9,7 +9,7 @@ import {
   getSemesterById,
   updateSemester,
   deleteSemester,
-} from "@controllers/semesterController.js";
+} from "../controllers/semesterController.js";
 
 const router: express.Router = express.Router();
 
