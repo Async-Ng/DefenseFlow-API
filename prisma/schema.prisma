@@ -1,21 +1,178 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
-
-
 generator client {
-  provider = "prisma-client-js"
+  provider = "prisma-client"
+  output   = "../generated/prisma"
 }
 
 datasource db {
-  provider  = "postgresql"
-  url       = env("DATABASE_URL")
-  directUrl = env("DIRECT_URL")
+  provider = "postgresql"
 }
-        
-        
 
-// Enums
+model Semester {
+  id           Int       @id @default(autoincrement())
+  semesterCode String    @unique @map("semester_code") @db.VarChar(50)
+  name         String    @db.VarChar(100)
+  startDate    DateTime? @map("start_date") @db.Date
+  endDate      DateTime? @map("end_date") @db.Date
+  councils     Council[]
+  sessions     Session[]
+  topics       Topic[]
+
+  @@map("Semesters")
+}
+
+model Skill {
+  id             Int             @id @default(autoincrement())
+  skillCode      String          @unique @map("skill_code") @db.VarChar(50)
+  name           String          @db.VarChar(100)
+  lecturerSkills LecturerSkill[]
+
+  @@map("Skills")
+}
+
+model Lecturer {
+  id                      Int                       @id @default(autoincrement())
+  lecturerCode            String                    @unique @map("lecturer_code") @db.VarChar(50)
+  fullName                String?                   @map("full_name") @db.VarChar(100)
+  email                   String?                   @db.VarChar(100)
+  isPresidentQualified    Boolean?                  @map("is_president_qualified")
+  isSecretaryQualified    Boolean?                  @map("is_secretary_qualified")
+  councilMembers          CouncilMember[]
+  lecturerDayAvailability LecturerDayAvailability[]
+  lecturerSessionConfigs  LecturerSessionConfig[]
+  lecturerSkills          LecturerSkill[]
+  supervisedTopics        Topic[]
+
+  @@map("Lecturers")
+}
+
+model Topic {
+  id                        Int                        @id @default(autoincrement())
+  topicCode                 String                     @unique @map("topic_code") @db.VarChar(50)
+  semesterId                Int                        @map("semester_id")
+  supervisorId              Int                        @map("supervisor_id")
+  title                     String?                    @db.VarChar(255)
+  topicSessionRegistrations TopicSessionRegistration[]
+  semester                  Semester                   @relation(fields: [semesterId], references: [id])
+  supervisor                Lecturer                   @relation(fields: [supervisorId], references: [id])
+
+  @@map("Topics")
+}
+
+model Session {
+  id                        Int                        @id @default(autoincrement())
+  sessionCode               String                     @unique @map("session_code") @db.VarChar(50)
+  semesterId                Int                        @map("semester_id")
+  name                      String?                    @db.VarChar(100)
+  type                      SessionType?               @default(Main)
+  timePerTopic              Int?                       @map("time_per_topic")
+  workStartTime             DateTime?                  @map("work_start_time") @db.Time(6)
+  lecturerSessionConfigs    LecturerSessionConfig[]
+  sessionDays               SessionDay[]
+  semester                  Semester                   @relation(fields: [semesterId], references: [id])
+  topicSessionRegistrations TopicSessionRegistration[]
+
+  @@map("Sessions")
+}
+
+model SessionDay {
+  id                      Int                       @id @default(autoincrement())
+  sessionDayCode          String                    @unique @map("session_day_code") @db.VarChar(50)
+  sessionId               Int                       @map("session_id")
+  dayDate                 DateTime                  @map("day_date") @db.Date
+  note                    String?                   @db.VarChar(255)
+  councils                Council[]
+  lecturerDayAvailability LecturerDayAvailability[]
+  session                 Session                   @relation(fields: [sessionId], references: [id])
+
+  @@map("Session_Days")
+}
+
+model Council {
+  id             Int             @id @default(autoincrement())
+  councilCode    String          @unique @map("council_code") @db.VarChar(50)
+  sessionDayId   Int             @map("session_day_id")
+  semesterId     Int             @map("semester_id")
+  name           String?         @db.VarChar(100)
+  councilMembers CouncilMember[]
+  semester       Semester        @relation(fields: [semesterId], references: [id])
+  sessionDay     SessionDay      @relation(fields: [sessionDayId], references: [id])
+  defenseMatches DefenseMatch[]
+
+  @@map("Councils")
+}
+
+model TopicSessionRegistration {
+  id               Int            @id @default(autoincrement())
+  registrationCode String         @unique @map("registration_code") @db.VarChar(50)
+  topicId          Int?           @map("topic_id")
+  sessionId        Int?           @map("session_id")
+  finalResult      SessionResult  @default(Pending) @map("final_result")
+  defenseMatches   DefenseMatch[]
+  session          Session?       @relation(fields: [sessionId], references: [id])
+  topic            Topic?         @relation(fields: [topicId], references: [id])
+
+  @@map("Topic_Session_Registrations")
+}
+
+model DefenseMatch {
+  id             Int                      @id @default(autoincrement())
+  matchCode      String                   @unique @map("match_code") @db.VarChar(50)
+  registrationId Int                      @map("registration_id")
+  councilId      Int                      @map("council_id")
+  startTime      DateTime?                @map("start_time") @db.Time(6)
+  endTime        DateTime?                @map("end_time") @db.Time(6)
+  council        Council                  @relation(fields: [councilId], references: [id])
+  registration   TopicSessionRegistration @relation(fields: [registrationId], references: [id])
+
+  @@map("Defense_Matches")
+}
+
+model LecturerSessionConfig {
+  id         Int       @id @default(autoincrement())
+  lecturerId Int?      @map("lecturer_id")
+  sessionId  Int?      @map("session_id")
+  minTopics  Int?      @default(5) @map("min_topics")
+  maxTopics  Int?      @default(20) @map("max_topics")
+  lecturer   Lecturer? @relation(fields: [lecturerId], references: [id])
+  session    Session?  @relation(fields: [sessionId], references: [id])
+
+  @@map("Lecturer_Session_Configs")
+}
+
+model LecturerDayAvailability {
+  id           Int                 @id @default(autoincrement())
+  lecturerId   Int?                @map("lecturer_id")
+  sessionDayId Int?                @map("session_day_id")
+  status       AvailabilityStatus? @default(Available)
+  lecturer     Lecturer?           @relation(fields: [lecturerId], references: [id])
+  sessionDay   SessionDay?         @relation(fields: [sessionDayId], references: [id])
+
+  @@map("Lecturer_Day_Availability")
+}
+
+model CouncilMember {
+  id         Int          @id @default(autoincrement())
+  councilId  Int?         @map("council_id")
+  lecturerId Int?         @map("lecturer_id")
+  role       CouncilRole?
+  council    Council?     @relation(fields: [councilId], references: [id])
+  lecturer   Lecturer?    @relation(fields: [lecturerId], references: [id])
+
+  @@map("Council_Members")
+}
+
+model LecturerSkill {
+  id         Int      @id @default(autoincrement())
+  lecturerId Int      @map("lecturer_id")
+  skillId    Int      @map("skill_id")
+  score      Int?     @default(0)
+  lecturer   Lecturer @relation(fields: [lecturerId], references: [id])
+  skill      Skill    @relation(fields: [skillId], references: [id])
+
+  @@unique([lecturerId, skillId])
+  @@map("Lecturer_Skills")
+}
+
 enum AvailabilityStatus {
   Available
   Busy
@@ -44,197 +201,4 @@ enum SessionType {
   Resit
 
   @@map("session_type")
-}
-
-// Models
-model Semester {
-  id           Int       @id @default(autoincrement())
-  semesterCode String    @unique @map("semester_code") @db.VarChar(50)
-  name         String    @db.VarChar(100) // Spring 2025
-  startDate  DateTime? @map("start_date") @db.Date
-  endDate    DateTime? @map("end_date") @db.Date
-
-  // Relations
-  topics     Topic[]
-  sessions   Session[]
-  councils   Council[]
-
-  @@map("Semesters")
-}
-
-model Skill {
-  id        Int    @id @default(autoincrement())
-  skillCode String @unique @map("skill_code") @db.VarChar(50)
-  name      String @db.VarChar(100)
-
-  // Relations
-  lecturerSkills   LecturerSkill[]
-
-  @@map("Skills")
-}
-
-model Lecturer {
-  id                     Int      @id @default(autoincrement())
-  lecturerCode           String   @unique @map("lecturer_code") @db.VarChar(50)
-  fullName               String?  @map("full_name") @db.VarChar(100)
-  email                  String?  @db.VarChar(100)
-  isPresidentQualified   Boolean? @map("is_president_qualified")
-  isSecretaryQualified   Boolean? @map("is_secretary_qualified")
-
-  // Relations
-  lecturerSessionConfigs LecturerSessionConfig[]
-  lecturerDayAvailability LecturerDayAvailability[]
-  supervisedTopics       Topic[]
-  councilMembers         CouncilMember[]
-  lecturerSkills         LecturerSkill[]
-
-  @@map("Lecturers")
-}
-
-model Topic {
-  id              Int      @id @default(autoincrement())
-  topicCode       String   @unique @map("topic_code") @db.VarChar(50)
-  semesterId      Int      @map("semester_id")
-  supervisorId    Int      @map("supervisor_id")
-  title           String?  @db.VarChar(255)
-
-  // Relations
-  semester                   Semester                   @relation(fields: [semesterId], references: [id])
-  supervisor                 Lecturer                   @relation(fields: [supervisorId], references: [id])
-  topicSessionRegistrations  TopicSessionRegistration[]
-
-  @@map("Topics")
-}
-
-model Session {
-  id                Int          @id @default(autoincrement())
-  sessionCode       String       @unique @map("session_code") @db.VarChar(50)
-  semesterId        Int          @map("semester_id")
-  name              String?      @db.VarChar(100) // Round 1, Resit Round
-  type              SessionType? @default(Main)
-  timePerTopic      Int?         @map("time_per_topic") // in minutes
-  workStartTime     DateTime?    @map("work_start_time") @db.Time
-
-  // Relations
-  semester                   Semester                     @relation(fields: [semesterId], references: [id])
-  sessionDays                SessionDay[]
-  topicSessionRegistrations  TopicSessionRegistration[]
-  lecturerSessionConfigs     LecturerSessionConfig[]
-
-  @@map("Sessions")
-}
-
-model SessionDay {
-  id             Int      @id @default(autoincrement())
-  sessionDayCode String   @unique @map("session_day_code") @db.VarChar(50)
-  sessionId      Int      @map("session_id")
-  dayDate   DateTime @map("day_date") @db.Date
-  note      String?  @db.VarChar(255)
-
-  // Relations
-  session                  Session                   @relation(fields: [sessionId], references: [id])
-  councils                 Council[]
-  lecturerDayAvailability  LecturerDayAvailability[]
-
-  @@map("Session_Days")
-}
-
-model Council {
-  id            Int         @id @default(autoincrement())
-  councilCode   String      @unique @map("council_code") @db.VarChar(50)
-  sessionDayId  Int         @map("session_day_id")
-  semesterId    Int         @map("semester_id") // Denormalization
-  name          String?     @db.VarChar(100)
-
-  // Relations
-  sessionDay      SessionDay      @relation(fields: [sessionDayId], references: [id])
-  semester        Semester        @relation(fields: [semesterId], references: [id])
-  councilMembers  CouncilMember[]
-  defenseMatches  DefenseMatch[]
-
-  @@map("Councils")
-}
-
-model TopicSessionRegistration {
-  id               Int           @id @default(autoincrement())
-  registrationCode String        @unique @map("registration_code") @db.VarChar(50)
-  topicId          Int?          @map("topic_id")
-  sessionId   Int?          @map("session_id")
-  finalResult SessionResult @default(Pending) @map("final_result")
-
-  // Relations
-  topic          Topic?         @relation(fields: [topicId], references: [id])
-  session        Session?       @relation(fields: [sessionId], references: [id])
-  defenseMatches DefenseMatch[]
-
-  @@map("Topic_Session_Registrations")
-}
-
-model DefenseMatch {
-  id               Int      @id @default(autoincrement())
-  matchCode        String   @unique @map("match_code") @db.VarChar(50)
-  registrationId   Int      @map("registration_id")
-  councilId        Int      @map("council_id")
-  startTime        DateTime? @map("start_time") @db.Time()
-  endTime          DateTime? @map("end_time") @db.Time()
-
-  // Relations
-  registration   TopicSessionRegistration @relation(fields: [registrationId], references: [id])
-  council        Council                  @relation(fields: [councilId], references: [id])
-
-  @@map("Defense_Matches")
-}
-
-model LecturerSessionConfig {
-  id         Int  @id @default(autoincrement())
-  lecturerId  Int? @map("lecturer_id")
-  sessionId   Int? @map("session_id")
-  minTopics   Int? @default(5) @map("min_topics")
-  maxTopics   Int? @default(20) @map("max_topics")
-
-  // Relations
-  lecturer Lecturer? @relation(fields: [lecturerId], references: [id])
-  session  Session?  @relation(fields: [sessionId], references: [id])
-
-  @@map("Lecturer_Session_Configs")
-}
-
-model LecturerDayAvailability {
-  id           Int                 @id @default(autoincrement())
-  lecturerId   Int?                @map("lecturer_id")
-  sessionDayId Int?                @map("session_day_id")
-  status       AvailabilityStatus? @default(Available)
-
-  // Relations
-  lecturer   Lecturer?   @relation(fields: [lecturerId], references: [id])
-  sessionDay SessionDay? @relation(fields: [sessionDayId], references: [id])
-
-  @@map("Lecturer_Day_Availability")
-}
-
-model CouncilMember {
-  id         Int         @id @default(autoincrement())
-  councilId  Int?        @map("council_id")
-  lecturerId Int?        @map("lecturer_id")
-  role       CouncilRole?
-
-  // Relations
-  council  Council?  @relation(fields: [councilId], references: [id])
-  lecturer Lecturer? @relation(fields: [lecturerId], references: [id])
-
-  @@map("Council_Members")
-}
-
-model LecturerSkill {
-  id         Int  @id @default(autoincrement())
-  lecturerId Int  @map("lecturer_id")
-  skillId    Int  @map("skill_id")
-  score      Int? @default(0) // 0-5 scale
-
-  // Relations
-  lecturer Lecturer @relation(fields: [lecturerId], references: [id])
-  skill    Skill    @relation(fields: [skillId], references: [id])
-
-  @@unique([lecturerId, skillId])
-  @@map("Lecturer_Skills")
 }
