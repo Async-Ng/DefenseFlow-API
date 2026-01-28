@@ -1,11 +1,10 @@
 import ExcelJS from "exceljs";
-import { Topic, Lecturer } from "@prisma/client";
 import prisma from "../config/prisma.js";
 
 interface TopicImportRow {
   topicCode: string;
   title: string;
-  supervisorEmail: string;
+  supervisorCode: string;
 }
 
 interface LecturerImportRow {
@@ -46,13 +45,13 @@ export class ImportService {
     const processedCodes = new Set<string>();
 
     const rawRows = await this.parseExcel<TopicImportRow>(buffer, (row) => {
-      // Cell 1: Topic Code, Cell 2: Title, Cell 3: Supervisor Email
+      // Cell 1: Topic Code, Cell 2: Title, Cell 3: Supervisor Code
       const topicCode = row.getCell(1).text?.toString().trim();
       const title = row.getCell(2).text?.toString().trim();
-      const supervisorEmail = row.getCell(3).text?.toString().trim();
+      const supervisorCode = row.getCell(3).text?.toString().trim();
 
-      if (!topicCode || !title || !supervisorEmail) return null;
-      return { topicCode, title, supervisorEmail };
+      if (!topicCode || !title || !supervisorCode) return null;
+      return { topicCode, title, supervisorCode };
     });
 
     for (let i = 0; i < rawRows.length; i++) {
@@ -81,15 +80,15 @@ export class ImportService {
         continue;
       }
 
-      // 2. Find supervisor
-      const supervisor = await prisma.lecturer.findFirst({
-        where: { email: row.supervisorEmail },
+      // 2. Find supervisor by Code
+      const supervisor = await prisma.lecturer.findUnique({
+        where: { lecturerCode: row.supervisorCode },
       });
 
       if (!supervisor) {
         errors.push({
           row: rowNum,
-          message: `Supervisor with email '${row.supervisorEmail}' not found.`,
+          message: `Supervisor with code '${row.supervisorCode}' not found.`,
         });
         continue;
       }
@@ -201,7 +200,7 @@ export class ImportService {
     sheet.columns = [
       { header: "Topic Code", key: "topicCode", width: 15 },
       { header: "Title", key: "title", width: 40 },
-      { header: "Supervisor Email", key: "supervisorEmail", width: 30 },
+      { header: "Supervisor Code", key: "supervisorCode", width: 20 },
     ];
 
     return (await workbook.xlsx.writeBuffer()) as Buffer;
