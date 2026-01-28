@@ -13,7 +13,11 @@ const router: express.Router = express.Router();
 const storage = multer.memoryStorage();
 const upload = multer({
   storage: storage,
-  fileFilter: (_req, file, cb: multer.FileFilterCallback) => {
+  fileFilter: (
+    _req: express.Request,
+    file: Express.Multer.File,
+    cb: multer.FileFilterCallback,
+  ) => {
     if (
       file.mimetype ===
         "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" ||

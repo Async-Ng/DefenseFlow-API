@@ -23,7 +23,7 @@ export class ImportService {
     mapRow: (row: ExcelJS.Row) => T | null,
   ): Promise<T[]> {
     const workbook = new ExcelJS.Workbook();
-    await workbook.xlsx.load(buffer);
+    await workbook.xlsx.load(buffer as any);
     const worksheet = workbook.worksheets[0];
     const results: T[] = [];
 
@@ -203,7 +203,7 @@ export class ImportService {
       { header: "Supervisor Code", key: "supervisorCode", width: 20 },
     ];
 
-    return (await workbook.xlsx.writeBuffer()) as Buffer;
+    return (await workbook.xlsx.writeBuffer()) as unknown as Buffer;
   }
 
   /**
@@ -219,7 +219,7 @@ export class ImportService {
       { header: "Email", key: "email", width: 30 },
     ];
 
-    return (await workbook.xlsx.writeBuffer()) as Buffer;
+    return (await workbook.xlsx.writeBuffer()) as unknown as Buffer;
   }
 }
 
