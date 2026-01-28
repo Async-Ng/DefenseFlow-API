@@ -1,10 +1,5 @@
-/**
- * Session Repository
- * Data access layer for Session entity (Functional)
- */
-
-import prisma from "../config/prisma.js";
-import { Prisma } from "@prisma/client";
+import { prisma } from "../config/prisma.js";
+import { Prisma } from "../../generated/prisma/client.js";
 import type {
   Session,
   CreateSessionInput,
@@ -55,7 +50,7 @@ export const createWithDays = async (
   sessionData: CreateSessionInput,
   sessionDays: CreateSessionDayInput[],
 ): Promise<any> => {
-  return await prisma.$transaction(async (tx) => {
+  return await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
     // Create session
     const session = await tx.session.create({
       data: {
@@ -188,7 +183,7 @@ export const update = async (
  */
 export const deleteSession = async (id: number): Promise<Session> => {
   // Delete in transaction to handle session days
-  return await prisma.$transaction(async (tx) => {
+  return await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
     // Delete session days first
     await tx.sessionDay.deleteMany({
       where: { sessionId: id },

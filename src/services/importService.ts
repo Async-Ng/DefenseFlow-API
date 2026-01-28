@@ -1,5 +1,5 @@
 import ExcelJS from "exceljs";
-import prisma from "../config/prisma.js";
+import {prisma} from "../config/prisma.js";
 
 interface TopicImportRow {
   topicCode: string;

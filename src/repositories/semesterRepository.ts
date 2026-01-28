@@ -1,10 +1,5 @@
-/**
- * Semester Repository
- * Data access layer for Semester entity (Functional)
- */
-
-import prisma from "../config/prisma.js";
-import { Prisma } from "@prisma/client";
+import { prisma } from "../config/prisma.js";
+import { Prisma } from "../../generated/prisma/client.js";
 import type {
   Semester,
   CreateSemesterInput,

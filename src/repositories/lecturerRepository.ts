@@ -1,10 +1,5 @@
-/**
- * Lecturer Repository
- * Data access layer for Lecturer entity (Functional)
- */
-
-import prisma from "../config/prisma.js";
-import { Prisma } from "@prisma/client";
+import { prisma } from "../config/prisma.js";
+import { Prisma } from "../../generated/prisma/client.js";
 import type {
   Lecturer,
   LecturerSkill,

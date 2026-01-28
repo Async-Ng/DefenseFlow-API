@@ -1,21 +1,10 @@
-/**
- * Prisma Client Configuration (TypeScript)
- */
-
-import pkg from "@prisma/client";
-const { PrismaClient } = pkg;
-import { Pool } from "pg";
+import "dotenv/config";
 import { PrismaPg } from "@prisma/adapter-pg";
-import dotenv from "dotenv";
+import { PrismaClient } from "../../generated/prisma/client.js";
 
-dotenv.config();
+const connectionString = `${process.env.DIRECT_URL}`;
 
-// Use pooler connection for production, direct connection for development
-const connectionString = process.env.DATABASE_URL;
-
-const pool = new Pool({ connectionString });
-const adapter = new PrismaPg(pool);
-
+const adapter = new PrismaPg({ connectionString });
 const prisma = new PrismaClient({ adapter });
 
-export default prisma;
+export { prisma };

@@ -4,7 +4,7 @@
     "module": "ESNext",
     "lib": ["ES2024"],
     "moduleResolution": "node",
-    "rootDir": "./src",
+    "rootDir": "./",
     "outDir": "./dist",
     "baseUrl": "./src",
     "paths": {
@@ -41,6 +41,6 @@
     "noFallthroughCasesInSwitch": true,
     "skipLibCheck": true
   },
-  "include": ["src/**/*"],
+  "include": ["src/**/*", "generated/**/*"],
   "exclude": ["node_modules", "dist", "**/*.spec.ts"]
 }

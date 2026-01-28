@@ -15,7 +15,7 @@ import type {
   Lecturer,
   LecturerSkill,
   Skill,
-} from "@prisma/client";
+} from "../../generated/prisma/client.js";
 
 export type {
   Semester,
