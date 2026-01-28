@@ -4,22 +4,22 @@
  */
 
 import { Request, Response } from "express";
-import * as semesterService from "@services/semesterService.js";
+import * as semesterService from "../services/semesterService.js";
 import {
   successResponse,
-  createdResponse,
-  notFoundResponse,
-  validationErrorResponse,
-  paginatedResponse,
   errorResponse,
-} from "@utils/apiResponse.js";
-import { getErrorMessage } from "@utils/typeGuards.js";
+  notFoundResponse,
+  createdResponse, // Keep createdResponse for createSemester
+  validationErrorResponse, // Keep validationErrorResponse for createSemester
+  paginatedResponse, // Keep paginatedResponse for getAllSemesters
+} from "../utils/apiResponse.js";
+import { getErrorMessage } from "../utils/typeGuards.js";
 import {
   getIdParam,
   getPaginationParams,
   getIncludeOptions,
   getSemesterFilters,
-} from "@utils/requestHelpers.js";
+} from "../utils/requestHelpers.js";
 import type {
   CreateSemesterInput,
   UpdateSemesterInput,

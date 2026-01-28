@@ -3,7 +3,7 @@
  */
 
 import { Request, Response, NextFunction } from "express";
-import { errorResponse, notFoundResponse } from "@utils/apiResponse.js";
+import { errorResponse, notFoundResponse } from "../utils/apiResponse.js";
 
 interface CustomError extends Error {
   statusCode?: number;
