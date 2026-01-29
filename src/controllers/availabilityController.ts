@@ -7,10 +7,7 @@ import { Request, Response } from "express";
 import * as availabilityService from "../services/availabilityService.js";
 import { successResponse, errorResponse } from "../utils/apiResponse.js";
 import { getErrorMessage } from "../utils/typeGuards.js";
-import type {
-  UpdateAvailabilityInput,
-  BatchUpdateAvailabilityInput,
-} from "../types/index.js";
+import type { BatchUpdateAvailabilityInput } from "../types/index.js";
 
 /**
  * @swagger
@@ -112,6 +109,41 @@ export const getSessionDays = async (
  *     responses:
  *       200:
  *         description: Session days with availability retrieved successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 message:
+ *                   type: string
+ *                   example: "Session days with availability retrieved successfully"
+ *                 data:
+ *                   type: array
+ *                   items:
+ *                     type: object
+ *                     properties:
+ *                       id:
+ *                         type: integer
+ *                         example: 1
+ *                       sessionDayCode:
+ *                         type: string
+ *                         example: "SD001"
+ *                       dayDate:
+ *                         type: string
+ *                         format: date
+ *                         example: "2025-05-15"
+ *                       lecturerDayAvailability:
+ *                         type: array
+ *                         items:
+ *                           type: object
+ *                           properties:
+ *                             status:
+ *                               type: string
+ *                               enum: [Available, Busy]
+ *                               example: "Busy"
  *       400:
  *         description: Invalid parameters
  *       404:
@@ -273,113 +305,6 @@ export const getLecturerStatus = async (
 
 /**
  * @swagger
- * /api/availability/lecturers/{lecturerId}/availability:
- *   put:
- *     summary: Update lecturer availability for a specific session day
- *     tags: [Availability]
- *     parameters:
- *       - in: path
- *         name: lecturerId
- *         required: true
- *         schema:
- *           type: integer
- *         description: Lecturer ID
- *     requestBody:
- *       required: true
- *       content:
- *         application/json:
- *           schema:
- *             type: object
- *             required:
- *               - sessionDayId
- *               - status
- *             properties:
- *               sessionDayId:
- *                 type: integer
- *                 example: 1
- *               status:
- *                 type: string
- *                 enum: [Available, Busy]
- *                 example: "Busy"
- *     responses:
- *       200:
- *         description: Availability updated successfully
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 success:
- *                   type: boolean
- *                   example: true
- *                 message:
- *                   type: string
- *                   example: "Availability updated successfully"
- *                 data:
- *                   type: object
- *                   properties:
- *                     id:
- *                       type: integer
- *                       example: 1
- *                     lecturerId:
- *                       type: integer
- *                       example: 1
- *                     sessionDayId:
- *                       type: integer
- *                       example: 1
- *                     status:
- *                       type: string
- *                       example: "Busy"
- *       400:
- *         description: Invalid input or registration closed
- *       404:
- *         description: Lecturer or session day not found
- *       500:
- *         description: Server error
- */
-export const updateAvailability = async (
-  req: Request<{ lecturerId: string }, {}, UpdateAvailabilityInput>,
-  res: Response,
-): Promise<void> => {
-  try {
-    const lecturerId = parseInt(req.params.lecturerId, 10);
-    const { sessionDayId, status } = req.body;
-
-    if (isNaN(lecturerId)) {
-      errorResponse(res, "Invalid lecturer ID", 400);
-      return;
-    }
-
-    if (!sessionDayId || !status) {
-      errorResponse(res, "Session day ID and status are required", 400);
-      return;
-    }
-
-    if (!["Available", "Busy"].includes(status)) {
-      errorResponse(res, "Status must be 'Available' or 'Busy'", 400);
-      return;
-    }
-
-    const availability = await availabilityService.updateAvailability(
-      lecturerId,
-      sessionDayId,
-      status,
-    );
-    successResponse(res, availability, "Availability updated successfully");
-  } catch (error) {
-    const message = getErrorMessage(error);
-    if (message.includes("not found")) {
-      errorResponse(res, message, 404);
-    } else if (message.includes("closed")) {
-      errorResponse(res, message, 400);
-    } else {
-      errorResponse(res, message, 500);
-    }
-  }
-};
-
-/**
- * @swagger
  * /api/availability/lecturers/{lecturerId}/availability/batch:
  *   put:
  *     summary: Batch update lecturer availability for multiple session days
@@ -415,6 +340,35 @@ export const updateAvailability = async (
  *     responses:
  *       200:
  *         description: Availability updated successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 message:
+ *                   type: string
+ *                   example: "Availability updated successfully for all days"
+ *                 data:
+ *                   type: array
+ *                   items:
+ *                     type: object
+ *                     properties:
+ *                       id:
+ *                         type: integer
+ *                         example: 1
+ *                       lecturerId:
+ *                         type: integer
+ *                         example: 1
+ *                       sessionDayId:
+ *                         type: integer
+ *                         example: 1
+ *                       status:
+ *                         type: string
+ *                         enum: [Available, Busy]
+ *                         example: "Busy"
  *       400:
  *         description: Invalid input or registration closed
  *       404:
@@ -499,6 +453,21 @@ export const batchUpdateAvailability = async (
  *     responses:
  *       200:
  *         description: Availability removed successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 message:
+ *                   type: string
+ *                   example: "Availability removed successfully (reverted to Available)"
+ *                 data:
+ *                   type: object
+ *                   nullable: true
+ *                   example: null
  *       400:
  *         description: Invalid input or registration closed
  *       404:

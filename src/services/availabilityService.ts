@@ -100,49 +100,6 @@ export const getLecturerStatus = async (
 };
 
 /**
- * Update lecturer availability for a specific day
- * Acceptance Criteria: Endpoint to save/update the "Busy" status for specific days
- */
-export const updateAvailability = async (
-  lecturerId: number,
-  sessionDayId: number,
-  status: AvailabilityStatus,
-): Promise<LecturerDayAvailability> => {
-  // Verify lecturer exists
-  const lecturer = await availabilityRepository.getLecturerById(lecturerId);
-  if (!lecturer) {
-    throw new Error(`Lecturer with ID ${lecturerId} not found`);
-  }
-
-  // Verify session day exists
-  const sessionDay =
-    await availabilityRepository.getSessionDayById(sessionDayId);
-  if (!sessionDay) {
-    throw new Error(`Session day with ID ${sessionDayId} not found`);
-  }
-
-  // Get the session to check if it's locked
-  const session = await availabilityRepository.getSessionById(
-    sessionDay.sessionId,
-  );
-  if (!session) {
-    throw new Error(`Session not found`);
-  }
-
-  // Acceptance Criteria: Add logic to prevent updates if the session is "Locked" by Admin
-  if (session.status === "Locked") {
-    throw new Error("Registration is closed for scheduling processing");
-  }
-
-  // Upsert the availability record
-  return await availabilityRepository.upsertAvailability(
-    lecturerId,
-    sessionDayId,
-    status,
-  );
-};
-
-/**
  * Batch update lecturer availability for multiple days
  */
 export const batchUpdateAvailability = async (

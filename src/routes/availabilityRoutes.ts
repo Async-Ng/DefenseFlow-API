@@ -16,10 +16,7 @@ const router: express.Router = express.Router();
  * GET /api/availability/sessions/:sessionId/days
  * Get all session days for a specific session
  */
-router.get(
-  "/sessions/:sessionId/days",
-  availabilityController.getSessionDays,
-);
+router.get("/sessions/:sessionId/days", availabilityController.getSessionDays);
 
 /**
  * GET /api/availability/sessions/:sessionId/days/with-availability
@@ -41,15 +38,6 @@ router.get(
 router.get(
   "/lecturers/:lecturerId/status",
   availabilityController.getLecturerStatus,
-);
-
-/**
- * PUT /api/availability/lecturers/:lecturerId/availability
- * Update lecturer availability for a specific session day
- */
-router.put(
-  "/lecturers/:lecturerId/availability",
-  availabilityController.updateAvailability,
 );
 
 /**
