@@ -9,6 +9,14 @@
 * 🟢 You can import this file directly.
 */
 
+export const SessionStatus = {
+  Open: 'Open',
+  Locked: 'Locked'
+} as const
+
+export type SessionStatus = (typeof SessionStatus)[keyof typeof SessionStatus]
+
+
 export const AvailabilityStatus = {
   Available: 'Available',
   Busy: 'Busy'

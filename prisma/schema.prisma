@@ -64,6 +64,7 @@ model Session {
   semesterId                Int                        @map("semester_id")
   name                      String?                    @db.VarChar(100)
   type                      SessionType?               @default(Main)
+  status                    SessionStatus?             @default(Open)
   timePerTopic              Int?                       @map("time_per_topic")
   workStartTime             DateTime?                  @map("work_start_time") @db.Time(6)
   lecturerSessionConfigs    LecturerSessionConfig[]
@@ -72,6 +73,13 @@ model Session {
   topicSessionRegistrations TopicSessionRegistration[]
 
   @@map("Sessions")
+}
+
+enum SessionStatus {
+  Open
+  Locked
+
+  @@map("session_status")
 }
 
 model SessionDay {
