@@ -10,7 +10,6 @@ import type {
   LecturerDayAvailability,
   LecturerStatusResponse,
   BatchUpdateAvailabilityInput,
-  AvailabilityStatus,
 } from "../types/index.js";
 
 /**
@@ -94,8 +93,13 @@ export const getLecturerStatus = async (
     lecturerId,
     sessionId,
     isRegistrationOpen,
-    sessionConfig,
-    availabilities,
+    sessionConfig: sessionConfig
+      ? {
+          minTopics: sessionConfig?.minTopics || 0,
+          maxTopics: sessionConfig?.maxTopics || 0,
+        }
+      : null,
+    availabilities: availabilities as unknown as LecturerDayAvailability[], // Cast because DB return might have nullable fields
   };
 };
 
