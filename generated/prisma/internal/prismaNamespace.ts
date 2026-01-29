@@ -1466,6 +1466,7 @@ export const SessionScalarFieldEnum = {
   semesterId: 'semesterId',
   name: 'name',
   type: 'type',
+  status: 'status',
   timePerTopic: 'timePerTopic',
   workStartTime: 'workStartTime'
 } as const
@@ -1649,6 +1650,20 @@ export type EnumSessionTypeFieldRefInput<$PrismaModel> = FieldRefInputType<$Pris
  * Reference to a field of type 'SessionType[]'
  */
 export type ListEnumSessionTypeFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'SessionType[]'>
+    
+
+
+/**
+ * Reference to a field of type 'SessionStatus'
+ */
+export type EnumSessionStatusFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'SessionStatus'>
+    
+
+
+/**
+ * Reference to a field of type 'SessionStatus[]'
+ */
+export type ListEnumSessionStatusFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'SessionStatus[]'>
     
 
 
