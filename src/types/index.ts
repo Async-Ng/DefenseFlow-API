@@ -15,6 +15,9 @@ import type {
   Lecturer,
   LecturerSkill,
   Skill,
+  LecturerDayAvailability,
+  LecturerSessionConfig,
+  AvailabilityStatus,
 } from "../../generated/prisma/client.js";
 
 export type {
@@ -26,6 +29,9 @@ export type {
   Lecturer,
   LecturerSkill,
   Skill,
+  LecturerDayAvailability,
+  LecturerSessionConfig,
+  AvailabilityStatus,
 };
 
 // ============================================================================
@@ -144,6 +150,44 @@ export type LecturerWithSkills = Lecturer & {
     skill: Skill;
   })[];
 };
+
+// ============================================================================
+// Availability Types
+// ============================================================================
+
+/**
+ * Session day with availability status
+ */
+export type SessionDayWithAvailability = SessionDay & {
+  lecturerDayAvailability?: LecturerDayAvailability[];
+};
+
+/**
+ * Lecturer availability status update input
+ */
+export type UpdateAvailabilityInput = {
+  sessionDayId: number;
+  status: AvailabilityStatus;
+};
+
+/**
+ * Batch availability update input
+ */
+export type BatchUpdateAvailabilityInput = {
+  availabilities: UpdateAvailabilityInput[];
+};
+
+/**
+ * Lecturer status response
+ */
+export type LecturerStatusResponse = {
+  lecturerId: number;
+  sessionId: number;
+  isRegistrationOpen: boolean;
+  sessionConfig?: LecturerSessionConfig | null;
+  availabilities: LecturerDayAvailability[];
+};
+
 
 // ============================================================================
 // Parsed/Validated Types

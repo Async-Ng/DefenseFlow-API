@@ -13,14 +13,13 @@ COPY package.json pnpm-lock.yaml ./
 # Cài đặt dependencies
 RUN pnpm install --frozen-lockfile
 
-# Copy prisma files và config
+# Copy prisma schema và config files
 COPY prisma ./prisma
 COPY prisma.config.ts ./
 COPY tsconfig.json ./
 
-
 # Copy source code
-COPY . .
+COPY src ./src
 
 # Set a dummy database URL for prisma generate (not actually used during generation)
 ARG DIRECT_URL="postgresql://dummy:dummy@localhost:5432/dummy"
@@ -32,8 +31,14 @@ RUN pnpm prisma generate
 # Build TypeScript code
 RUN pnpm run build
 
-# Expose port (thay đổi nếu cần)
+# Remove dev dependencies to reduce image size
+RUN pnpm prune --prod
+
+# Expose port
 EXPOSE 3000
+
+# Environment variables will be provided at runtime
+ENV NODE_ENV=production
 
 # Chạy ứng dụng
 CMD ["node", "dist/src/server.js"]

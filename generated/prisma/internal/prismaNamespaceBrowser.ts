@@ -131,6 +131,7 @@ export const SessionScalarFieldEnum = {
   semesterId: 'semesterId',
   name: 'name',
   type: 'type',
+  status: 'status',
   timePerTopic: 'timePerTopic',
   workStartTime: 'workStartTime'
 } as const

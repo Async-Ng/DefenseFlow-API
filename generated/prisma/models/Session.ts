@@ -44,6 +44,7 @@ export type SessionMinAggregateOutputType = {
   semesterId: number | null
   name: string | null
   type: $Enums.SessionType | null
+  status: $Enums.SessionStatus | null
   timePerTopic: number | null
   workStartTime: Date | null
 }
@@ -54,6 +55,7 @@ export type SessionMaxAggregateOutputType = {
   semesterId: number | null
   name: string | null
   type: $Enums.SessionType | null
+  status: $Enums.SessionStatus | null
   timePerTopic: number | null
   workStartTime: Date | null
 }
@@ -64,6 +66,7 @@ export type SessionCountAggregateOutputType = {
   semesterId: number
   name: number
   type: number
+  status: number
   timePerTopic: number
   workStartTime: number
   _all: number
@@ -88,6 +91,7 @@ export type SessionMinAggregateInputType = {
   semesterId?: true
   name?: true
   type?: true
+  status?: true
   timePerTopic?: true
   workStartTime?: true
 }
@@ -98,6 +102,7 @@ export type SessionMaxAggregateInputType = {
   semesterId?: true
   name?: true
   type?: true
+  status?: true
   timePerTopic?: true
   workStartTime?: true
 }
@@ -108,6 +113,7 @@ export type SessionCountAggregateInputType = {
   semesterId?: true
   name?: true
   type?: true
+  status?: true
   timePerTopic?: true
   workStartTime?: true
   _all?: true
@@ -205,6 +211,7 @@ export type SessionGroupByOutputType = {
   semesterId: number
   name: string | null
   type: $Enums.SessionType | null
+  status: $Enums.SessionStatus | null
   timePerTopic: number | null
   workStartTime: Date | null
   _count: SessionCountAggregateOutputType | null
@@ -238,6 +245,7 @@ export type SessionWhereInput = {
   semesterId?: Prisma.IntFilter<"Session"> | number
   name?: Prisma.StringNullableFilter<"Session"> | string | null
   type?: Prisma.EnumSessionTypeNullableFilter<"Session"> | $Enums.SessionType | null
+  status?: Prisma.EnumSessionStatusNullableFilter<"Session"> | $Enums.SessionStatus | null
   timePerTopic?: Prisma.IntNullableFilter<"Session"> | number | null
   workStartTime?: Prisma.DateTimeNullableFilter<"Session"> | Date | string | null
   lecturerSessionConfigs?: Prisma.LecturerSessionConfigListRelationFilter
@@ -252,6 +260,7 @@ export type SessionOrderByWithRelationInput = {
   semesterId?: Prisma.SortOrder
   name?: Prisma.SortOrderInput | Prisma.SortOrder
   type?: Prisma.SortOrderInput | Prisma.SortOrder
+  status?: Prisma.SortOrderInput | Prisma.SortOrder
   timePerTopic?: Prisma.SortOrderInput | Prisma.SortOrder
   workStartTime?: Prisma.SortOrderInput | Prisma.SortOrder
   lecturerSessionConfigs?: Prisma.LecturerSessionConfigOrderByRelationAggregateInput
@@ -269,6 +278,7 @@ export type SessionWhereUniqueInput = Prisma.AtLeast<{
   semesterId?: Prisma.IntFilter<"Session"> | number
   name?: Prisma.StringNullableFilter<"Session"> | string | null
   type?: Prisma.EnumSessionTypeNullableFilter<"Session"> | $Enums.SessionType | null
+  status?: Prisma.EnumSessionStatusNullableFilter<"Session"> | $Enums.SessionStatus | null
   timePerTopic?: Prisma.IntNullableFilter<"Session"> | number | null
   workStartTime?: Prisma.DateTimeNullableFilter<"Session"> | Date | string | null
   lecturerSessionConfigs?: Prisma.LecturerSessionConfigListRelationFilter
@@ -283,6 +293,7 @@ export type SessionOrderByWithAggregationInput = {
   semesterId?: Prisma.SortOrder
   name?: Prisma.SortOrderInput | Prisma.SortOrder
   type?: Prisma.SortOrderInput | Prisma.SortOrder
+  status?: Prisma.SortOrderInput | Prisma.SortOrder
   timePerTopic?: Prisma.SortOrderInput | Prisma.SortOrder
   workStartTime?: Prisma.SortOrderInput | Prisma.SortOrder
   _count?: Prisma.SessionCountOrderByAggregateInput
@@ -301,6 +312,7 @@ export type SessionScalarWhereWithAggregatesInput = {
   semesterId?: Prisma.IntWithAggregatesFilter<"Session"> | number
   name?: Prisma.StringNullableWithAggregatesFilter<"Session"> | string | null
   type?: Prisma.EnumSessionTypeNullableWithAggregatesFilter<"Session"> | $Enums.SessionType | null
+  status?: Prisma.EnumSessionStatusNullableWithAggregatesFilter<"Session"> | $Enums.SessionStatus | null
   timePerTopic?: Prisma.IntNullableWithAggregatesFilter<"Session"> | number | null
   workStartTime?: Prisma.DateTimeNullableWithAggregatesFilter<"Session"> | Date | string | null
 }
@@ -309,6 +321,7 @@ export type SessionCreateInput = {
   sessionCode: string
   name?: string | null
   type?: $Enums.SessionType | null
+  status?: $Enums.SessionStatus | null
   timePerTopic?: number | null
   workStartTime?: Date | string | null
   lecturerSessionConfigs?: Prisma.LecturerSessionConfigCreateNestedManyWithoutSessionInput
@@ -323,6 +336,7 @@ export type SessionUncheckedCreateInput = {
   semesterId: number
   name?: string | null
   type?: $Enums.SessionType | null
+  status?: $Enums.SessionStatus | null
   timePerTopic?: number | null
   workStartTime?: Date | string | null
   lecturerSessionConfigs?: Prisma.LecturerSessionConfigUncheckedCreateNestedManyWithoutSessionInput
@@ -334,6 +348,7 @@ export type SessionUpdateInput = {
   sessionCode?: Prisma.StringFieldUpdateOperationsInput | string
   name?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   type?: Prisma.NullableEnumSessionTypeFieldUpdateOperationsInput | $Enums.SessionType | null
+  status?: Prisma.NullableEnumSessionStatusFieldUpdateOperationsInput | $Enums.SessionStatus | null
   timePerTopic?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   workStartTime?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   lecturerSessionConfigs?: Prisma.LecturerSessionConfigUpdateManyWithoutSessionNestedInput
@@ -348,6 +363,7 @@ export type SessionUncheckedUpdateInput = {
   semesterId?: Prisma.IntFieldUpdateOperationsInput | number
   name?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   type?: Prisma.NullableEnumSessionTypeFieldUpdateOperationsInput | $Enums.SessionType | null
+  status?: Prisma.NullableEnumSessionStatusFieldUpdateOperationsInput | $Enums.SessionStatus | null
   timePerTopic?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   workStartTime?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   lecturerSessionConfigs?: Prisma.LecturerSessionConfigUncheckedUpdateManyWithoutSessionNestedInput
@@ -361,6 +377,7 @@ export type SessionCreateManyInput = {
   semesterId: number
   name?: string | null
   type?: $Enums.SessionType | null
+  status?: $Enums.SessionStatus | null
   timePerTopic?: number | null
   workStartTime?: Date | string | null
 }
@@ -369,6 +386,7 @@ export type SessionUpdateManyMutationInput = {
   sessionCode?: Prisma.StringFieldUpdateOperationsInput | string
   name?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   type?: Prisma.NullableEnumSessionTypeFieldUpdateOperationsInput | $Enums.SessionType | null
+  status?: Prisma.NullableEnumSessionStatusFieldUpdateOperationsInput | $Enums.SessionStatus | null
   timePerTopic?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   workStartTime?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
 }
@@ -379,6 +397,7 @@ export type SessionUncheckedUpdateManyInput = {
   semesterId?: Prisma.IntFieldUpdateOperationsInput | number
   name?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   type?: Prisma.NullableEnumSessionTypeFieldUpdateOperationsInput | $Enums.SessionType | null
+  status?: Prisma.NullableEnumSessionStatusFieldUpdateOperationsInput | $Enums.SessionStatus | null
   timePerTopic?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   workStartTime?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
 }
@@ -399,6 +418,7 @@ export type SessionCountOrderByAggregateInput = {
   semesterId?: Prisma.SortOrder
   name?: Prisma.SortOrder
   type?: Prisma.SortOrder
+  status?: Prisma.SortOrder
   timePerTopic?: Prisma.SortOrder
   workStartTime?: Prisma.SortOrder
 }
@@ -415,6 +435,7 @@ export type SessionMaxOrderByAggregateInput = {
   semesterId?: Prisma.SortOrder
   name?: Prisma.SortOrder
   type?: Prisma.SortOrder
+  status?: Prisma.SortOrder
   timePerTopic?: Prisma.SortOrder
   workStartTime?: Prisma.SortOrder
 }
@@ -425,6 +446,7 @@ export type SessionMinOrderByAggregateInput = {
   semesterId?: Prisma.SortOrder
   name?: Prisma.SortOrder
   type?: Prisma.SortOrder
+  status?: Prisma.SortOrder
   timePerTopic?: Prisma.SortOrder
   workStartTime?: Prisma.SortOrder
 }
@@ -491,6 +513,10 @@ export type NullableEnumSessionTypeFieldUpdateOperationsInput = {
   set?: $Enums.SessionType | null
 }
 
+export type NullableEnumSessionStatusFieldUpdateOperationsInput = {
+  set?: $Enums.SessionStatus | null
+}
+
 export type NullableIntFieldUpdateOperationsInput = {
   set?: number | null
   increment?: number
@@ -549,6 +575,7 @@ export type SessionCreateWithoutSemesterInput = {
   sessionCode: string
   name?: string | null
   type?: $Enums.SessionType | null
+  status?: $Enums.SessionStatus | null
   timePerTopic?: number | null
   workStartTime?: Date | string | null
   lecturerSessionConfigs?: Prisma.LecturerSessionConfigCreateNestedManyWithoutSessionInput
@@ -561,6 +588,7 @@ export type SessionUncheckedCreateWithoutSemesterInput = {
   sessionCode: string
   name?: string | null
   type?: $Enums.SessionType | null
+  status?: $Enums.SessionStatus | null
   timePerTopic?: number | null
   workStartTime?: Date | string | null
   lecturerSessionConfigs?: Prisma.LecturerSessionConfigUncheckedCreateNestedManyWithoutSessionInput
@@ -603,6 +631,7 @@ export type SessionScalarWhereInput = {
   semesterId?: Prisma.IntFilter<"Session"> | number
   name?: Prisma.StringNullableFilter<"Session"> | string | null
   type?: Prisma.EnumSessionTypeNullableFilter<"Session"> | $Enums.SessionType | null
+  status?: Prisma.EnumSessionStatusNullableFilter<"Session"> | $Enums.SessionStatus | null
   timePerTopic?: Prisma.IntNullableFilter<"Session"> | number | null
   workStartTime?: Prisma.DateTimeNullableFilter<"Session"> | Date | string | null
 }
@@ -611,6 +640,7 @@ export type SessionCreateWithoutSessionDaysInput = {
   sessionCode: string
   name?: string | null
   type?: $Enums.SessionType | null
+  status?: $Enums.SessionStatus | null
   timePerTopic?: number | null
   workStartTime?: Date | string | null
   lecturerSessionConfigs?: Prisma.LecturerSessionConfigCreateNestedManyWithoutSessionInput
@@ -624,6 +654,7 @@ export type SessionUncheckedCreateWithoutSessionDaysInput = {
   semesterId: number
   name?: string | null
   type?: $Enums.SessionType | null
+  status?: $Enums.SessionStatus | null
   timePerTopic?: number | null
   workStartTime?: Date | string | null
   lecturerSessionConfigs?: Prisma.LecturerSessionConfigUncheckedCreateNestedManyWithoutSessionInput
@@ -650,6 +681,7 @@ export type SessionUpdateWithoutSessionDaysInput = {
   sessionCode?: Prisma.StringFieldUpdateOperationsInput | string
   name?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   type?: Prisma.NullableEnumSessionTypeFieldUpdateOperationsInput | $Enums.SessionType | null
+  status?: Prisma.NullableEnumSessionStatusFieldUpdateOperationsInput | $Enums.SessionStatus | null
   timePerTopic?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   workStartTime?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   lecturerSessionConfigs?: Prisma.LecturerSessionConfigUpdateManyWithoutSessionNestedInput
@@ -663,6 +695,7 @@ export type SessionUncheckedUpdateWithoutSessionDaysInput = {
   semesterId?: Prisma.IntFieldUpdateOperationsInput | number
   name?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   type?: Prisma.NullableEnumSessionTypeFieldUpdateOperationsInput | $Enums.SessionType | null
+  status?: Prisma.NullableEnumSessionStatusFieldUpdateOperationsInput | $Enums.SessionStatus | null
   timePerTopic?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   workStartTime?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   lecturerSessionConfigs?: Prisma.LecturerSessionConfigUncheckedUpdateManyWithoutSessionNestedInput
@@ -673,6 +706,7 @@ export type SessionCreateWithoutTopicSessionRegistrationsInput = {
   sessionCode: string
   name?: string | null
   type?: $Enums.SessionType | null
+  status?: $Enums.SessionStatus | null
   timePerTopic?: number | null
   workStartTime?: Date | string | null
   lecturerSessionConfigs?: Prisma.LecturerSessionConfigCreateNestedManyWithoutSessionInput
@@ -686,6 +720,7 @@ export type SessionUncheckedCreateWithoutTopicSessionRegistrationsInput = {
   semesterId: number
   name?: string | null
   type?: $Enums.SessionType | null
+  status?: $Enums.SessionStatus | null
   timePerTopic?: number | null
   workStartTime?: Date | string | null
   lecturerSessionConfigs?: Prisma.LecturerSessionConfigUncheckedCreateNestedManyWithoutSessionInput
@@ -712,6 +747,7 @@ export type SessionUpdateWithoutTopicSessionRegistrationsInput = {
   sessionCode?: Prisma.StringFieldUpdateOperationsInput | string
   name?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   type?: Prisma.NullableEnumSessionTypeFieldUpdateOperationsInput | $Enums.SessionType | null
+  status?: Prisma.NullableEnumSessionStatusFieldUpdateOperationsInput | $Enums.SessionStatus | null
   timePerTopic?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   workStartTime?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   lecturerSessionConfigs?: Prisma.LecturerSessionConfigUpdateManyWithoutSessionNestedInput
@@ -725,6 +761,7 @@ export type SessionUncheckedUpdateWithoutTopicSessionRegistrationsInput = {
   semesterId?: Prisma.IntFieldUpdateOperationsInput | number
   name?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   type?: Prisma.NullableEnumSessionTypeFieldUpdateOperationsInput | $Enums.SessionType | null
+  status?: Prisma.NullableEnumSessionStatusFieldUpdateOperationsInput | $Enums.SessionStatus | null
   timePerTopic?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   workStartTime?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   lecturerSessionConfigs?: Prisma.LecturerSessionConfigUncheckedUpdateManyWithoutSessionNestedInput
@@ -735,6 +772,7 @@ export type SessionCreateWithoutLecturerSessionConfigsInput = {
   sessionCode: string
   name?: string | null
   type?: $Enums.SessionType | null
+  status?: $Enums.SessionStatus | null
   timePerTopic?: number | null
   workStartTime?: Date | string | null
   sessionDays?: Prisma.SessionDayCreateNestedManyWithoutSessionInput
@@ -748,6 +786,7 @@ export type SessionUncheckedCreateWithoutLecturerSessionConfigsInput = {
   semesterId: number
   name?: string | null
   type?: $Enums.SessionType | null
+  status?: $Enums.SessionStatus | null
   timePerTopic?: number | null
   workStartTime?: Date | string | null
   sessionDays?: Prisma.SessionDayUncheckedCreateNestedManyWithoutSessionInput
@@ -774,6 +813,7 @@ export type SessionUpdateWithoutLecturerSessionConfigsInput = {
   sessionCode?: Prisma.StringFieldUpdateOperationsInput | string
   name?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   type?: Prisma.NullableEnumSessionTypeFieldUpdateOperationsInput | $Enums.SessionType | null
+  status?: Prisma.NullableEnumSessionStatusFieldUpdateOperationsInput | $Enums.SessionStatus | null
   timePerTopic?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   workStartTime?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   sessionDays?: Prisma.SessionDayUpdateManyWithoutSessionNestedInput
@@ -787,6 +827,7 @@ export type SessionUncheckedUpdateWithoutLecturerSessionConfigsInput = {
   semesterId?: Prisma.IntFieldUpdateOperationsInput | number
   name?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   type?: Prisma.NullableEnumSessionTypeFieldUpdateOperationsInput | $Enums.SessionType | null
+  status?: Prisma.NullableEnumSessionStatusFieldUpdateOperationsInput | $Enums.SessionStatus | null
   timePerTopic?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   workStartTime?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   sessionDays?: Prisma.SessionDayUncheckedUpdateManyWithoutSessionNestedInput
@@ -798,6 +839,7 @@ export type SessionCreateManySemesterInput = {
   sessionCode: string
   name?: string | null
   type?: $Enums.SessionType | null
+  status?: $Enums.SessionStatus | null
   timePerTopic?: number | null
   workStartTime?: Date | string | null
 }
@@ -806,6 +848,7 @@ export type SessionUpdateWithoutSemesterInput = {
   sessionCode?: Prisma.StringFieldUpdateOperationsInput | string
   name?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   type?: Prisma.NullableEnumSessionTypeFieldUpdateOperationsInput | $Enums.SessionType | null
+  status?: Prisma.NullableEnumSessionStatusFieldUpdateOperationsInput | $Enums.SessionStatus | null
   timePerTopic?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   workStartTime?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   lecturerSessionConfigs?: Prisma.LecturerSessionConfigUpdateManyWithoutSessionNestedInput
@@ -818,6 +861,7 @@ export type SessionUncheckedUpdateWithoutSemesterInput = {
   sessionCode?: Prisma.StringFieldUpdateOperationsInput | string
   name?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   type?: Prisma.NullableEnumSessionTypeFieldUpdateOperationsInput | $Enums.SessionType | null
+  status?: Prisma.NullableEnumSessionStatusFieldUpdateOperationsInput | $Enums.SessionStatus | null
   timePerTopic?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   workStartTime?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   lecturerSessionConfigs?: Prisma.LecturerSessionConfigUncheckedUpdateManyWithoutSessionNestedInput
@@ -830,6 +874,7 @@ export type SessionUncheckedUpdateManyWithoutSemesterInput = {
   sessionCode?: Prisma.StringFieldUpdateOperationsInput | string
   name?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   type?: Prisma.NullableEnumSessionTypeFieldUpdateOperationsInput | $Enums.SessionType | null
+  status?: Prisma.NullableEnumSessionStatusFieldUpdateOperationsInput | $Enums.SessionStatus | null
   timePerTopic?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   workStartTime?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
 }
@@ -889,6 +934,7 @@ export type SessionSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs 
   semesterId?: boolean
   name?: boolean
   type?: boolean
+  status?: boolean
   timePerTopic?: boolean
   workStartTime?: boolean
   lecturerSessionConfigs?: boolean | Prisma.Session$lecturerSessionConfigsArgs<ExtArgs>
@@ -904,6 +950,7 @@ export type SessionSelectCreateManyAndReturn<ExtArgs extends runtime.Types.Exten
   semesterId?: boolean
   name?: boolean
   type?: boolean
+  status?: boolean
   timePerTopic?: boolean
   workStartTime?: boolean
   semester?: boolean | Prisma.SemesterDefaultArgs<ExtArgs>
@@ -915,6 +962,7 @@ export type SessionSelectUpdateManyAndReturn<ExtArgs extends runtime.Types.Exten
   semesterId?: boolean
   name?: boolean
   type?: boolean
+  status?: boolean
   timePerTopic?: boolean
   workStartTime?: boolean
   semester?: boolean | Prisma.SemesterDefaultArgs<ExtArgs>
@@ -926,11 +974,12 @@ export type SessionSelectScalar = {
   semesterId?: boolean
   name?: boolean
   type?: boolean
+  status?: boolean
   timePerTopic?: boolean
   workStartTime?: boolean
 }
 
-export type SessionOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "sessionCode" | "semesterId" | "name" | "type" | "timePerTopic" | "workStartTime", ExtArgs["result"]["session"]>
+export type SessionOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "sessionCode" | "semesterId" | "name" | "type" | "status" | "timePerTopic" | "workStartTime", ExtArgs["result"]["session"]>
 export type SessionInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   lecturerSessionConfigs?: boolean | Prisma.Session$lecturerSessionConfigsArgs<ExtArgs>
   sessionDays?: boolean | Prisma.Session$sessionDaysArgs<ExtArgs>
@@ -959,6 +1008,7 @@ export type $SessionPayload<ExtArgs extends runtime.Types.Extensions.InternalArg
     semesterId: number
     name: string | null
     type: $Enums.SessionType | null
+    status: $Enums.SessionStatus | null
     timePerTopic: number | null
     workStartTime: Date | null
   }, ExtArgs["result"]["session"]>
@@ -1393,6 +1443,7 @@ export interface SessionFieldRefs {
   readonly semesterId: Prisma.FieldRef<"Session", 'Int'>
   readonly name: Prisma.FieldRef<"Session", 'String'>
   readonly type: Prisma.FieldRef<"Session", 'SessionType'>
+  readonly status: Prisma.FieldRef<"Session", 'SessionStatus'>
   readonly timePerTopic: Prisma.FieldRef<"Session", 'Int'>
   readonly workStartTime: Prisma.FieldRef<"Session", 'DateTime'>
 }
