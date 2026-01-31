@@ -56,7 +56,7 @@ export const getSkills = async (req: Request, res: Response) => {
  */
 export const getSkill = async (req: Request, res: Response) => {
   try {
-    const id = parseInt(req.params.id);
+    const id = parseInt(req.params.id as string);
     if (isNaN(id)) {
       return errorResponse(res, "Invalid ID", 400);
     }
@@ -77,7 +77,7 @@ export const getSkill = async (req: Request, res: Response) => {
  */
 export const updateSkill = async (req: Request, res: Response) => {
   try {
-    const id = parseInt(req.params.id);
+    const id = parseInt(req.params.id as string);
     if (isNaN(id)) {
       return errorResponse(res, "Invalid ID", 400);
     }
@@ -101,7 +101,7 @@ export const updateSkill = async (req: Request, res: Response) => {
  */
 export const deleteSkill = async (req: Request, res: Response) => {
   try {
-    const id = parseInt(req.params.id);
+    const id = parseInt(req.params.id as string);
     if (isNaN(id)) {
       return errorResponse(res, "Invalid ID", 400);
     }
