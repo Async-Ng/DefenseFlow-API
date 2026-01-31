@@ -1,16 +1,14 @@
-/**
- * Main Application (TypeScript)
- */
-
-import express, { Request, Response } from "express";
+import express, { Application, Request, Response } from "express";
+import cors from "cors";
 import swaggerUi from "swagger-ui-express";
 import routes from "./routes/index.js";
 import { errorHandler } from "./middleware/errorHandler.js";
 import { swaggerSpec } from "./config/swagger.js";
 
-const app: express.Application = express();
+const app: Application = express();
 
 // Middleware
+app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(express.static("public"));

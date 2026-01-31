@@ -35,7 +35,7 @@ export const getSessionDaysWithAvailability = async (
   sessionId: number,
   lecturerId: number,
 ): Promise<SessionDayWithAvailability[]> => {
-  const sessionDays = await prisma.sessionDay.findMany({
+  return await prisma.sessionDay.findMany({
     where: {
       sessionId,
     },
@@ -50,13 +50,6 @@ export const getSessionDaysWithAvailability = async (
       dayDate: "asc",
     },
   });
-
-  return sessionDays.map((day) => ({
-    ...day,
-    lecturerDayAvailability: day.lecturerDayAvailability.map((lda) => ({
-      status: lda.status || "Available", // Default to "Available" if null, though logically should be set
-    })),
-  }));
 };
 
 /**
@@ -66,7 +59,7 @@ export const getLecturerAvailability = async (
   lecturerId: number,
   sessionId: number,
 ): Promise<LecturerDayAvailability[]> => {
-  const availabilities = await prisma.lecturerDayAvailability.findMany({
+  return await prisma.lecturerDayAvailability.findMany({
     where: {
       lecturerId,
       sessionDay: {
@@ -82,12 +75,6 @@ export const getLecturerAvailability = async (
       },
     },
   });
-
-  return availabilities.map((avail) => ({
-    id: avail.id,
-    sessionDayId: avail.sessionDayId ?? 0, // Should not be null for existing record
-    status: avail.status || "Available",
-  }));
 };
 
 /**
@@ -112,20 +99,12 @@ export const findAvailabilityRecord = async (
   lecturerId: number,
   sessionDayId: number,
 ): Promise<LecturerDayAvailability | null> => {
-  const record = await prisma.lecturerDayAvailability.findFirst({
+  return await prisma.lecturerDayAvailability.findFirst({
     where: {
       lecturerId,
       sessionDayId,
     },
   });
-
-  if (!record) return null;
-
-  return {
-    id: record.id,
-    sessionDayId: record.sessionDayId ?? sessionDayId,
-    status: record.status || "Available",
-  };
 };
 
 /**
@@ -136,29 +115,35 @@ export const upsertAvailability = async (
   sessionDayId: number,
   status: AvailabilityStatus,
 ): Promise<LecturerDayAvailability> => {
-  // Verify unique constraints or use findFirst if compound key name is unknown.
-  // Assuming schema has @@unique([lecturerId, sessionDayId])
+  // First, check if record exists
   const existing = await findAvailabilityRecord(lecturerId, sessionDayId);
 
-  let result;
   if (existing) {
-    result = await prisma.lecturerDayAvailability.update({
-      where: { id: existing.id },
-      data: { status },
-      include: { sessionDay: true },
+    // Update existing record
+    return await prisma.lecturerDayAvailability.update({
+      where: {
+        id: existing.id,
+      },
+      data: {
+        status,
+      },
+      include: {
+        sessionDay: true,
+      },
     });
   } else {
-    result = await prisma.lecturerDayAvailability.create({
-      data: { lecturerId, sessionDayId, status },
-      include: { sessionDay: true },
+    // Create new record
+    return await prisma.lecturerDayAvailability.create({
+      data: {
+        lecturerId,
+        sessionDayId,
+        status,
+      },
+      include: {
+        sessionDay: true,
+      },
     });
   }
-
-  return {
-    id: result.id,
-    sessionDayId: result.sessionDayId ?? sessionDayId,
-    status: result.status || "Available",
-  };
 };
 
 /**
@@ -168,42 +153,53 @@ export const batchUpdateAvailability = async (
   lecturerId: number,
   updates: Array<{ sessionDayId: number; status: AvailabilityStatus }>,
 ): Promise<LecturerDayAvailability[]> => {
-  // Use transaction to ensure atomicity
-  return await prisma.$transaction(async (tx) => {
-    const results: LecturerDayAvailability[] = [];
+  const results: LecturerDayAvailability[] = [];
 
+  // Use transaction to ensure atomicity
+  await prisma.$transaction(async (tx) => {
     for (const update of updates) {
-      // Manual check to avoid assuming @@unique name
+      // Check if record exists
       const existing = await tx.lecturerDayAvailability.findFirst({
-        where: { lecturerId, sessionDayId: update.sessionDayId },
+        where: {
+          lecturerId,
+          sessionDayId: update.sessionDayId,
+        },
       });
 
-      let result;
+      let result: LecturerDayAvailability;
+
       if (existing) {
+        // Update existing
         result = await tx.lecturerDayAvailability.update({
-          where: { id: existing.id },
-          data: { status: update.status },
-          include: { sessionDay: true },
+          where: {
+            id: existing.id,
+          },
+          data: {
+            status: update.status,
+          },
+          include: {
+            sessionDay: true,
+          },
         });
       } else {
+        // Create new
         result = await tx.lecturerDayAvailability.create({
           data: {
             lecturerId,
             sessionDayId: update.sessionDayId,
             status: update.status,
           },
-          include: { sessionDay: true },
+          include: {
+            sessionDay: true,
+          },
         });
       }
 
-      results.push({
-        id: result.id,
-        sessionDayId: result.sessionDayId ?? update.sessionDayId,
-        status: result.status || "Available",
-      });
+      results.push(result);
     }
-    return results;
   });
+
+  return results;
 };
 
 /**

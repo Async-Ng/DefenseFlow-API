@@ -15,6 +15,7 @@ import type {
   Lecturer,
   LecturerSkill,
   Skill,
+  LecturerDayAvailability,
   LecturerSessionConfig,
   AvailabilityStatus,
 } from "../../generated/prisma/client.js";
@@ -28,6 +29,7 @@ export type {
   Lecturer,
   LecturerSkill,
   Skill,
+  LecturerDayAvailability,
   LecturerSessionConfig,
   AvailabilityStatus,
 };
@@ -149,12 +151,43 @@ export type LecturerWithSkills = Lecturer & {
   })[];
 };
 
-export type BatchUpdateAvailabilityInput = {
-  availabilities: {
-    sessionDayId: number;
-    status: "Available" | "Busy";
-  }[];
+// ============================================================================
+// Availability Types
+// ============================================================================
+
+/**
+ * Session day with availability status
+ */
+export type SessionDayWithAvailability = SessionDay & {
+  lecturerDayAvailability?: LecturerDayAvailability[];
 };
+
+/**
+ * Lecturer availability status update input
+ */
+export type UpdateAvailabilityInput = {
+  sessionDayId: number;
+  status: AvailabilityStatus;
+};
+
+/**
+ * Batch availability update input
+ */
+export type BatchUpdateAvailabilityInput = {
+  availabilities: UpdateAvailabilityInput[];
+};
+
+/**
+ * Lecturer status response
+ */
+export type LecturerStatusResponse = {
+  lecturerId: number;
+  sessionId: number;
+  isRegistrationOpen: boolean;
+  sessionConfig?: LecturerSessionConfig | null;
+  availabilities: LecturerDayAvailability[];
+};
+
 
 // ============================================================================
 // Parsed/Validated Types
@@ -201,8 +234,6 @@ export type PaginatedResult<T> = {
 export type SemesterFilters = {
   semesterCode?: string;
   name?: string;
-  startDate?: Date;
-  endDate?: Date;
 };
 
 export type SessionFilters = {
@@ -270,33 +301,6 @@ export type IncludeOptions = {
 export type SessionDependencies = {
   hasCouncils: boolean;
   hasRegistrations: boolean;
-};
-
-// ============================================================================
-// Response Types
-// ============================================================================
-
-export type SessionDayWithAvailability = SessionDay & {
-  lecturerDayAvailability: {
-    status: string;
-  }[];
-};
-
-export type LecturerDayAvailability = {
-  id: number;
-  sessionDayId: number;
-  status: string;
-};
-
-export type LecturerStatusResponse = {
-  lecturerId: number;
-  sessionId: number;
-  isRegistrationOpen: boolean;
-  sessionConfig: {
-    minTopics: number;
-    maxTopics: number;
-  } | null;
-  availabilities: LecturerDayAvailability[];
 };
 
 // ============================================================================
