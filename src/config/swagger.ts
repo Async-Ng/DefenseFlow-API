@@ -253,6 +253,21 @@ const options: swaggerJsdoc.Options = {
             },
           },
         },
+        CreateSkillInput: {
+          type: "object",
+          required: ["skillCode", "name"],
+          properties: {
+            skillCode: { type: "string", maxLength: 50, example: "JAVA" },
+            name: { type: "string", maxLength: 100, example: "Java Programming" },
+          },
+        },
+        UpdateSkillInput: {
+          type: "object",
+          properties: {
+            skillCode: { type: "string", maxLength: 50, example: "JAVA" },
+            name: { type: "string", maxLength: 100, example: "Java Programming" },
+          },
+        },
         LecturerSkill: {
           type: "object",
           required: ["id", "lecturerId", "skillId"],
