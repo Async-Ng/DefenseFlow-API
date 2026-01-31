@@ -145,6 +145,18 @@ export type UpdateLecturerSkillsInput = {
   skills: LecturerSkillInput[];
 };
 
+export type CreateSkillInput = {
+  skillCode: string;
+  name: string;
+};
+
+export type UpdateSkillInput = Partial<CreateSkillInput>;
+
+export type SkillFilterQuery = {
+  skillCode?: string | string[];
+  name?: string | string[];
+};
+
 export type LecturerWithSkills = Lecturer & {
   lecturerSkills: (LecturerSkill & {
     skill: Skill;
