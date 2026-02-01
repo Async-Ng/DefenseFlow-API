@@ -172,6 +172,60 @@ export const update = async (
   if (data.workStartTime !== undefined)
     updateData.workStartTime = timeToDateTime(data.workStartTime);
 
+  if (data.sessionDays) {
+    return await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
+      // Update session details
+      const session = await tx.session.update({
+        where: { id },
+        data: updateData,
+      });
+
+      // Handle session days sync
+      const existingDays = await tx.sessionDay.findMany({
+        where: { sessionId: id },
+      });
+      const inputCodes = data.sessionDays!.map((d) => d.sessionDayCode);
+
+      // 1. Delete days not in input
+      const toDelete = existingDays.filter(
+        (d) => !inputCodes.includes(d.sessionDayCode),
+      );
+      for (const day of toDelete) {
+        await tx.sessionDay.delete({ where: { id: day.id } });
+      }
+
+      // 2. Create or Update days
+      for (const dayInput of data.sessionDays!) {
+        const existingDay = existingDays.find(
+          (d) => d.sessionDayCode === dayInput.sessionDayCode,
+        );
+
+        if (existingDay) {
+          // Update
+          await tx.sessionDay.update({
+            where: { id: existingDay.id },
+            data: {
+              dayDate: new Date(dayInput.dayDate),
+              note: dayInput.note || null,
+            },
+          });
+        } else {
+          // Create
+          await tx.sessionDay.create({
+            data: {
+              sessionDayCode: dayInput.sessionDayCode,
+              sessionId: id,
+              dayDate: new Date(dayInput.dayDate),
+              note: dayInput.note || null,
+            },
+          });
+        }
+      }
+
+      return session;
+    });
+  }
+
   return await prisma.session.update({
     where: { id },
     data: updateData,
