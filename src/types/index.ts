@@ -129,6 +129,7 @@ export type UpdateSessionInput = {
   type?: SessionType;
   timePerTopic?: number;
   workStartTime?: string;
+  sessionDays?: CreateSessionDayInput[];
 };
 
 export type UpdateLecturerRolesInput = {

@@ -152,6 +152,12 @@ const options: swaggerJsdoc.Options = {
               format: "time",
               example: "08:00:00",
             },
+            sessionDays: {
+              type: "array",
+              items: {
+                $ref: "#/components/schemas/CreateSessionDayInput",
+              },
+            },
           },
         },
         SessionDay: {

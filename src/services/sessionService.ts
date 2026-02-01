@@ -134,6 +134,39 @@ export const updateSession = async (
     }
   }
 
+  // Validate session days if provided
+  if (data.sessionDays && data.sessionDays.length > 0) {
+    // Validate each session day has required fields
+    for (const day of data.sessionDays) {
+      const dayValidation = validateRequiredFields(
+        day as Record<string, unknown>,
+        ["sessionDayCode", "dayDate"],
+      );
+      if (!dayValidation.isValid) {
+        throw new Error(
+          `Session day validation failed: ${dayValidation.error}`,
+        );
+      }
+    }
+
+    // Validate session days fall within semester dates
+    if (existing.semester && existing.semester.startDate && existing.semester.endDate) {
+      const dateValidation = validateSessionDaysInSemester(
+        data.sessionDays,
+        existing.semester.startDate,
+        existing.semester.endDate,
+      );
+
+      if (!dateValidation.isValid) {
+        throw new Error(
+          `${dateValidation.error}. Invalid dates: ${dateValidation.details?.invalidDates
+            .map((d: any) => `${d.date} (${d.reason})`)
+            .join(", ")}`,
+        );
+      }
+    }
+  }
+
   // Update session
   return await sessionRepository.update(id, data);
 };
