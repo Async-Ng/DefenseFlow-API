@@ -152,9 +152,10 @@ export const getAllSessions = async (
     // Extract input data
     const { page, limit } = getPaginationParams(req);
     const filters = getSessionFilters(req);
+    const include = getIncludeOptions(req);
 
     // Process
-    const result = await sessionService.getAllSessions(page, limit, filters);
+    const result = await sessionService.getAllSessions(page, limit, filters, include);
     return paginatedResponse(
       res,
       result.data,
@@ -234,7 +235,7 @@ export const getSessionById = async (
  * @swagger
  * /api/sessions/{id}:
  *   patch:
- *     summary: Update session
+ *     summary: Update session details and session days
  *     tags: [Sessions]
  *     parameters:
  *       - in: path

@@ -88,8 +88,9 @@ export const getAllSessions = async (
   page: number = 1,
   limit: number = 10,
   filters: SessionFilters = {},
+  include: IncludeOptions = {},
 ): Promise<PaginatedResult<any>> => {
-  return await sessionRepository.findAll(page, limit, filters);
+  return await sessionRepository.findAll(page, limit, filters, include);
 };
 
 /**
@@ -131,6 +132,39 @@ export const updateSession = async (
   if (data.timePerTopic !== undefined && data.timePerTopic !== null) {
     if (typeof data.timePerTopic !== "number" || data.timePerTopic <= 0) {
       throw new Error("Time per topic must be a positive number");
+    }
+  }
+
+  // Validate session days if provided
+  if (data.sessionDays && data.sessionDays.length > 0) {
+    // Validate each session day has required fields
+    for (const day of data.sessionDays) {
+      const dayValidation = validateRequiredFields(
+        day as Record<string, unknown>,
+        ["sessionDayCode", "dayDate"],
+      );
+      if (!dayValidation.isValid) {
+        throw new Error(
+          `Session day validation failed: ${dayValidation.error}`,
+        );
+      }
+    }
+
+    // Validate session days fall within semester dates
+    if (existing.semester && existing.semester.startDate && existing.semester.endDate) {
+      const dateValidation = validateSessionDaysInSemester(
+        data.sessionDays,
+        existing.semester.startDate,
+        existing.semester.endDate,
+      );
+
+      if (!dateValidation.isValid) {
+        throw new Error(
+          `${dateValidation.error}. Invalid dates: ${dateValidation.details?.invalidDates
+            .map((d: any) => `${d.date} (${d.reason})`)
+            .join(", ")}`,
+        );
+      }
     }
   }
 

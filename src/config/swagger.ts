@@ -17,12 +17,12 @@ const options: swaggerJsdoc.Options = {
     },
     servers: [
       {
-        url: "http://localhost:3000",
-        description: "Development server",
-      },
-      {
         url: "https://defenseflow-api.onrender.com",
         description: "Production server",
+      },
+      {
+        url: "http://localhost:3000",
+        description: "Development server",
       },
     ],
     components: {
@@ -112,6 +112,12 @@ const options: swaggerJsdoc.Options = {
               nullable: true,
               example: "08:00:00",
             },
+            sessionDays: {
+              type: "array",
+              items: {
+                $ref: "#/components/schemas/SessionDay",
+              },
+            },
           },
         },
         CreateSessionInput: {
@@ -151,6 +157,12 @@ const options: swaggerJsdoc.Options = {
               type: "string",
               format: "time",
               example: "08:00:00",
+            },
+            sessionDays: {
+              type: "array",
+              items: {
+                $ref: "#/components/schemas/CreateSessionDayInput",
+              },
             },
           },
         },
