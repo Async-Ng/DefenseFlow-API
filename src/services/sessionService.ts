@@ -88,8 +88,9 @@ export const getAllSessions = async (
   page: number = 1,
   limit: number = 10,
   filters: SessionFilters = {},
+  include: IncludeOptions = {},
 ): Promise<PaginatedResult<any>> => {
-  return await sessionRepository.findAll(page, limit, filters);
+  return await sessionRepository.findAll(page, limit, filters, include);
 };
 
 /**

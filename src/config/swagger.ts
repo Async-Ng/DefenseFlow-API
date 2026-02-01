@@ -17,12 +17,12 @@ const options: swaggerJsdoc.Options = {
     },
     servers: [
       {
-        url: "http://localhost:3000",
-        description: "Development server",
-      },
-      {
         url: "https://defenseflow-api.onrender.com",
         description: "Production server",
+      },
+      {
+        url: "http://localhost:3000",
+        description: "Development server",
       },
     ],
     components: {
@@ -111,6 +111,12 @@ const options: swaggerJsdoc.Options = {
               format: "time", // Prisma @db.Time maps to string in JSON usually, representing time
               nullable: true,
               example: "08:00:00",
+            },
+            sessionDays: {
+              type: "array",
+              items: {
+                $ref: "#/components/schemas/SessionDay",
+              },
             },
           },
         },
