@@ -1,7 +1,7 @@
 import express from "express";
 import * as topicController from "../controllers/topicController.js";
 
-const router = express.Router();
+const router: express.Router = express.Router();
 
 router.get("/", topicController.getAllTopics);
 router.get("/:id", topicController.getTopicById);
