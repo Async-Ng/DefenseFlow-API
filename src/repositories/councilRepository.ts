@@ -112,7 +112,20 @@ export const findCouncilsBySession = async (sessionId: number): Promise<Council[
           lecturer: true
         }
       },
-      defenseMatches: true
+      defenseMatches: {
+        include: {
+          registration: {
+            include: {
+              topic: {
+                include: {
+                  supervisor: true
+                }
+              }
+            }
+          }
+        }
+      }
     }
   });
 };
+
