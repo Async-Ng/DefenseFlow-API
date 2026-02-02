@@ -129,6 +129,32 @@ export type UpdateSessionInput = {
   type?: SessionType;
   timePerTopic?: number;
   workStartTime?: string;
+  sessionDays?: CreateSessionDayInput[];
+};
+
+export type LecturerSessionConfigInput = {
+  lecturerId: number;
+  sessionId: number;
+  minTopics?: number;
+  maxTopics?: number;
+};
+
+export type UpdateLecturerSessionConfigInput = {
+  minTopics?: number;
+  maxTopics?: number;
+};
+
+export type CreateSkillInput = {
+  skillCode: string; // Added
+  name: string;
+  description?: string;
+};
+
+export type UpdateSkillInput = Partial<CreateSkillInput>;
+
+export type SkillFilterQuery = {
+  skillCode?: string; // Added
+  name?: string;
 };
 
 export type UpdateLecturerRolesInput = {
