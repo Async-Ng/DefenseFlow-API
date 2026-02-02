@@ -9,7 +9,8 @@ import sessionRoutes from "./sessionRoutes.js";
 import importRoutes from "./importRoutes.js";
 import lecturerRoutes from "./lecturerRoutes.js";
 import availabilityRoutes from "./availabilityRoutes.js";
-import skillRoutes from "./skillRoutes.js";
+
+import lecturerSessionConfigRoutes from "./lecturerSessionConfigRoutes.js";
 
 const router: express.Router = express.Router();
 
@@ -28,6 +29,6 @@ router.use("/sessions", sessionRoutes);
 router.use("/import", importRoutes);
 router.use("/lecturers", lecturerRoutes);
 router.use("/availability", availabilityRoutes);
-router.use("/skills", skillRoutes);
+router.use("/lecturer-configs", lecturerSessionConfigRoutes);
 
 export default router;

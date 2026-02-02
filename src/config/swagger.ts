@@ -299,6 +299,25 @@ const options: swaggerJsdoc.Options = {
             skill: { $ref: "#/components/schemas/Skill" },
           },
         },
+        LecturerSessionConfig: {
+          type: "object",
+          required: ["id", "lecturerId", "sessionId"],
+          properties: {
+            id: { type: "integer", example: 1 },
+            lecturerId: { type: "integer", example: 1 },
+            sessionId: { type: "integer", example: 1 },
+            minTopics: {
+              type: "integer",
+              example: 5,
+              description: "Minimum number of topics lecturer is willing to evaluate",
+            },
+            maxTopics: {
+              type: "integer",
+              example: 10,
+              description: "Maximum number of topics lecturer is willing to evaluate",
+            },
+          },
+        },
         UpdateLecturerRolesInput: {
           type: "object",
           properties: {
