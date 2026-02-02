@@ -44,6 +44,21 @@ export const generateSchedule = async (sessionId: number) => {
   };
 };
 
+/**
+ * Get the generated schedule for a session
+ */
+export const getSchedule = async (sessionId: number) => {
+  const session = await prisma.session.findUnique({
+    where: { id: sessionId },
+  });
+
+  if (!session) throw new AppError(404, "Session not found");
+
+  const councils = await councilRepository.findCouncilsBySession(sessionId);
+
+  return councils;
+};
+
 const fetchSchedulingData = async (sessionId: number): Promise<SchedulingData> => {
   const session = await prisma.session.findUnique({
     where: { id: sessionId },

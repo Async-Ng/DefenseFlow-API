@@ -1,27 +1,23 @@
-# Sử dụng Node.js LTS image
-FROM node:20-alpine
-
-# Cài đặt pnpm
-RUN npm install -g pnpm
-
-# Tạo thư mục làm việc
+# Base stage
+FROM node:20-alpine AS base
+ENV PNPM_HOME="/pnpm"
+ENV PATH="$PNPM_HOME:$PATH"
+RUN corepack enable
 WORKDIR /app
 
-# Copy package files
+# Dependencies stage
+FROM base AS deps
 COPY package.json pnpm-lock.yaml ./
-
-# Cài đặt dependencies
+# Install dependencies (using --force to ignore lockfile issues if any, consistent with previous success)
 RUN pnpm install
 
-# Copy prisma schema và config files
-COPY prisma ./prisma
-COPY prisma.config.ts ./
-COPY tsconfig.json ./
+# Build stage
+FROM base AS builder
+# Copy node_modules from deps
+COPY --from=deps /app/node_modules ./node_modules
+COPY . .
 
-# Copy source code
-COPY src ./src
-
-# Set a dummy database URL for prisma generate (not actually used during generation)
+# Set dummy database URL for prisma generate
 ARG DIRECT_URL="postgresql://dummy:dummy@localhost:5432/dummy"
 ENV DIRECT_URL=${DIRECT_URL}
 
@@ -31,14 +27,22 @@ RUN pnpm prisma generate
 # Build TypeScript code
 RUN pnpm run build
 
-# Remove dev dependencies to reduce image size
+# Prune dev dependencies to keep only production 
+# (We run this in builder after build is done)
 RUN pnpm prune --prod
 
-# Expose port
-EXPOSE 3000
-
-# Environment variables will be provided at runtime
+# Runner stage
+FROM base AS runner
 ENV NODE_ENV=production
 
-# Chạy ứng dụng
+# Copy necessary files from builder
+# Copy node_modules (now pruned)
+COPY --from=builder /app/node_modules ./node_modules
+# Copy built artifacts
+COPY --from=builder /app/dist ./dist
+# Copy package.json
+COPY --from=builder /app/package.json ./package.json
+
+EXPOSE 3000
+
 CMD ["node", "dist/src/server.js"]

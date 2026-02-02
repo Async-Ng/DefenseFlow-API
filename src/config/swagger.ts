@@ -403,6 +403,7 @@ const options: swaggerJsdoc.Options = {
               enum: ["Pending", "Passed", "Failed"],
               example: "Passed",
             },
+            topic: { $ref: "#/components/schemas/Topic" },
           },
         },
         UpdateTopicResultInput: {
@@ -552,6 +553,75 @@ const options: swaggerJsdoc.Options = {
             },
           },
           required: ["success", "message"],
+        },
+        CouncilRole: {
+          type: "string",
+          enum: ["President", "Secretary", "Member"],
+          example: "President",
+        },
+        CouncilMember: {
+          type: "object",
+          required: ["id", "councilId", "lecturerId", "role"],
+          properties: {
+            id: { type: "integer", example: 1 },
+            councilId: { type: "integer", example: 10 },
+            lecturerId: { type: "integer", example: 5 },
+            role: { $ref: "#/components/schemas/CouncilRole" },
+            lecturer: { $ref: "#/components/schemas/Lecturer" },
+          },
+        },
+        Council: {
+          type: "object",
+          required: ["id", "councilCode", "sessionDayId", "semesterId"],
+          properties: {
+            id: { type: "integer", example: 10 },
+            councilCode: { type: "string", example: "CNCL-20250101-123" },
+            name: { type: "string", example: "Defense Council 1" },
+            sessionDayId: { type: "integer", example: 2 },
+            semesterId: { type: "integer", example: 1 },
+            councilMembers: {
+              type: "array",
+              items: { $ref: "#/components/schemas/CouncilMember" },
+            },
+            defenseMatches: {
+              type: "array",
+              items: { $ref: "#/components/schemas/DefenseMatch" },
+            },
+          },
+        },
+        DefenseMatch: {
+          type: "object",
+          required: ["id", "matchCode", "registrationId", "councilId"],
+          properties: {
+            id: { type: "integer", example: 50 },
+            matchCode: { type: "string", example: "MTCH-TOPIC001-123" },
+            registrationId: { type: "integer", example: 5 },
+            councilId: { type: "integer", example: 10 },
+            startTime: { type: "string", format: "time", example: "08:00:00" },
+            endTime: { type: "string", format: "time", example: "08:45:00" },
+            council: { $ref: "#/components/schemas/Council" },
+            registration: { $ref: "#/components/schemas/TopicSessionRegistration" },
+          },
+        },
+
+        ScheduleGenerationResult: {
+            type: "object",
+            properties: {
+                status: { type: "string", example: "success" },
+                metrics: {
+                    type: "object",
+                    properties: {
+                        totalTopics: { type: "integer", example: 10 },
+                        scheduled: { type: "integer", example: 10 },
+                        unscheduled: { type: "integer", example: 0 }
+                    }
+                },
+                unscheduledTopics: {
+                    type: "array",
+                    items: { type: "string" },
+                    example: []
+                }
+            }
         },
       },
     },
