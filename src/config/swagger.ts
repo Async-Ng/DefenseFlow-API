@@ -27,6 +27,32 @@ const options: swaggerJsdoc.Options = {
     ],
     components: {
       schemas: {
+        Topic: {
+          type: "object",
+          required: ["id", "topicCode", "semesterId", "supervisorId"],
+          properties: {
+            id: { type: "integer", example: 1 },
+            topicCode: { type: "string", maxLength: 50, example: "TOPIC_001" },
+            semesterId: { type: "integer", example: 1 },
+            supervisorId: { type: "integer", example: 5 },
+            title: {
+              type: "string",
+              maxLength: 255,
+              nullable: true,
+              example: "AI Research",
+            },
+            semester: { $ref: "#/components/schemas/Semester" },
+            supervisor: { $ref: "#/components/schemas/Lecturer" },
+          },
+        },
+        UpdateTopicInput: {
+          type: "object",
+          properties: {
+            topicCode: { type: "string", maxLength: 50, example: "TOPIC_001" },
+            title: { type: "string", maxLength: 255, example: "AI Research" },
+            supervisorId: { type: "integer", example: 5 },
+          },
+        },
         Semester: {
           type: "object",
           required: ["id", "semesterCode", "name"],
@@ -362,6 +388,31 @@ const options: swaggerJsdoc.Options = {
                 { skillId: 1, score: 5 },
                 { skillId: 2, score: 3 },
               ],
+            },
+          },
+        },
+        TopicSessionRegistration: {
+          type: "object",
+          properties: {
+            id: { type: "integer", example: 1 },
+            registrationCode: { type: "string", example: "REG_001" },
+            topicId: { type: "integer", example: 10 },
+            sessionId: { type: "integer", example: 5 },
+            finalResult: {
+              type: "string",
+              enum: ["Pending", "Passed", "Failed"],
+              example: "Passed",
+            },
+          },
+        },
+        UpdateTopicResultInput: {
+          type: "object",
+          required: ["result"],
+          properties: {
+            result: {
+              type: "string",
+              enum: ["Pending", "Passed", "Failed"],
+              example: "Passed",
             },
           },
         },
