@@ -34,6 +34,9 @@ RUN pnpm prune --prod
 # Runner stage
 FROM base AS runner
 
+# Set production environment
+ENV NODE_ENV=production
+
 # Copy necessary files from builder
 # Copy node_modules (now pruned)
 COPY --from=builder /app/node_modules ./node_modules
