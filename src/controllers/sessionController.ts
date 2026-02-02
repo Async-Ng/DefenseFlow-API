@@ -15,6 +15,7 @@ import {
   getIncludeOptions,
   getSessionFilters,
 } from "../utils/requestHelpers.js";
+import { formatSession } from "../utils/formatters.js";
 import type { CreateSessionInput, UpdateSessionInput } from "../types/index.js";
 
 /**
@@ -68,7 +69,7 @@ export const createSession = async (
 
     // Process
     const session = await sessionService.createSession(data);
-    return createdResponse(res, session, "Session created successfully");
+    return createdResponse(res, formatSession(session), "Session created successfully");
   } catch (error: unknown) {
     const message = getErrorMessage(error);
     if (
@@ -156,9 +157,10 @@ export const getAllSessions = async (
 
     // Process
     const result = await sessionService.getAllSessions(page, limit, filters, include);
+    const formattedData = result.data.map(formatSession);
     return paginatedResponse(
       res,
-      result.data,
+      formattedData,
       page,
       limit,
       result.total,
@@ -221,7 +223,7 @@ export const getSessionById = async (
 
     // Process
     const session = await sessionService.getSessionById(id, include);
-    return successResponse(res, session, "Session retrieved successfully");
+    return successResponse(res, formatSession(session), "Session retrieved successfully");
   } catch (error: unknown) {
     const message = getErrorMessage(error);
     if (message.includes("not found")) {
@@ -295,7 +297,7 @@ export const updateSession = async (
 
     // Process
     const session = await sessionService.updateSession(id, data);
-    return successResponse(res, session, "Session updated successfully");
+    return successResponse(res, formatSession(session), "Session updated successfully");
   } catch (error: unknown) {
     const message = getErrorMessage(error);
     if (message.includes("not found")) {
