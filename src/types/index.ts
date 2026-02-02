@@ -132,6 +132,31 @@ export type UpdateSessionInput = {
   sessionDays?: CreateSessionDayInput[];
 };
 
+export type LecturerSessionConfigInput = {
+  lecturerId: number;
+  sessionId: number;
+  minTopics?: number;
+  maxTopics?: number;
+};
+
+export type UpdateLecturerSessionConfigInput = {
+  minTopics?: number;
+  maxTopics?: number;
+};
+
+export type CreateSkillInput = {
+  skillCode: string; // Added
+  name: string;
+  description?: string;
+};
+
+export type UpdateSkillInput = Partial<CreateSkillInput>;
+
+export type SkillFilterQuery = {
+  skillCode?: string; // Added
+  name?: string;
+};
+
 export type UpdateLecturerRolesInput = {
   isPresidentQualified?: boolean;
   isSecretaryQualified?: boolean;
@@ -144,18 +169,6 @@ export type LecturerSkillInput = {
 
 export type UpdateLecturerSkillsInput = {
   skills: LecturerSkillInput[];
-};
-
-export type CreateSkillInput = {
-  skillCode: string;
-  name: string;
-};
-
-export type UpdateSkillInput = Partial<CreateSkillInput>;
-
-export type SkillFilterQuery = {
-  skillCode?: string | string[];
-  name?: string | string[];
 };
 
 export type LecturerWithSkills = Lecturer & {
