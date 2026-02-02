@@ -10,6 +10,8 @@ import importRoutes from "./importRoutes.js";
 import lecturerRoutes from "./lecturerRoutes.js";
 import availabilityRoutes from "./availabilityRoutes.js";
 
+import lecturerSessionConfigRoutes from "./lecturerSessionConfigRoutes.js";
+
 const router: express.Router = express.Router();
 
 // Health check route
@@ -27,5 +29,6 @@ router.use("/sessions", sessionRoutes);
 router.use("/import", importRoutes);
 router.use("/lecturers", lecturerRoutes);
 router.use("/availability", availabilityRoutes);
+router.use("/lecturer-configs", lecturerSessionConfigRoutes);
 
 export default router;
