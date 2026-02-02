@@ -39,3 +39,31 @@ export const generateSchedule = async (
   }
 };
 
+/**
+ * Get schedule for a session
+ * GET /api/schedule/:sessionId
+ */
+export const getSchedule = async (
+  req: Request,
+  res: Response,
+  next: NextFunction,
+) => {
+  try {
+    const sessionId = parseInt(req.params.sessionId as string);
+
+    if (isNaN(sessionId)) {
+      throw new AppError(400, "Invalid session ID");
+    }
+
+    const result = await scheduleService.getSchedule(sessionId);
+
+    return successResponse(
+      res,
+      result,
+      "Schedule retrieved successfully",
+    );
+  } catch (error) {
+    return next(error);
+  }
+};
+
