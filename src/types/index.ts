@@ -18,6 +18,7 @@ import type {
   LecturerDayAvailability,
   LecturerSessionConfig,
   AvailabilityStatus,
+  SessionResult,
 } from "../../generated/prisma/client.js";
 
 export type {
@@ -32,6 +33,7 @@ export type {
   LecturerDayAvailability,
   LecturerSessionConfig,
   AvailabilityStatus,
+  SessionResult,
 };
 
 // ============================================================================
@@ -142,6 +144,30 @@ export type LecturerSessionConfigInput = {
 export type UpdateLecturerSessionConfigInput = {
   minTopics?: number;
   maxTopics?: number;
+};
+
+export type UpdateTopicResultInput = {
+  result: SessionResult;
+};
+
+export type UpdateTopicInput = {
+  topicCode?: string;
+  title?: string;
+  supervisorId?: number;
+};
+
+export type TopicFilterQuery = {
+  topicCode?: string | string[];
+  title?: string | string[];
+  semesterId?: string | string[];
+  supervisorId?: string | string[];
+};
+
+export type TopicFilters = {
+  topicCode?: string;
+  title?: string;
+  semesterId?: number;
+  supervisorId?: number;
 };
 
 export type CreateSkillInput = {

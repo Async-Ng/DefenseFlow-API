@@ -1,0 +1,295 @@
+import { Request, Response } from "express";
+import * as topicService from "../services/topicService.js";
+import {
+  successResponse,
+  errorResponse,
+  notFoundResponse,
+  validationErrorResponse,
+  paginatedResponse,
+} from "../utils/apiResponse.js";
+import { getErrorMessage } from "../utils/typeGuards.js";
+import { getIdParam, getPaginationParams } from "../utils/requestHelpers.js";
+import { UpdateTopicResultInput, UpdateTopicInput, TopicFilterQuery, TopicFilters } from "../types/index.js";
+
+/**
+ * Helper to parse topic filters
+ */
+const getTopicFilters = (req: Request): TopicFilters => {
+  const query = req.query as TopicFilterQuery;
+  return {
+    topicCode: query.topicCode as string,
+    title: query.title as string,
+    semesterId: query.semesterId ? Number(query.semesterId) : undefined,
+    supervisorId: query.supervisorId ? Number(query.supervisorId) : undefined,
+  };
+};
+
+/**
+ * @swagger
+ * /api/topics:
+ *   get:
+ *     summary: Get all topics
+ *     tags: [Topics]
+ *     parameters:
+ *       - in: query
+ *         name: page
+ *         schema:
+ *           type: integer
+ *           default: 1
+ *       - in: query
+ *         name: limit
+ *         schema:
+ *           type: integer
+ *           default: 10
+ *       - in: query
+ *         name: topicCode
+ *         schema:
+ *           type: string
+ *       - in: query
+ *         name: title
+ *         schema:
+ *           type: string
+ *       - in: query
+ *         name: semesterId
+ *         schema:
+ *           type: integer
+ *       - in: query
+ *         name: supervisorId
+ *         schema:
+ *           type: integer
+ *     responses:
+ *       200:
+ *         description: List of topics
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/PaginatedResponse'
+ */
+export const getAllTopics = async (
+  req: Request,
+  res: Response,
+): Promise<Response> => {
+  try {
+    const { page, limit } = getPaginationParams(req);
+    const filters = getTopicFilters(req);
+
+    const result = await topicService.getAllTopics(page, limit, filters);
+    return paginatedResponse(
+      res,
+      result.data,
+      page,
+      limit,
+      result.total,
+      "Topics retrieved successfully",
+    );
+  } catch (error: unknown) {
+    return errorResponse(res, getErrorMessage(error), 500);
+  }
+};
+
+/**
+ * @swagger
+ * /api/topics/{id}:
+ *   get:
+ *     summary: Get topic by ID
+ *     tags: [Topics]
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: integer
+ *     responses:
+ *       200:
+ *         description: Topic details
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success: { type: boolean }
+ *                 data: { $ref: '#/components/schemas/Topic' }
+ *       404:
+ *         description: Topic not found
+ */
+export const getTopicById = async (
+  req: Request,
+  res: Response,
+): Promise<Response> => {
+  try {
+    const id = getIdParam(req);
+    const topic = await topicService.getTopicById(id);
+    return successResponse(res, topic, "Topic retrieved successfully");
+  } catch (error: unknown) {
+    const message = getErrorMessage(error);
+    if (message.includes("not found")) {
+      return notFoundResponse(res, message);
+    }
+    return errorResponse(res, message, 500);
+  }
+};
+
+/**
+ * @swagger
+ * /api/topics/{id}:
+ *   patch:
+ *     summary: Update topic
+ *     tags: [Topics]
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: integer
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             $ref: '#/components/schemas/UpdateTopicInput'
+ *     responses:
+ *       200:
+ *         description: Topic updated successfully
+ *       404:
+ *         description: Topic not found
+ *       400:
+ *         description: Validation error
+ */
+export const updateTopic = async (
+  req: Request,
+  res: Response,
+): Promise<Response> => {
+  try {
+    const id = getIdParam(req);
+    const data: UpdateTopicInput = req.body;
+
+    const topic = await topicService.updateTopic(id, data);
+    return successResponse(res, topic, "Topic updated successfully");
+  } catch (error: unknown) {
+    const message = getErrorMessage(error);
+    if (message.includes("not found")) {
+      return notFoundResponse(res, message);
+    }
+    if (message.includes("already exists")) {
+      return validationErrorResponse(res, { message });
+    }
+    return errorResponse(res, message, 500);
+  }
+};
+
+/**
+ * @swagger
+ * /api/topics/{id}:
+ *   delete:
+ *     summary: Delete topic
+ *     tags: [Topics]
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: integer
+ *     responses:
+ *       200:
+ *         description: Topic deleted successfully
+ *       404:
+ *         description: Topic not found
+ */
+export const deleteTopic = async (
+  req: Request,
+  res: Response,
+): Promise<Response> => {
+  try {
+    const id = getIdParam(req);
+    await topicService.deleteTopic(id);
+    return successResponse(res, {}, "Topic deleted successfully");
+  } catch (error: unknown) {
+    const message = getErrorMessage(error);
+    if (message.includes("not found")) {
+      return notFoundResponse(res, message);
+    }
+    return errorResponse(res, message, 500);
+  }
+};
+
+/**
+ * @swagger
+ * /api/topics/{id}/result:
+ *   patch:
+ *     summary: Update the result of a topic registration
+ *     tags: [Topics]
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: integer
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             $ref: '#/components/schemas/UpdateTopicResultInput'
+ *     responses:
+ *       200:
+ *         description: Topic result updated successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 message:
+ *                   type: string
+ *                   example: "Topic result updated successfully"
+ *                 data:
+ *                   $ref: '#/components/schemas/TopicSessionRegistration'
+ *       404:
+ *         description: Topic or registration not found
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ *       400:
+ *         description: Validation error
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ValidationErrorResponse'
+ *       500:
+ *         description: Server Error
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ */
+export const updateTopicResult = async (
+  req: Request,
+  res: Response,
+): Promise<Response> => {
+  try {
+    const id = getIdParam(req);
+    const data: UpdateTopicResultInput = req.body;
+
+    // Validate enum
+    if (!data.result || !["Pending", "Passed", "Failed"].includes(data.result)) {
+      return validationErrorResponse(res, {
+        message: "Result must be one of: Pending, Passed, Failed",
+      });
+    }
+
+    const result = await topicService.updateTopicResult(id, data);
+    return successResponse(res, result, "Topic result updated successfully");
+  } catch (error: unknown) {
+    const message = getErrorMessage(error);
+    if (message.includes("not found")) {
+      return notFoundResponse(res, message);
+    }
+    if (message.includes("not registered")) {
+      return validationErrorResponse(res, { message });
+    }
+    return errorResponse(res, message, 500);
+  }
+};
