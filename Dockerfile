@@ -11,7 +11,7 @@ WORKDIR /app
 COPY package.json pnpm-lock.yaml ./
 
 # Cài đặt dependencies
-RUN pnpm install --frozen-lockfile
+RUN pnpm install
 
 # Copy prisma schema và config files
 COPY prisma ./prisma
