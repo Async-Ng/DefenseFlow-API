@@ -13,6 +13,7 @@ import availabilityRoutes from "./availabilityRoutes.js";
 import lecturerSessionConfigRoutes from "./lecturerSessionConfigRoutes.js";
 import topicRoutes from "./topicRoutes.js";
 import scheduleRoutes from "./scheduleRoutes.js";
+import capacityRoutes from "./capacityRoutes.js";
 
 const router: express.Router = express.Router();
 
@@ -34,5 +35,6 @@ router.use("/availability", availabilityRoutes);
 router.use("/lecturer-configs", lecturerSessionConfigRoutes);
 router.use("/topics", topicRoutes);
 router.use("/schedule", scheduleRoutes);
+router.use("/capacity", capacityRoutes);
 
 export default router;

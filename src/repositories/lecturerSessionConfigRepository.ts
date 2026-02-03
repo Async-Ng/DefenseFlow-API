@@ -63,7 +63,7 @@ export const getAll = async (
       where,
       skip,
       take,
-      orderBy: { id: 'asc' }, // Consistent ordering
+      orderBy: { id: "desc" }, // Consistent ordering
     }),
     prisma.lecturerSessionConfig.count({ where }),
   ]);

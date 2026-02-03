@@ -355,6 +355,87 @@ export type SessionDependencies = {
 };
 
 // ============================================================================
+// Capacity Calculator Types
+// ============================================================================
+
+/**
+ * Request for capacity calculation
+ */
+export type CapacityCalculationRequest = {
+  semesterId: number;
+  sessionId?: number; // If provided, will analyze current session days
+  timePerTopic?: number; // minutes, default from session or 30
+  workHoursPerDay?: number; // minutes, default 480 (8 hours)
+  councilSize?: number; // default 5 (1 President + 1 Secretary + 3 Members)
+  plannedDays?: number; // optional: planned days if no session exists
+};
+
+/**
+ * Session day adjustment recommendation
+ */
+export type SessionDayAdjustment = {
+  shouldAdjust: boolean;
+  suggestedChange: number; // +2 (add 2 days) or -1 (remove 1 day)
+  reason: string;
+};
+
+/**
+ * Topics per council per day breakdown
+ */
+export type TopicsPerCouncilPerDay = {
+  minimum: number;
+  maximum: number;
+  average: number;
+};
+
+/**
+ * Lecturer workload recommendations
+ */
+export type LecturerWorkload = {
+  recommendedMin: number;
+  recommendedMax: number;
+  idealAverage: number;
+};
+
+/**
+ * Capacity calculation recommendations
+ */
+export type CapacityRecommendations = {
+  minimumDaysRequired: number;
+  recommendedDays: number;
+  currentSessionDays: number | null;
+  sessionDayAdjustment: SessionDayAdjustment | null;
+  minLecturersRequired: number;
+  recommendedLecturers: number;
+  maxLecturersNeeded: number;
+  topicsPerCouncilPerDay: TopicsPerCouncilPerDay;
+  councilsPerDay: number;
+  lecturerWorkload: LecturerWorkload;
+};
+
+/**
+ * Analysis data for capacity calculation
+ */
+export type CapacityAnalysis = {
+  totalTopics: number;
+  timePerTopic: number;
+  workHoursPerDay: number;
+  councilSize: number;
+};
+
+/**
+ * Complete capacity calculation response
+ */
+export type CapacityCalculationResponse = {
+  semesterId: number;
+  sessionId: number | null;
+  analysis: CapacityAnalysis;
+  recommendations: CapacityRecommendations;
+  warnings: string[];
+  suggestions: string[];
+};
+
+// ============================================================================
 // Utility Types
 // ============================================================================
 

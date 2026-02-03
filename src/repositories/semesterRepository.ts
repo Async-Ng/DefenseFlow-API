@@ -47,7 +47,7 @@ export const findAll = async (
       where,
       skip,
       take: limit,
-      orderBy: { id: "desc" },
+      orderBy: { startDate: "desc" },
     }),
     prisma.semester.count({ where }),
   ]);

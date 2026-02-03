@@ -134,5 +134,9 @@ export const findCouncilsBySession = async (
         },
       },
     },
+    orderBy: [
+      { sessionDayId: "asc" },
+      { id: "asc" },
+    ],
   });
 };

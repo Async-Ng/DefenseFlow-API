@@ -124,7 +124,10 @@ export const findAll = async (
       where,
       skip,
       take: limit,
-      orderBy: { id: "desc" },
+      orderBy: [
+        { type: "asc" },
+        { workStartTime: "desc" },
+      ],
       include: includeOptions,
     }),
     prisma.session.count({ where }),
