@@ -9,9 +9,9 @@ import * as capacityController from "../controllers/capacityCalculatorController
 const router: Router = Router();
 
 /**
- * POST /api/capacity/calculate
+ * GET /api/capacity/calculate
  * Calculate session capacity and provide recommendations
  */
-router.post("/calculate", capacityController.calculateCapacity);
+router.get("/calculate", capacityController.calculateCapacity);
 
 export default router;

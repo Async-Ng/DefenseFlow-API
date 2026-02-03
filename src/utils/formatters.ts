@@ -13,10 +13,10 @@ export const formatSession = (session: any): any => {
   const formatted = { ...session };
 
   // Format workStartTime if it exists
-  if (formatted.workStartTime && formatted.workStartTime instanceof Date) {
-    const hours = formatted.workStartTime.getHours().toString().padStart(2, "0");
-    const minutes = formatted.workStartTime.getMinutes().toString().padStart(2, "0");
-    formatted.workStartTime = `${hours}:${minutes}`;
+  // It is now a string "HH:mm" directly from DB, so no Date conversion needed
+  if (formatted.workStartTime) {
+    // Ensure it is a string just in case
+    formatted.workStartTime = String(formatted.workStartTime);
   }
 
   // Recursively format nested objects if needed (e.g. if we had nested sessions)

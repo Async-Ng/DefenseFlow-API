@@ -59,4 +59,31 @@ router.post("/generate", scheduleController.generateSchedule);
  */
 router.get("/:sessionId", scheduleController.getSchedule);
 
+/**
+ * @swagger
+ * /api/schedule/publish:
+ *   post:
+ *     summary: Publish schedule
+ *     tags: [Schedule]
+ */
+router.post("/publish", scheduleController.publishSchedule);
+
+/**
+ * @swagger
+ * /api/schedule/matches/{matchId}:
+ *   put:
+ *     summary: Update defense match
+ *     tags: [Schedule]
+ */
+router.put("/matches/:matchId", scheduleController.updateMatch);
+
+/**
+ * @swagger
+ * /api/schedule/councils/{councilId}:
+ *   put:
+ *     summary: Update council members
+ *     tags: [Schedule]
+ */
+router.put("/councils/:councilId", scheduleController.updateCouncil);
+
 export default router;

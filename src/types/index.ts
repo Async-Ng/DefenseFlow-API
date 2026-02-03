@@ -117,6 +117,8 @@ export type CreateSessionInput = {
   timePerTopic?: number;
   workStartTime?: string;
   sessionDays?: CreateSessionDayInput[];
+  availabilityStartDate?: string;
+  availabilityEndDate?: string;
 };
 
 export type CreateSessionDayInput = {
@@ -132,6 +134,8 @@ export type UpdateSessionInput = {
   timePerTopic?: number;
   workStartTime?: string;
   sessionDays?: CreateSessionDayInput[];
+  availabilityStartDate?: string;
+  availabilityEndDate?: string;
 };
 
 export type LecturerSessionConfigInput = {

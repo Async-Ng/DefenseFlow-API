@@ -31,7 +31,7 @@ import type {
  *         content:
  *           application/json:
  *             schema:
- *               $ref: '#/components/schemas/ApiResponse'
+ *               $ref: '#/components/schemas/SessionDaysResponse'
  *       404:
  *         description: Session not found
  *         content:
@@ -94,7 +94,7 @@ export const getSessionDays = async (
  *         content:
  *           application/json:
  *             schema:
- *               $ref: '#/components/schemas/ApiResponse'
+ *               $ref: '#/components/schemas/SessionDaysWithAvailabilityResponse'
  *       400:
  *         description: Invalid parameters
  *         content:
@@ -178,7 +178,7 @@ export const getSessionDaysWithAvailability = async (
  *         content:
  *           application/json:
  *             schema:
- *               $ref: '#/components/schemas/ApiResponse'
+ *               $ref: '#/components/schemas/LecturerStatusResultResponse'
  *       400:
  *         description: Invalid parameters
  *         content:
@@ -269,7 +269,7 @@ export const getLecturerStatus = async (
  *         content:
  *           application/json:
  *             schema:
- *               $ref: '#/components/schemas/ApiResponse'
+ *               $ref: '#/components/schemas/AvailabilityResponse'
  *       400:
  *         description: Invalid input or registration closed
  *         content:
@@ -370,7 +370,7 @@ export const updateAvailability = async (
  *         content:
  *           application/json:
  *             schema:
- *               $ref: '#/components/schemas/ApiResponse'
+ *               $ref: '#/components/schemas/AvailabilityListResponse'
  *       400:
  *         description: Invalid input or registration closed
  *         content:
