@@ -879,17 +879,7 @@ const options: swaggerJsdoc.Options = {
             },
           },
         },
-        ScheduleResponse: {
-          type: "object",
-          properties: {
-            success: { type: "boolean", example: true },
-            message: {
-              type: "string",
-              example: "Schedule generated successfully",
-            },
-            data: { $ref: "#/components/schemas/ScheduleGenerationResult" },
-          },
-        },
+
         // Capacity Calculator Schemas
         CapacityCalculationRequest: {
           type: "object",
@@ -1257,6 +1247,53 @@ const options: swaggerJsdoc.Options = {
               type: "array",
               items: { $ref: "#/components/schemas/LecturerDayAvailability" },
             },
+          },
+        },
+        ScheduleResponse: {
+          type: "object",
+          properties: {
+            success: { type: "boolean", example: true },
+            message: {
+              type: "string",
+              example: "Schedule retrieved successfully",
+            },
+            data: {
+              type: "array",
+              items: { $ref: "#/components/schemas/Council" },
+            },
+          },
+        },
+        ScheduleGenerationResponse: {
+          type: "object",
+          properties: {
+            success: { type: "boolean", example: true },
+            message: {
+              type: "string",
+              example: "Schedule generated successfully",
+            },
+            data: { $ref: "#/components/schemas/ScheduleGenerationResult" },
+          },
+        },
+        DefenseMatchResponse: {
+          type: "object",
+          properties: {
+            success: { type: "boolean", example: true },
+            message: {
+              type: "string",
+              example: "Match updated successfully",
+            },
+            data: { $ref: "#/components/schemas/DefenseMatch" },
+          },
+        },
+        CouncilResponse: {
+          type: "object",
+          properties: {
+            success: { type: "boolean", example: true },
+            message: {
+              type: "string",
+              example: "Council updated successfully",
+            },
+            data: { $ref: "#/components/schemas/Council" },
           },
         },
       },
