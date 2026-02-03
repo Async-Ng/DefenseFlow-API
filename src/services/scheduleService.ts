@@ -9,12 +9,13 @@ import {
   Session,
   Prisma,
   CouncilRole,
-  AvailabilityStatus
+  AvailabilityStatus,
+  TopicSupervisor
 } from "../../generated/prisma/client.js";
 
 interface SchedulingData {
   session: Session;
-  topics: (Topic & { supervisor: Lecturer })[];
+  topics: (Topic & { topicSupervisors: (TopicSupervisor & { lecturer: Lecturer })[] })[];
   lecturers: (Lecturer & { lecturerDayAvailability: LecturerDayAvailability[] })[];
   sessionDays: SessionDay[];
 }
@@ -76,7 +77,11 @@ const fetchSchedulingData = async (sessionId: number): Promise<SchedulingData> =
       },
     },
     include: {
-      supervisor: true,
+      topicSupervisors: {
+        include: {
+          lecturer: true,
+        },
+      },
       topicSessionRegistrations: {
           where: { sessionId: sessionId }
       }
@@ -190,9 +195,11 @@ const runSchedulingAlgorithm = (data: SchedulingData) => {
 
         // 3. Select Topics for this Council
         // Strict Constraint: No Supervisor in Council
-        const compatibleTopics = unscheduledTopics.filter(topic => 
-            !councilIds.includes(topic.supervisorId)
-        );
+        const compatibleTopics = unscheduledTopics.filter(topic => {
+            // Check if any of the topic's supervisors are in the council
+            const topicSupervisorIds = topic.topicSupervisors.map(ts => ts.lecturerId);
+            return !topicSupervisorIds.some(supervisorId => councilIds.includes(supervisorId));
+        });
 
 
 
