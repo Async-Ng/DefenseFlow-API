@@ -1,7 +1,25 @@
+# dependencies
 node_modules
+.pnpm-store
+
+# build output
 dist
-.git
+build
+
+# env & secrets
 .env
+.env.*
+
+# logs & debug
 npm-debug.log
-Dockerfile
-.dockerignore
+yarn-debug.log
+pnpm-debug.log
+logs
+
+# git
+.git
+.gitignore
+
+# cache
+.cache
+.tmp
