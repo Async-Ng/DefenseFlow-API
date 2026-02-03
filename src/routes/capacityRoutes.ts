@@ -6,7 +6,7 @@
 import { Router } from "express";
 import * as capacityController from "../controllers/capacityCalculatorController.js";
 
-const router = Router();
+const router: Router = Router();
 
 /**
  * POST /api/capacity/calculate
