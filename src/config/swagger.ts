@@ -879,17 +879,7 @@ const options: swaggerJsdoc.Options = {
             },
           },
         },
-        ScheduleResponse: {
-          type: "object",
-          properties: {
-            success: { type: "boolean", example: true },
-            message: {
-              type: "string",
-              example: "Schedule generated successfully",
-            },
-            data: { $ref: "#/components/schemas/ScheduleGenerationResult" },
-          },
-        },
+
         // Capacity Calculator Schemas
         CapacityCalculationRequest: {
           type: "object",
@@ -1112,6 +1102,198 @@ const options: swaggerJsdoc.Options = {
                 },
               },
             },
+          },
+        },
+        LecturerSessionConfigResponse: {
+          type: "object",
+          properties: {
+            success: { type: "boolean", example: true },
+            message: {
+              type: "string",
+              example: "Configuration retrieved successfully",
+            },
+            data: { $ref: "#/components/schemas/LecturerSessionConfig" },
+          },
+        },
+        LecturerSessionConfigListResponse: {
+          type: "object",
+          properties: {
+            success: { type: "boolean", example: true },
+            message: {
+              type: "string",
+              example: "Configurations retrieved successfully",
+            },
+            data: {
+              type: "array",
+              items: { $ref: "#/components/schemas/LecturerSessionConfig" },
+            },
+            meta: {
+              type: "object",
+              properties: {
+                pagination: {
+                  type: "object",
+                  properties: {
+                    currentPage: { type: "integer", example: 1 },
+                    pageSize: { type: "integer", example: 10 },
+                    totalItems: { type: "integer", example: 50 },
+                    totalPages: { type: "integer", example: 5 },
+                    hasNextPage: { type: "boolean", example: true },
+                    hasPreviousPage: { type: "boolean", example: false },
+                  },
+                },
+              },
+            },
+          },
+        },
+        LecturerDayAvailability: {
+          type: "object",
+          properties: {
+            id: { type: "integer", example: 1 },
+            lecturerId: { type: "integer", example: 1 },
+            sessionDayId: { type: "integer", example: 1 },
+            status: {
+              type: "string",
+              enum: ["Available", "Busy"],
+              example: "Busy",
+            },
+          },
+        },
+        SessionDayWithAvailability: {
+          allOf: [
+            { $ref: "#/components/schemas/SessionDay" },
+            {
+              type: "object",
+              properties: {
+                lecturerDayAvailability: {
+                  type: "array",
+                  items: { $ref: "#/components/schemas/LecturerDayAvailability" },
+                },
+              },
+            },
+          ],
+        },
+        LecturerStatusResponseData: {
+          type: "object",
+          properties: {
+            lecturerId: { type: "integer", example: 1 },
+            sessionId: { type: "integer", example: 1 },
+            isRegistrationOpen: { type: "boolean", example: true },
+            sessionConfig: { $ref: "#/components/schemas/LecturerSessionConfig" },
+            availabilities: {
+              type: "array",
+              items: { $ref: "#/components/schemas/LecturerDayAvailability" },
+            },
+          },
+        },
+        SessionDaysResponse: {
+          type: "object",
+          properties: {
+            success: { type: "boolean", example: true },
+            message: {
+              type: "string",
+              example: "Session days retrieved successfully",
+            },
+            data: {
+              type: "array",
+              items: { $ref: "#/components/schemas/SessionDay" },
+            },
+          },
+        },
+        SessionDaysWithAvailabilityResponse: {
+          type: "object",
+          properties: {
+            success: { type: "boolean", example: true },
+            message: {
+              type: "string",
+              example: "Session days with availability retrieved successfully",
+            },
+            data: {
+              type: "array",
+              items: { $ref: "#/components/schemas/SessionDayWithAvailability" },
+            },
+          },
+        },
+        LecturerStatusResultResponse: {
+          type: "object",
+          properties: {
+            success: { type: "boolean", example: true },
+            message: {
+              type: "string",
+              example: "Lecturer status retrieved successfully",
+            },
+            data: { $ref: "#/components/schemas/LecturerStatusResponseData" },
+          },
+        },
+        AvailabilityResponse: {
+          type: "object",
+          properties: {
+            success: { type: "boolean", example: true },
+            message: {
+              type: "string",
+              example: "Availability updated successfully",
+            },
+            data: { $ref: "#/components/schemas/LecturerDayAvailability" },
+          },
+        },
+        AvailabilityListResponse: {
+          type: "object",
+          properties: {
+            success: { type: "boolean", example: true },
+            message: {
+              type: "string",
+              example: "Availability updated successfully for all days",
+            },
+            data: {
+              type: "array",
+              items: { $ref: "#/components/schemas/LecturerDayAvailability" },
+            },
+          },
+        },
+        ScheduleResponse: {
+          type: "object",
+          properties: {
+            success: { type: "boolean", example: true },
+            message: {
+              type: "string",
+              example: "Schedule retrieved successfully",
+            },
+            data: {
+              type: "array",
+              items: { $ref: "#/components/schemas/Council" },
+            },
+          },
+        },
+        ScheduleGenerationResponse: {
+          type: "object",
+          properties: {
+            success: { type: "boolean", example: true },
+            message: {
+              type: "string",
+              example: "Schedule generated successfully",
+            },
+            data: { $ref: "#/components/schemas/ScheduleGenerationResult" },
+          },
+        },
+        DefenseMatchResponse: {
+          type: "object",
+          properties: {
+            success: { type: "boolean", example: true },
+            message: {
+              type: "string",
+              example: "Match updated successfully",
+            },
+            data: { $ref: "#/components/schemas/DefenseMatch" },
+          },
+        },
+        CouncilResponse: {
+          type: "object",
+          properties: {
+            success: { type: "boolean", example: true },
+            message: {
+              type: "string",
+              example: "Council updated successfully",
+            },
+            data: { $ref: "#/components/schemas/Council" },
           },
         },
       },

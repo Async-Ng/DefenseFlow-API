@@ -65,7 +65,10 @@ model Session {
   type                      SessionType?               @default(Main)
   status                    SessionStatus?             @default(Open)
   timePerTopic              Int?                       @map("time_per_topic")
-  workStartTime             DateTime?                  @map("work_start_time") @db.Time(6)
+  workStartTime             String?                    @map("work_start_time") @db.VarChar(10) // HH:mm
+  isSchedulePublished       Boolean                    @default(false) @map("is_schedule_published")
+  availabilityStartDate     DateTime?                  @map("availability_start_date") @db.Date
+  availabilityEndDate       DateTime?                  @map("availability_end_date") @db.Date
   lecturerSessionConfigs    LecturerSessionConfig[]
   sessionDays               SessionDay[]
   semester                  Semester                   @relation(fields: [semesterId], references: [id])

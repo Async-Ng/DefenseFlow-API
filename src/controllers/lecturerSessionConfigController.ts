@@ -39,7 +39,7 @@ import { LecturerSessionConfigInput } from "../types/index.js";
  *         content:
  *           application/json:
  *             schema:
- *               $ref: '#/components/schemas/ApiResponse'
+ *               $ref: '#/components/schemas/LecturerSessionConfigResponse'
  *       400:
  *         description: Validation error
  *         content:
@@ -123,7 +123,7 @@ export const createConfig = async (req: Request, res: Response) => {
  *         content:
  *           application/json:
  *             schema:
- *               $ref: '#/components/schemas/ApiResponse'
+ *               $ref: '#/components/schemas/LecturerSessionConfigResponse'
  *       400:
  *         description: Validation error
  *         content:
@@ -201,7 +201,7 @@ export const updateConfig = async (req: Request, res: Response) => {
  *         content:
  *           application/json:
  *             schema:
- *               $ref: '#/components/schemas/PaginatedResponse'
+ *               $ref: '#/components/schemas/LecturerSessionConfigListResponse'
  *       500:
  *         description: Server error
  *         content:
