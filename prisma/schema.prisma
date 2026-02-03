@@ -40,7 +40,7 @@ model Lecturer {
   lecturerDayAvailability LecturerDayAvailability[]
   lecturerSessionConfigs  LecturerSessionConfig[]
   lecturerSkills          LecturerSkill[]
-  supervisedTopics        Topic[]
+  topicSupervisors        TopicSupervisor[]
 
   @@map("Lecturers")
 }
@@ -49,11 +49,10 @@ model Topic {
   id                        Int                        @id @default(autoincrement())
   topicCode                 String                     @unique @map("topic_code") @db.VarChar(50)
   semesterId                Int                        @map("semester_id")
-  supervisorId              Int                        @map("supervisor_id")
   title                     String?                    @db.VarChar(255)
   topicSessionRegistrations TopicSessionRegistration[]
+  topicSupervisors          TopicSupervisor[]
   semester                  Semester                   @relation(fields: [semesterId], references: [id])
-  supervisor                Lecturer                   @relation(fields: [supervisorId], references: [id])
 
   @@map("Topics")
 }
@@ -179,6 +178,17 @@ model LecturerSkill {
 
   @@unique([lecturerId, skillId])
   @@map("Lecturer_Skills")
+}
+
+model TopicSupervisor {
+  id         Int      @id @default(autoincrement())
+  topicId    Int      @map("topic_id")
+  lecturerId Int      @map("lecturer_id")
+  topic      Topic    @relation(fields: [topicId], references: [id])
+  lecturer   Lecturer @relation(fields: [lecturerId], references: [id])
+
+  @@unique([topicId, lecturerId])
+  @@map("Topic_Supervisors")
 }
 
 enum AvailabilityStatus {
