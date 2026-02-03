@@ -73,4 +73,13 @@ temp/
 # Tests
 tests/
 
+# Prisma generated files
 /src/generated/prisma
+/generated/
+generated/
+
+# Test files
+test-db.ts
+test-db.js
+
+prisma/migrations/

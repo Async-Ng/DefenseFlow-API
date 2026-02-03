@@ -1,10 +1,10 @@
 import ExcelJS from "exceljs";
-import {prisma} from "../config/prisma.js";
+import { prisma } from "../config/prisma.js";
 
 interface TopicImportRow {
   topicCode: string;
   title: string;
-  supervisorCode: string;
+  supervisorCodes: string[];
 }
 
 interface LecturerImportRow {
@@ -45,13 +45,22 @@ export class ImportService {
     const processedCodes = new Set<string>();
 
     const rawRows = await this.parseExcel<TopicImportRow>(buffer, (row) => {
-      // Cell 1: Topic Code, Cell 2: Title, Cell 3: Supervisor Code
+      // Cell 1: Topic Code, Cell 2: Title, Cell 3+: Supervisor Codes (comma-separated or multiple columns)
       const topicCode = row.getCell(1).text?.toString().trim();
       const title = row.getCell(2).text?.toString().trim();
-      const supervisorCode = row.getCell(3).text?.toString().trim();
+      const supervisorCodesRaw = row.getCell(3).text?.toString().trim();
 
-      if (!topicCode || !title || !supervisorCode) return null;
-      return { topicCode, title, supervisorCode };
+      if (!topicCode || !title || !supervisorCodesRaw) return null;
+
+      // Split by comma to support multiple supervisors in one cell
+      const supervisorCodes = supervisorCodesRaw
+        .split(",")
+        .map((code) => code.trim())
+        .filter((code) => code.length > 0);
+
+      if (supervisorCodes.length === 0) return null;
+
+      return { topicCode, title, supervisorCodes };
     });
 
     for (let i = 0; i < rawRows.length; i++) {
@@ -80,15 +89,23 @@ export class ImportService {
         continue;
       }
 
-      // 2. Find supervisor by Code
-      const supervisor = await prisma.lecturer.findUnique({
-        where: { lecturerCode: row.supervisorCode },
+      // 2. Find all supervisors by Code
+      const supervisors = await prisma.lecturer.findMany({
+        where: {
+          lecturerCode: { in: row.supervisorCodes },
+        },
       });
 
-      if (!supervisor) {
+      if (supervisors.length !== row.supervisorCodes.length) {
+        const foundCodes = supervisors.map((s) => s.lecturerCode);
+        const notFoundCodes = row.supervisorCodes.filter(
+          (code) => !foundCodes.includes(code),
+        );
         errors.push({
           row: rowNum,
-          message: `Supervisor with code '${row.supervisorCode}' not found.`,
+          message: `Supervisor(s) with code(s) '${notFoundCodes.join(
+            ", ",
+          )}' not found.`,
         });
         continue;
       }
@@ -97,18 +114,30 @@ export class ImportService {
         topicCode: row.topicCode,
         title: row.title,
         semesterId: semesterId,
-        supervisorId: supervisor.id,
+        supervisorIds: supervisors.map((s) => s.id),
       });
 
       processedCodes.add(row.topicCode);
     }
 
-    // Bulk insert valid topics
+    // Insert valid topics with supervisors
     if (validTopics.length > 0) {
-      const result = await prisma.topic.createMany({
-        data: validTopics,
-      });
-      return { successCount: result.count, errors };
+      for (const topicData of validTopics) {
+        const { supervisorIds, ...topicCreateData } = topicData;
+
+        await prisma.topic.create({
+          data: {
+            ...topicCreateData,
+            topicSupervisors: {
+              create: supervisorIds.map((lecturerId: number) => ({
+                lecturerId,
+              })),
+            },
+          },
+        });
+      }
+
+      return { successCount: validTopics.length, errors };
     }
 
     return { successCount: 0, errors };
@@ -200,10 +229,14 @@ export class ImportService {
     sheet.columns = [
       { header: "Topic Code", key: "topicCode", width: 15 },
       { header: "Title", key: "title", width: 40 },
-      { header: "Supervisor Code", key: "supervisorCode", width: 20 },
+      {
+        header: "Supervisor Codes (comma-separated)",
+        key: "supervisorCodes",
+        width: 30,
+      },
     ];
 
-    return (await workbook.xlsx.writeBuffer()) as unknown as Buffer;
+    return ((await workbook.xlsx.writeBuffer()) as unknown) as Buffer;
   }
 
   /**
@@ -219,7 +252,7 @@ export class ImportService {
       { header: "Email", key: "email", width: 30 },
     ];
 
-    return (await workbook.xlsx.writeBuffer()) as unknown as Buffer;
+    return ((await workbook.xlsx.writeBuffer()) as unknown) as Buffer;
   }
 }
 

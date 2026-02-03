@@ -32,8 +32,12 @@ export const findAll = async (
   if (filters.semesterId) {
     where.semesterId = filters.semesterId;
   }
-  if (filters.supervisorId) {
-    where.supervisorId = filters.supervisorId;
+  if (filters.supervisorIds && filters.supervisorIds.length > 0) {
+    where.topicSupervisors = {
+      some: {
+        lecturerId: { in: filters.supervisorIds },
+      },
+    };
   }
 
   const [data, total] = await Promise.all([
@@ -44,7 +48,11 @@ export const findAll = async (
       orderBy: { id: "desc" },
       include: {
         semester: true,
-        supervisor: true,
+        topicSupervisors: {
+          include: {
+            lecturer: true,
+          },
+        },
       },
     }),
     prisma.topic.count({ where }),
@@ -61,7 +69,11 @@ export const findById = async (id: number) => {
     where: { id },
     include: {
       semester: true,
-      supervisor: true,
+      topicSupervisors: {
+        include: {
+          lecturer: true,
+        },
+      },
     },
   });
 };
@@ -86,6 +98,27 @@ export const update = async (
     where: { id },
     data,
   });
+};
+
+/**
+ * Update topic supervisors
+ */
+export const updateSupervisors = async (
+  topicId: number,
+  supervisorIds: number[],
+): Promise<void> => {
+  // Delete existing supervisors and create new ones in a transaction
+  await prisma.$transaction([
+    prisma.topicSupervisor.deleteMany({
+      where: { topicId },
+    }),
+    prisma.topicSupervisor.createMany({
+      data: supervisorIds.map((lecturerId) => ({
+        topicId,
+        lecturerId,
+      })),
+    }),
+  ]);
 };
 
 /**

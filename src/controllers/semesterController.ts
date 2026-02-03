@@ -38,16 +38,7 @@ import type {
  *         content:
  *           application/json:
  *             schema:
- *               type: object
- *               properties:
- *                 success:
- *                   type: boolean
- *                   example: true
- *                 message:
- *                   type: string
- *                   example: "Semester created successfully"
- *                 data:
- *                   $ref: '#/components/schemas/Semester'
+ *               $ref: '#/components/schemas/SemesterResponse'
  *       400:
  *         description: Validation error
  *         content:
@@ -112,23 +103,7 @@ export const createSemester = async (
  *         content:
  *           application/json:
  *             schema:
- *               type: object
- *               properties:
- *                 success:
- *                   type: boolean
- *                   example: true
- *                 message:
- *                   type: string
- *                   example: "Semesters retrieved successfully"
- *                 data:
- *                   type: array
- *                   items:
- *                     $ref: '#/components/schemas/Semester'
- *                 meta:
- *                   type: object
- *                   properties:
- *                     pagination:
- *                       $ref: '#/components/schemas/PaginatedResponse/properties/meta/properties/pagination'
+ *               $ref: '#/components/schemas/SemesterListResponse'
  *       500:
  *         description: Server Error
  *         content:
@@ -178,16 +153,7 @@ export const getAllSemesters = async (
  *         content:
  *           application/json:
  *             schema:
- *               type: object
- *               properties:
- *                 success:
- *                   type: boolean
- *                   example: true
- *                 message:
- *                   type: string
- *                   example: "Semester retrieved successfully"
- *                 data:
- *                   $ref: '#/components/schemas/Semester'
+ *               $ref: '#/components/schemas/SemesterResponse'
  *       404:
  *         description: Semester not found
  *         content:
@@ -246,16 +212,7 @@ export const getSemesterById = async (
  *         content:
  *           application/json:
  *             schema:
- *               type: object
- *               properties:
- *                 success:
- *                   type: boolean
- *                   example: true
- *                 message:
- *                   type: string
- *                   example: "Semester updated successfully"
- *                 data:
- *                   $ref: '#/components/schemas/Semester'
+ *               $ref: '#/components/schemas/SemesterResponse'
  *       404:
  *         description: Semester not found
  *         content:
@@ -317,14 +274,7 @@ export const updateSemester = async (
  *         content:
  *           application/json:
  *             schema:
- *               type: object
- *               properties:
- *                 success:
- *                   type: boolean
- *                   example: true
- *                 message:
- *                   type: string
- *                   example: "Semester deleted successfully"
+ *               $ref: '#/components/schemas/ApiResponse'
  *       404:
  *         description: Semester not found
  *         content:

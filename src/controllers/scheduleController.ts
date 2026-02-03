@@ -5,8 +5,43 @@ import { AppError } from "../middleware/errorHandler.js";
 import { z } from "zod";
 
 /**
- * Generate schedule for a session
- * POST /api/schedule/generate
+ * @swagger
+ * /api/schedule/generate:
+ *   post:
+ *     summary: Generate schedule for a session
+ *     tags: [Schedule]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - sessionId
+ *             properties:
+ *               sessionId:
+ *                 type: integer
+ *                 description: Session ID to generate schedule for
+ *                 example: 1
+ *     responses:
+ *       201:
+ *         description: Schedule generated successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ScheduleResponse'
+ *       400:
+ *         description: Validation error
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ *       500:
+ *         description: Server error
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
  */
 export const generateSchedule = async (
   req: Request,
@@ -28,20 +63,50 @@ export const generateSchedule = async (
 
     const result = await scheduleService.generateSchedule(sessionId);
 
-    return successResponse(
-        res, 
-        result, 
-        "Schedule generated successfully",
-        201
-    );
+    return successResponse(res, result, "Schedule generated successfully", 201);
   } catch (error) {
     return next(error);
   }
 };
 
 /**
- * Get schedule for a session
- * GET /api/schedule/:sessionId
+ * @swagger
+ * /api/schedule/{sessionId}:
+ *   get:
+ *     summary: Get schedule for a session
+ *     tags: [Schedule]
+ *     parameters:
+ *       - in: path
+ *         name: sessionId
+ *         required: true
+ *         schema:
+ *           type: integer
+ *         description: Session ID to get schedule for
+ *     responses:
+ *       200:
+ *         description: Schedule retrieved successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ScheduleResponse'
+ *       400:
+ *         description: Invalid session ID
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ *       404:
+ *         description: Schedule not found
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ *       500:
+ *         description: Server error
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
  */
 export const getSchedule = async (
   req: Request,
@@ -57,13 +122,8 @@ export const getSchedule = async (
 
     const result = await scheduleService.getSchedule(sessionId);
 
-    return successResponse(
-      res,
-      result,
-      "Schedule retrieved successfully",
-    );
+    return successResponse(res, result, "Schedule retrieved successfully");
   } catch (error) {
     return next(error);
   }
 };
-

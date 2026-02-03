@@ -35,66 +35,7 @@ type LecturerFilterQuery = {
  *         content:
  *           application/json:
  *             schema:
- *               type: object
- *               properties:
- *                 success:
- *                   type: boolean
- *                   example: true
- *                 message:
- *                   type: string
- *                   example: "Lecturer retrieved successfully"
- *                 data:
- *                   type: object
- *                   properties:
- *                     id:
- *                       type: integer
- *                       example: 1
- *                     lecturerCode:
- *                       type: string
- *                       example: "LEC001"
- *                     fullName:
- *                       type: string
- *                       nullable: true
- *                       example: "Nguyen Van A"
- *                     email:
- *                       type: string
- *                       nullable: true
- *                       example: "nguyenvana@fpt.edu.vn"
- *                     isPresidentQualified:
- *                       type: boolean
- *                       example: true
- *                     isSecretaryQualified:
- *                       type: boolean
- *                       example: false
- *                     lecturerSkills:
- *                       type: array
- *                       items:
- *                         type: object
- *                         properties:
- *                           id:
- *                             type: integer
- *                             example: 1
- *                           lecturerId:
- *                             type: integer
- *                             example: 1
- *                           skillId:
- *                             type: integer
- *                             example: 1
- *                           score:
- *                             type: integer
- *                             example: 4
- *                           skill:
- *                             type: object
- *                             properties:
- *                               id:
- *                                 type: integer
- *                                 example: 1
- *                               skillCode:
- *                                 type: string
- *                                 example: "JAVA"
- *                               name:
- *                                 type: string
- *                                 example: "Java Programming"
+ *               $ref: '#/components/schemas/LecturerResponse'
  *       404:
  *         description: Lecturer not found
  *         content:
@@ -169,65 +110,7 @@ export const getLecturerById = async (
  *         content:
  *           application/json:
  *             schema:
- *               type: object
- *               properties:
- *                 success:
- *                   type: boolean
- *                   example: true
- *                 message:
- *                   type: string
- *                   example: "Lecturers retrieved successfully"
- *                 data:
- *                   type: array
- *                   items:
- *                     type: object
- *                     properties:
- *                       id:
- *                         type: integer
- *                         example: 1
- *                       lecturerCode:
- *                         type: string
- *                         example: "LEC001"
- *                       fullName:
- *                         type: string
- *                         example: "Nguyen Van A"
- *                       email:
- *                         type: string
- *                         example: "nguyenvana@fpt.edu.vn"
- *                       isPresidentQualified:
- *                         type: boolean
- *                         example: true
- *                       isSecretaryQualified:
- *                         type: boolean
- *                         example: false
- *                       lecturerSkills:
- *                         type: array
- *                         items:
- *                           type: object
- *                 meta:
- *                   type: object
- *                   properties:
- *                     pagination:
- *                       type: object
- *                       properties:
- *                         currentPage:
- *                           type: integer
- *                           example: 1
- *                         pageSize:
- *                           type: integer
- *                           example: 10
- *                         totalItems:
- *                           type: integer
- *                           example: 50
- *                         totalPages:
- *                           type: integer
- *                           example: 5
- *                         hasNextPage:
- *                           type: boolean
- *                           example: true
- *                         hasPreviousPage:
- *                           type: boolean
- *                           example: false
+ *               $ref: '#/components/schemas/LecturerListResponse'
  *       500:
  *         description: Server Error
  *         content:
@@ -305,16 +188,7 @@ export const getAllLecturers = async (
  *         content:
  *           application/json:
  *             schema:
- *               type: object
- *               properties:
- *                 success:
- *                   type: boolean
- *                   example: true
- *                 message:
- *                   type: string
- *                   example: "Lecturer roles updated successfully"
- *                 data:
- *                   $ref: '#/components/schemas/Lecturer'
+ *               $ref: '#/components/schemas/LecturerResponse'
  *       404:
  *         description: Lecturer not found
  *         content:
@@ -390,16 +264,7 @@ export const updateLecturerRoles = async (
  *         content:
  *           application/json:
  *             schema:
- *               type: object
- *               properties:
- *                 success:
- *                   type: boolean
- *                   example: true
- *                 message:
- *                   type: string
- *                   example: "Lecturer skills updated successfully"
- *                 data:
- *                   $ref: '#/components/schemas/Lecturer'
+ *               $ref: '#/components/schemas/LecturerResponse'
  *       404:
  *         description: Lecturer or skill not found
  *         content:
@@ -411,14 +276,7 @@ export const updateLecturerRoles = async (
  *         content:
  *           application/json:
  *             schema:
- *               type: object
- *               properties:
- *                 success:
- *                   type: boolean
- *                   example: false
- *                 message:
- *                   type: string
- *                   example: "Invalid skill score 6 for skill ID 1. Score must be between 0 and 5."
+ *               $ref: '#/components/schemas/ValidationErrorResponse'
  *       500:
  *         description: Server Error
  *         content:

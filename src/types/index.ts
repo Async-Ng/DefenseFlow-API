@@ -153,21 +153,21 @@ export type UpdateTopicResultInput = {
 export type UpdateTopicInput = {
   topicCode?: string;
   title?: string;
-  supervisorId?: number;
+  supervisorIds?: number[];
 };
 
 export type TopicFilterQuery = {
   topicCode?: string | string[];
   title?: string | string[];
   semesterId?: string | string[];
-  supervisorId?: string | string[];
+  supervisorIds?: string | string[];
 };
 
 export type TopicFilters = {
   topicCode?: string;
   title?: string;
   semesterId?: number;
-  supervisorId?: number;
+  supervisorIds?: number[];
 };
 
 export type CreateSkillInput = {
@@ -239,7 +239,6 @@ export type LecturerStatusResponse = {
   sessionConfig?: LecturerSessionConfig | null;
   availabilities: LecturerDayAvailability[];
 };
-
 
 // ============================================================================
 // Parsed/Validated Types
