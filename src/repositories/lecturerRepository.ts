@@ -61,7 +61,7 @@ export const findAll = async (
       where,
       skip,
       take: limit,
-      orderBy: { id: "asc" },
+      orderBy: { fullName: "asc" },
       include: {
         lecturerSkills: {
           include: {

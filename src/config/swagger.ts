@@ -890,6 +890,230 @@ const options: swaggerJsdoc.Options = {
             data: { $ref: "#/components/schemas/ScheduleGenerationResult" },
           },
         },
+        // Capacity Calculator Schemas
+        CapacityCalculationRequest: {
+          type: "object",
+          required: ["semesterId"],
+          properties: {
+            semesterId: {
+              type: "integer",
+              example: 1,
+              description: "ID of the semester to calculate capacity for",
+            },
+            sessionId: {
+              type: "integer",
+              example: 1,
+              description:
+                "Optional: Specific session ID. If not provided, system will auto-select first session from semester (if exists)",
+            },
+            timePerTopic: {
+              type: "integer",
+              example: 90,
+              description:
+                "Optional: Time per topic in minutes. If not provided, will use session data or default to 90 minutes",
+            },
+            workHoursPerDay: {
+              type: "integer",
+              example: 480,
+              description: "Optional: Work hours per day in minutes. Default: 480 minutes (8 hours)",
+            },
+            councilSize: {
+              type: "integer",
+              example: 5,
+              description:
+                "Optional: Number of council members. Default: 5 (1 President + 1 Secretary + 3 Members)",
+            },
+            plannedDays: {
+              type: "integer",
+              example: 4,
+              description: "Optional: Planned number of days if no session exists",
+            },
+          },
+        },
+        SessionDayAdjustment: {
+          type: "object",
+          properties: {
+            shouldAdjust: {
+              type: "boolean",
+              example: true,
+              description: "Whether session days should be adjusted",
+            },
+            suggestedChange: {
+              type: "integer",
+              example: 2,
+              description:
+                "Number of days to add (+) or remove (-), e.g., +2 means add 2 days",
+            },
+            reason: {
+              type: "string",
+              example:
+                "Số ngày hiện tại (2) không đủ để chấm 120 đề tài. Cần tăng thêm 2 ngày để đảm bảo workload hợp lý.",
+              description: "Explanation for the adjustment recommendation",
+            },
+          },
+        },
+        TopicsPerCouncilPerDay: {
+          type: "object",
+          properties: {
+            minimum: {
+              type: "integer",
+              example: 10,
+              description: "Minimum topics a council can evaluate per day",
+            },
+            maximum: {
+              type: "integer",
+              example: 12,
+              description: "Maximum topics a council can evaluate per day",
+            },
+            average: {
+              type: "integer",
+              example: 11,
+              description: "Average topics a council should evaluate per day",
+            },
+          },
+        },
+        LecturerWorkload: {
+          type: "object",
+          properties: {
+            recommendedMin: {
+              type: "integer",
+              example: 18,
+              description: "Recommended minimum topics per lecturer",
+            },
+            recommendedMax: {
+              type: "integer",
+              example: 30,
+              description: "Recommended maximum topics per lecturer",
+            },
+            idealAverage: {
+              type: "integer",
+              example: 24,
+              description: "Ideal average topics per lecturer",
+            },
+          },
+        },
+        CapacityRecommendations: {
+          type: "object",
+          properties: {
+            minimumDaysRequired: {
+              type: "integer",
+              example: 3,
+              description: "Absolute minimum days needed",
+            },
+            recommendedDays: {
+              type: "integer",
+              example: 4,
+              description: "Recommended number of days with buffer",
+            },
+            currentSessionDays: {
+              type: "integer",
+              nullable: true,
+              example: 2,
+              description: "Current number of days if sessionId provided",
+            },
+            sessionDayAdjustment: {
+              allOf: [{ $ref: "#/components/schemas/SessionDayAdjustment" }],
+              nullable: true,
+              description: "Adjustment recommendation if sessionId provided",
+            },
+            minLecturersRequired: {
+              type: "integer",
+              example: 20,
+              description: "Minimum lecturers needed",
+            },
+            recommendedLecturers: {
+              type: "integer",
+              example: 30,
+              description: "Recommended number of lecturers for balanced workload",
+            },
+            maxLecturersNeeded: {
+              type: "integer",
+              example: 40,
+              description: "Maximum lecturers that could be utilized",
+            },
+            topicsPerCouncilPerDay: {
+              $ref: "#/components/schemas/TopicsPerCouncilPerDay",
+            },
+            councilsPerDay: {
+              type: "integer",
+              example: 4,
+              description: "Number of councils needed per day",
+            },
+            lecturerWorkload: {
+              $ref: "#/components/schemas/LecturerWorkload",
+            },
+          },
+        },
+        CapacityAnalysis: {
+          type: "object",
+          properties: {
+            totalTopics: {
+              type: "integer",
+              example: 120,
+              description: "Total number of topics in the semester",
+            },
+            timePerTopic: {
+              type: "integer",
+              example: 30,
+              description: "Time allocated per topic in minutes",
+            },
+            workHoursPerDay: {
+              type: "integer",
+              example: 480,
+              description: "Work hours per day in minutes",
+            },
+            councilSize: {
+              type: "integer",
+              example: 5,
+              description: "Number of members in each council",
+            },
+          },
+        },
+        CapacityCalculationResponse: {
+          type: "object",
+          properties: {
+            success: { type: "boolean", example: true },
+            message: {
+              type: "string",
+              example: "Capacity calculated successfully",
+            },
+            data: {
+              type: "object",
+              properties: {
+                semesterId: {
+                  type: "integer",
+                  example: 1,
+                },
+                sessionId: {
+                  type: "integer",
+                  nullable: true,
+                  example: 1,
+                },
+                analysis: {
+                  $ref: "#/components/schemas/CapacityAnalysis",
+                },
+                recommendations: {
+                  $ref: "#/components/schemas/CapacityRecommendations",
+                },
+                warnings: {
+                  type: "array",
+                  items: { type: "string" },
+                  example: [
+                    "Session hiện tại chỉ có 2 ngày, không đủ để chấm 120 đề tài với councilSize = 5",
+                  ],
+                },
+                suggestions: {
+                  type: "array",
+                  items: { type: "string" },
+                  example: [
+                    "Nên có ít nhất 30 giảng viên tham gia để cân bằng workload",
+                    "Đề xuất tăng số ngày từ 2 lên 4 ngày để giảm áp lực",
+                  ],
+                },
+              },
+            },
+          },
+        },
       },
     },
   },
