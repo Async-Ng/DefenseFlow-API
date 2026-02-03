@@ -29,7 +29,7 @@ import { z } from "zod";
  *         content:
  *           application/json:
  *             schema:
- *               $ref: '#/components/schemas/ScheduleResponse'
+ *               $ref: '#/components/schemas/ScheduleGenerationResponse'
  *       400:
  *         description: Validation error
  *         content:
@@ -230,7 +230,7 @@ export const publishSchedule = async (
  *         content:
  *           application/json:
  *             schema:
- *               $ref: '#/components/schemas/ApiResponse'
+ *               $ref: '#/components/schemas/DefenseMatchResponse'
  *       400:
  *         description: Validation error
  *         content:
@@ -316,7 +316,7 @@ export const updateMatch = async (
  *         content:
  *           application/json:
  *             schema:
- *               $ref: '#/components/schemas/ApiResponse'
+ *               $ref: '#/components/schemas/CouncilResponse'
  *       400:
  *         description: Validation error
  *         content:
