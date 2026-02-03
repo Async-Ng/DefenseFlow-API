@@ -29,12 +29,11 @@ const options: swaggerJsdoc.Options = {
       schemas: {
         Topic: {
           type: "object",
-          required: ["id", "topicCode", "semesterId", "supervisorId"],
+          required: ["id", "topicCode", "semesterId"],
           properties: {
             id: { type: "integer", example: 1 },
             topicCode: { type: "string", maxLength: 50, example: "TOPIC_001" },
             semesterId: { type: "integer", example: 1 },
-            supervisorId: { type: "integer", example: 5 },
             title: {
               type: "string",
               maxLength: 255,
@@ -42,7 +41,16 @@ const options: swaggerJsdoc.Options = {
               example: "AI Research",
             },
             semester: { $ref: "#/components/schemas/Semester" },
-            supervisor: { $ref: "#/components/schemas/Lecturer" },
+            topicSupervisors: {
+              type: "array",
+              items: {
+                type: "object",
+                properties: {
+                  id: { type: "integer" },
+                  lecturer: { $ref: "#/components/schemas/Lecturer" },
+                },
+              },
+            },
           },
         },
         UpdateTopicInput: {
@@ -50,7 +58,11 @@ const options: swaggerJsdoc.Options = {
           properties: {
             topicCode: { type: "string", maxLength: 50, example: "TOPIC_001" },
             title: { type: "string", maxLength: 255, example: "AI Research" },
-            supervisorId: { type: "integer", example: 5 },
+            supervisorIds: {
+              type: "array",
+              items: { type: "integer" },
+              example: [5, 7],
+            },
           },
         },
         Semester: {
@@ -296,14 +308,22 @@ const options: swaggerJsdoc.Options = {
           required: ["skillCode", "name"],
           properties: {
             skillCode: { type: "string", maxLength: 50, example: "JAVA" },
-            name: { type: "string", maxLength: 100, example: "Java Programming" },
+            name: {
+              type: "string",
+              maxLength: 100,
+              example: "Java Programming",
+            },
           },
         },
         UpdateSkillInput: {
           type: "object",
           properties: {
             skillCode: { type: "string", maxLength: 50, example: "JAVA" },
-            name: { type: "string", maxLength: 100, example: "Java Programming" },
+            name: {
+              type: "string",
+              maxLength: 100,
+              example: "Java Programming",
+            },
           },
         },
         LecturerSkill: {
@@ -335,12 +355,14 @@ const options: swaggerJsdoc.Options = {
             minTopics: {
               type: "integer",
               example: 5,
-              description: "Minimum number of topics lecturer is willing to evaluate",
+              description:
+                "Minimum number of topics lecturer is willing to evaluate",
             },
             maxTopics: {
               type: "integer",
               example: 10,
-              description: "Maximum number of topics lecturer is willing to evaluate",
+              description:
+                "Maximum number of topics lecturer is willing to evaluate",
             },
           },
         },
@@ -600,28 +622,273 @@ const options: swaggerJsdoc.Options = {
             startTime: { type: "string", format: "time", example: "08:00:00" },
             endTime: { type: "string", format: "time", example: "08:45:00" },
             council: { $ref: "#/components/schemas/Council" },
-            registration: { $ref: "#/components/schemas/TopicSessionRegistration" },
+            registration: {
+              $ref: "#/components/schemas/TopicSessionRegistration",
+            },
           },
         },
 
         ScheduleGenerationResult: {
-            type: "object",
-            properties: {
-                status: { type: "string", example: "success" },
-                metrics: {
+          type: "object",
+          properties: {
+            status: { type: "string", example: "success" },
+            metrics: {
+              type: "object",
+              properties: {
+                totalTopics: { type: "integer", example: 10 },
+                scheduled: { type: "integer", example: 10 },
+                unscheduled: { type: "integer", example: 0 },
+              },
+            },
+            unscheduledTopics: {
+              type: "array",
+              items: { type: "string" },
+              example: [],
+            },
+          },
+        },
+        // Response Wrappers for specific endpoints
+        TopicResponse: {
+          type: "object",
+          properties: {
+            success: { type: "boolean", example: true },
+            message: {
+              type: "string",
+              example: "Topic retrieved successfully",
+            },
+            data: { $ref: "#/components/schemas/Topic" },
+          },
+        },
+        TopicListResponse: {
+          type: "object",
+          properties: {
+            success: { type: "boolean", example: true },
+            message: {
+              type: "string",
+              example: "Topics retrieved successfully",
+            },
+            data: {
+              type: "array",
+              items: { $ref: "#/components/schemas/Topic" },
+            },
+            meta: {
+              type: "object",
+              properties: {
+                pagination: {
+                  type: "object",
+                  properties: {
+                    currentPage: { type: "integer", example: 1 },
+                    pageSize: { type: "integer", example: 10 },
+                    totalItems: { type: "integer", example: 50 },
+                    totalPages: { type: "integer", example: 5 },
+                    hasNextPage: { type: "boolean", example: true },
+                    hasPreviousPage: { type: "boolean", example: false },
+                  },
+                },
+              },
+            },
+          },
+        },
+        SemesterResponse: {
+          type: "object",
+          properties: {
+            success: { type: "boolean", example: true },
+            message: {
+              type: "string",
+              example: "Semester retrieved successfully",
+            },
+            data: { $ref: "#/components/schemas/Semester" },
+          },
+        },
+        SemesterListResponse: {
+          type: "object",
+          properties: {
+            success: { type: "boolean", example: true },
+            message: {
+              type: "string",
+              example: "Semesters retrieved successfully",
+            },
+            data: {
+              type: "array",
+              items: { $ref: "#/components/schemas/Semester" },
+            },
+            meta: {
+              type: "object",
+              properties: {
+                pagination: {
+                  type: "object",
+                  properties: {
+                    currentPage: { type: "integer", example: 1 },
+                    pageSize: { type: "integer", example: 10 },
+                    totalItems: { type: "integer", example: 20 },
+                    totalPages: { type: "integer", example: 2 },
+                    hasNextPage: { type: "boolean", example: true },
+                    hasPreviousPage: { type: "boolean", example: false },
+                  },
+                },
+              },
+            },
+          },
+        },
+        SessionResponse: {
+          type: "object",
+          properties: {
+            success: { type: "boolean", example: true },
+            message: {
+              type: "string",
+              example: "Session retrieved successfully",
+            },
+            data: { $ref: "#/components/schemas/Session" },
+          },
+        },
+        SessionListResponse: {
+          type: "object",
+          properties: {
+            success: { type: "boolean", example: true },
+            message: {
+              type: "string",
+              example: "Sessions retrieved successfully",
+            },
+            data: {
+              type: "array",
+              items: { $ref: "#/components/schemas/Session" },
+            },
+            meta: {
+              type: "object",
+              properties: {
+                pagination: {
+                  type: "object",
+                  properties: {
+                    currentPage: { type: "integer", example: 1 },
+                    pageSize: { type: "integer", example: 10 },
+                    totalItems: { type: "integer", example: 15 },
+                    totalPages: { type: "integer", example: 2 },
+                    hasNextPage: { type: "boolean", example: true },
+                    hasPreviousPage: { type: "boolean", example: false },
+                  },
+                },
+              },
+            },
+          },
+        },
+        LecturerResponse: {
+          type: "object",
+          properties: {
+            success: { type: "boolean", example: true },
+            message: {
+              type: "string",
+              example: "Lecturer retrieved successfully",
+            },
+            data: { $ref: "#/components/schemas/Lecturer" },
+          },
+        },
+        LecturerListResponse: {
+          type: "object",
+          properties: {
+            success: { type: "boolean", example: true },
+            message: {
+              type: "string",
+              example: "Lecturers retrieved successfully",
+            },
+            data: {
+              type: "array",
+              items: { $ref: "#/components/schemas/Lecturer" },
+            },
+            meta: {
+              type: "object",
+              properties: {
+                pagination: {
+                  type: "object",
+                  properties: {
+                    currentPage: { type: "integer", example: 1 },
+                    pageSize: { type: "integer", example: 10 },
+                    totalItems: { type: "integer", example: 30 },
+                    totalPages: { type: "integer", example: 3 },
+                    hasNextPage: { type: "boolean", example: true },
+                    hasPreviousPage: { type: "boolean", example: false },
+                  },
+                },
+              },
+            },
+          },
+        },
+        SkillResponse: {
+          type: "object",
+          properties: {
+            success: { type: "boolean", example: true },
+            message: {
+              type: "string",
+              example: "Skill retrieved successfully",
+            },
+            data: { $ref: "#/components/schemas/Skill" },
+          },
+        },
+        SkillListResponse: {
+          type: "object",
+          properties: {
+            success: { type: "boolean", example: true },
+            message: {
+              type: "string",
+              example: "Skills retrieved successfully",
+            },
+            data: {
+              type: "array",
+              items: { $ref: "#/components/schemas/Skill" },
+            },
+            meta: {
+              type: "object",
+              properties: {
+                pagination: {
+                  type: "object",
+                  properties: {
+                    currentPage: { type: "integer", example: 1 },
+                    pageSize: { type: "integer", example: 10 },
+                    totalItems: { type: "integer", example: 25 },
+                    totalPages: { type: "integer", example: 3 },
+                    hasNextPage: { type: "boolean", example: true },
+                    hasPreviousPage: { type: "boolean", example: false },
+                  },
+                },
+              },
+            },
+          },
+        },
+        ImportResultResponse: {
+          type: "object",
+          properties: {
+            success: { type: "boolean", example: true },
+            message: { type: "string", example: "Import completed" },
+            data: {
+              type: "object",
+              properties: {
+                successCount: { type: "integer", example: 45 },
+                errors: {
+                  type: "array",
+                  items: {
                     type: "object",
                     properties: {
-                        totalTopics: { type: "integer", example: 10 },
-                        scheduled: { type: "integer", example: 10 },
-                        unscheduled: { type: "integer", example: 0 }
-                    }
+                      row: { type: "integer", example: 5 },
+                      message: {
+                        type: "string",
+                        example: "Supervisor not found",
+                      },
+                    },
+                  },
                 },
-                unscheduledTopics: {
-                    type: "array",
-                    items: { type: "string" },
-                    example: []
-                }
-            }
+              },
+            },
+          },
+        },
+        ScheduleResponse: {
+          type: "object",
+          properties: {
+            success: { type: "boolean", example: true },
+            message: {
+              type: "string",
+              example: "Schedule generated successfully",
+            },
+            data: { $ref: "#/components/schemas/ScheduleGenerationResult" },
+          },
         },
       },
     },

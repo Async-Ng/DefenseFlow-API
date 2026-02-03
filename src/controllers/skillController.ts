@@ -21,16 +21,7 @@ import { CreateSkillInput, UpdateSkillInput } from "../types/index.js";
  *         content:
  *           application/json:
  *             schema:
- *               type: object
- *               properties:
- *                 success:
- *                   type: boolean
- *                   example: true
- *                 message:
- *                   type: string
- *                   example: "Skill created successfully"
- *                 data:
- *                   $ref: '#/components/schemas/Skill'
+ *               $ref: '#/components/schemas/SkillResponse'
  *       400:
  *         description: Validation error
  *         content:
@@ -56,14 +47,18 @@ export const createSkill = async (req: Request, res: Response) => {
 
     // validation
     if (!input.skillCode || !input.name) {
-      return errorResponse(res, "Missing required fields: skillCode, name", 400);
+      return errorResponse(
+        res,
+        "Missing required fields: skillCode, name",
+        400,
+      );
     }
 
     const skill = await skillService.createSkill(input);
     return successResponse(res, skill, "Skill created successfully", 201);
   } catch (error: any) {
     if (error.message.includes("already exists")) {
-        return errorResponse(res, error.message, 409);
+      return errorResponse(res, error.message, 409);
     }
     return errorResponse(res, error.message, 500);
   }
@@ -100,7 +95,7 @@ export const createSkill = async (req: Request, res: Response) => {
  *         content:
  *           application/json:
  *             schema:
- *               $ref: '#/components/schemas/PaginatedResponse'
+ *               $ref: '#/components/schemas/SkillListResponse'
  *       500:
  *         description: Server Error
  *         content:
@@ -112,11 +107,11 @@ export const getSkills = async (req: Request, res: Response) => {
   try {
     const page = parseInt(req.query.page as string) || 1;
     const limit = parseInt(req.query.limit as string) || 10;
-    
+
     // Helper to allow single string or take first if array
     const getString = (param: any): string | undefined => {
-        if (!param) return undefined;
-        return Array.isArray(param) ? (param[0] as string) : (param as string);
+      if (!param) return undefined;
+      return Array.isArray(param) ? (param[0] as string) : (param as string);
     };
 
     const filters = {
@@ -149,16 +144,7 @@ export const getSkills = async (req: Request, res: Response) => {
  *         content:
  *           application/json:
  *             schema:
- *               type: object
- *               properties:
- *                 success:
- *                   type: boolean
- *                   example: true
- *                 message:
- *                   type: string
- *                   example: "Skill retrieved successfully"
- *                 data:
- *                   $ref: '#/components/schemas/Skill'
+ *               $ref: '#/components/schemas/SkillResponse'
  *       404:
  *         description: Skill not found
  *         content:
@@ -214,16 +200,7 @@ export const getSkill = async (req: Request, res: Response) => {
  *         content:
  *           application/json:
  *             schema:
- *               type: object
- *               properties:
- *                 success:
- *                   type: boolean
- *                   example: true
- *                 message:
- *                   type: string
- *                   example: "Skill updated successfully"
- *                 data:
- *                   $ref: '#/components/schemas/Skill'
+ *               $ref: '#/components/schemas/SkillResponse'
  *       404:
  *         description: Skill not found
  *         content:
@@ -254,7 +231,7 @@ export const updateSkill = async (req: Request, res: Response) => {
     const skill = await skillService.updateSkill(id, input);
     return successResponse(res, skill, "Skill updated successfully");
   } catch (error: any) {
-     if (error.message.includes("not found")) {
+    if (error.message.includes("not found")) {
       return errorResponse(res, error.message, 404);
     }
     if (error.message.includes("already exists")) {
@@ -282,14 +259,7 @@ export const updateSkill = async (req: Request, res: Response) => {
  *         content:
  *           application/json:
  *             schema:
- *               type: object
- *               properties:
- *                 success:
- *                   type: boolean
- *                   example: true
- *                 message:
- *                   type: string
- *                   example: "Skill deleted successfully"
+ *               $ref: '#/components/schemas/ApiResponse'
  *       404:
  *         description: Skill not found
  *         content:
@@ -323,8 +293,12 @@ export const deleteSkill = async (req: Request, res: Response) => {
       return errorResponse(res, error.message, 404);
     }
     // Check foreign key constraint error from Prisma (roughly)
-    if (error.code === 'P2003') {
-        return errorResponse(res, "Cannot delete skill because it is being used", 400);
+    if (error.code === "P2003") {
+      return errorResponse(
+        res,
+        "Cannot delete skill because it is being used",
+        400,
+      );
     }
     return errorResponse(res, error.message, 500);
   }

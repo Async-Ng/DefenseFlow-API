@@ -5,7 +5,7 @@ import { Prisma, Council } from "../../generated/prisma/client.js";
  * Create a new council with members
  */
 export const createCouncil = async (
-  data: Prisma.CouncilCreateInput
+  data: Prisma.CouncilCreateInput,
 ): Promise<Council> => {
   return await prisma.council.create({
     data,
@@ -23,7 +23,7 @@ export const createCouncil = async (
  * Create multiple defense matches
  */
 export const createDefenseMatches = async (
-  data: Prisma.DefenseMatchCreateManyInput[]
+  data: Prisma.DefenseMatchCreateManyInput[],
 ): Promise<Prisma.BatchPayload> => {
   return await prisma.defenseMatch.createMany({
     data,
@@ -34,14 +34,16 @@ export const createDefenseMatches = async (
  * Delete all councils and related data for a specific session
  * This is used to clear a previous draft schedule
  */
-export const deleteCouncilsBySession = async (sessionId: number): Promise<void> => {
+export const deleteCouncilsBySession = async (
+  sessionId: number,
+): Promise<void> => {
   // Find all session days for this session
   const sessionDays = await prisma.sessionDay.findMany({
     where: { sessionId },
     select: { id: true },
   });
-  
-  const sessionDayIds = sessionDays.map(day => day.id);
+
+  const sessionDayIds = sessionDays.map((day) => day.id);
 
   if (sessionDayIds.length === 0) return;
 
@@ -49,13 +51,13 @@ export const deleteCouncilsBySession = async (sessionId: number): Promise<void> 
   const councils = await prisma.council.findMany({
     where: {
       sessionDayId: {
-        in: sessionDayIds
-      }
+        in: sessionDayIds,
+      },
     },
-    select: { id: true }
+    select: { id: true },
   });
 
-  const councilIds = councils.map(c => c.id);
+  const councilIds = councils.map((c) => c.id);
 
   if (councilIds.length === 0) return;
 
@@ -63,54 +65,56 @@ export const deleteCouncilsBySession = async (sessionId: number): Promise<void> 
   await prisma.defenseMatch.deleteMany({
     where: {
       councilId: {
-        in: councilIds
-      }
-    }
+        in: councilIds,
+      },
+    },
   });
 
   // Delete CouncilMembers
   await prisma.councilMember.deleteMany({
     where: {
       councilId: {
-        in: councilIds
-      }
-    }
+        in: councilIds,
+      },
+    },
   });
 
   // Delete Councils
   await prisma.council.deleteMany({
     where: {
       id: {
-        in: councilIds
-      }
-    }
+        in: councilIds,
+      },
+    },
   });
 };
 
 /**
  * Find councils by session ID
  */
-export const findCouncilsBySession = async (sessionId: number): Promise<Council[]> => {
+export const findCouncilsBySession = async (
+  sessionId: number,
+): Promise<Council[]> => {
   const sessionDays = await prisma.sessionDay.findMany({
     where: { sessionId },
     select: { id: true },
   });
-  
-  const sessionDayIds = sessionDays.map(day => day.id);
+
+  const sessionDayIds = sessionDays.map((day) => day.id);
 
   if (sessionDayIds.length === 0) return [];
 
   return await prisma.council.findMany({
     where: {
       sessionDayId: {
-        in: sessionDayIds
-      }
+        in: sessionDayIds,
+      },
     },
     include: {
       councilMembers: {
         include: {
-          lecturer: true
-        }
+          lecturer: true,
+        },
       },
       defenseMatches: {
         include: {
@@ -118,14 +122,17 @@ export const findCouncilsBySession = async (sessionId: number): Promise<Council[
             include: {
               topic: {
                 include: {
-                  supervisor: true
-                }
-              }
-            }
-          }
-        }
-      }
-    }
+                  topicSupervisors: {
+                    include: {
+                      lecturer: true,
+                    },
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
+    },
   });
 };
-

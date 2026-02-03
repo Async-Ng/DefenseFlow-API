@@ -36,16 +36,7 @@ import type { CreateSessionInput, UpdateSessionInput } from "../types/index.js";
  *         content:
  *           application/json:
  *             schema:
- *               type: object
- *               properties:
- *                 success:
- *                   type: boolean
- *                   example: true
- *                 message:
- *                   type: string
- *                   example: "Session created successfully"
- *                 data:
- *                   $ref: '#/components/schemas/Session'
+ *               $ref: '#/components/schemas/SessionResponse'
  *       400:
  *         description: Validation error
  *         content:
@@ -69,7 +60,11 @@ export const createSession = async (
 
     // Process
     const session = await sessionService.createSession(data);
-    return createdResponse(res, formatSession(session), "Session created successfully");
+    return createdResponse(
+      res,
+      formatSession(session),
+      "Session created successfully",
+    );
   } catch (error: unknown) {
     const message = getErrorMessage(error);
     if (
@@ -121,23 +116,7 @@ export const createSession = async (
  *         content:
  *           application/json:
  *             schema:
- *               type: object
- *               properties:
- *                 success:
- *                   type: boolean
- *                   example: true
- *                 message:
- *                   type: string
- *                   example: "Sessions retrieved successfully"
- *                 data:
- *                   type: array
- *                   items:
- *                     $ref: '#/components/schemas/Session'
- *                 meta:
- *                   type: object
- *                   properties:
- *                     pagination:
- *                       $ref: '#/components/schemas/PaginatedResponse/properties/meta/properties/pagination'
+ *               $ref: '#/components/schemas/SessionListResponse'
  *       500:
  *         description: Server Error
  *         content:
@@ -156,7 +135,12 @@ export const getAllSessions = async (
     const include = getIncludeOptions(req);
 
     // Process
-    const result = await sessionService.getAllSessions(page, limit, filters, include);
+    const result = await sessionService.getAllSessions(
+      page,
+      limit,
+      filters,
+      include,
+    );
     const formattedData = result.data.map(formatSession);
     return paginatedResponse(
       res,
@@ -189,16 +173,7 @@ export const getAllSessions = async (
  *         content:
  *           application/json:
  *             schema:
- *               type: object
- *               properties:
- *                 success:
- *                   type: boolean
- *                   example: true
- *                 message:
- *                   type: string
- *                   example: "Session retrieved successfully"
- *                 data:
- *                   $ref: '#/components/schemas/Session'
+ *               $ref: '#/components/schemas/SessionResponse'
  *       404:
  *         description: Session not found
  *         content:
@@ -223,7 +198,11 @@ export const getSessionById = async (
 
     // Process
     const session = await sessionService.getSessionById(id, include);
-    return successResponse(res, formatSession(session), "Session retrieved successfully");
+    return successResponse(
+      res,
+      formatSession(session),
+      "Session retrieved successfully",
+    );
   } catch (error: unknown) {
     const message = getErrorMessage(error);
     if (message.includes("not found")) {
@@ -257,16 +236,7 @@ export const getSessionById = async (
  *         content:
  *           application/json:
  *             schema:
- *               type: object
- *               properties:
- *                 success:
- *                   type: boolean
- *                   example: true
- *                 message:
- *                   type: string
- *                   example: "Session updated successfully"
- *                 data:
- *                   $ref: '#/components/schemas/Session'
+ *               $ref: '#/components/schemas/SessionResponse'
  *       404:
  *         description: Session not found
  *         content:
@@ -297,7 +267,11 @@ export const updateSession = async (
 
     // Process
     const session = await sessionService.updateSession(id, data);
-    return successResponse(res, formatSession(session), "Session updated successfully");
+    return successResponse(
+      res,
+      formatSession(session),
+      "Session updated successfully",
+    );
   } catch (error: unknown) {
     const message = getErrorMessage(error);
     if (message.includes("not found")) {
@@ -328,14 +302,7 @@ export const updateSession = async (
  *         content:
  *           application/json:
  *             schema:
- *               type: object
- *               properties:
- *                 success:
- *                   type: boolean
- *                   example: true
- *                 message:
- *                   type: string
- *                   example: "Session deleted successfully"
+ *               $ref: '#/components/schemas/ApiResponse'
  *       404:
  *         description: Session not found
  *         content:

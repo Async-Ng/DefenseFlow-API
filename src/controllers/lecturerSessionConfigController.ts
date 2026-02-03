@@ -1,6 +1,10 @@
 import { Request, Response } from "express";
 import * as lecturerSessionConfigService from "../services/lecturerSessionConfigService.js";
-import { successResponse, errorResponse, paginatedResponse } from "../utils/apiResponse.js";
+import {
+  successResponse,
+  errorResponse,
+  paginatedResponse,
+} from "../utils/apiResponse.js";
 import { LecturerSessionConfigInput } from "../types/index.js";
 
 /**
@@ -35,16 +39,7 @@ import { LecturerSessionConfigInput } from "../types/index.js";
  *         content:
  *           application/json:
  *             schema:
- *               type: object
- *               properties:
- *                 success:
- *                   type: boolean
- *                   example: true
- *                 message:
- *                   type: string
- *                   example: "Configuration created successfully"
- *                 data:
- *                   $ref: '#/components/schemas/LecturerSessionConfig'
+ *               $ref: '#/components/schemas/ApiResponse'
  *       400:
  *         description: Validation error
  *         content:
@@ -69,17 +64,31 @@ export const createConfig = async (req: Request, res: Response) => {
     const input: LecturerSessionConfigInput = req.body;
 
     if (!input.lecturerId || !input.sessionId) {
-      return errorResponse(res, "Missing required fields: lecturerId, sessionId", 400);
+      return errorResponse(
+        res,
+        "Missing required fields: lecturerId, sessionId",
+        400,
+      );
     }
 
-    const config = await lecturerSessionConfigService.createLecturerSessionConfig(input);
-    return successResponse(res, config, "Configuration created successfully", 201);
+    const config = await lecturerSessionConfigService.createLecturerSessionConfig(
+      input,
+    );
+    return successResponse(
+      res,
+      config,
+      "Configuration created successfully",
+      201,
+    );
   } catch (error: any) {
     if (error.message.includes("already exists")) {
-        return errorResponse(res, error.message, 409);
+      return errorResponse(res, error.message, 409);
     }
-    if (error.message.includes("cannot be negative") || error.message.includes("cannot be greater than")) {
-        return errorResponse(res, error.message, 400);
+    if (
+      error.message.includes("cannot be negative") ||
+      error.message.includes("cannot be greater than")
+    ) {
+      return errorResponse(res, error.message, 400);
     }
     return errorResponse(res, error.message, 500);
   }
@@ -114,16 +123,7 @@ export const createConfig = async (req: Request, res: Response) => {
  *         content:
  *           application/json:
  *             schema:
- *               type: object
- *               properties:
- *                 success:
- *                   type: boolean
- *                   example: true
- *                 message:
- *                   type: string
- *                   example: "Configuration updated successfully"
- *                 data:
- *                   $ref: '#/components/schemas/LecturerSessionConfig'
+ *               $ref: '#/components/schemas/ApiResponse'
  *       400:
  *         description: Validation error
  *         content:
@@ -147,18 +147,24 @@ export const updateConfig = async (req: Request, res: Response) => {
   try {
     const id = parseInt(req.params.id as string);
     if (isNaN(id)) {
-        return errorResponse(res, "Invalid ID", 400);
+      return errorResponse(res, "Invalid ID", 400);
     }
 
     const input = req.body;
-    const config = await lecturerSessionConfigService.updateLecturerSessionConfig(id, input);
+    const config = await lecturerSessionConfigService.updateLecturerSessionConfig(
+      id,
+      input,
+    );
     return successResponse(res, config, "Configuration updated successfully");
   } catch (error: any) {
     if (error.message.includes("not found")) {
-        return errorResponse(res, error.message, 404);
+      return errorResponse(res, error.message, 404);
     }
-    if (error.message.includes("cannot be negative") || error.message.includes("cannot be greater than")) {
-        return errorResponse(res, error.message, 400);
+    if (
+      error.message.includes("cannot be negative") ||
+      error.message.includes("cannot be greater than")
+    ) {
+      return errorResponse(res, error.message, 400);
     }
     return errorResponse(res, error.message, 500);
   }
@@ -207,14 +213,28 @@ export const getConfigs = async (req: Request, res: Response) => {
   try {
     const page = parseInt(req.query.page as string) || 1;
     const limit = parseInt(req.query.limit as string) || 10;
-    const lecturerId = req.query.lecturerId ? parseInt(req.query.lecturerId as string) : undefined;
-    const sessionId = req.query.sessionId ? parseInt(req.query.sessionId as string) : undefined;
+    const lecturerId = req.query.lecturerId
+      ? parseInt(req.query.lecturerId as string)
+      : undefined;
+    const sessionId = req.query.sessionId
+      ? parseInt(req.query.sessionId as string)
+      : undefined;
 
-    const { data, total } = await lecturerSessionConfigService.getAllLecturerSessionConfigs(
+    const {
+      data,
+      total,
+    } = await lecturerSessionConfigService.getAllLecturerSessionConfigs(
       { page, limit },
-      { lecturerId, sessionId }
+      { lecturerId, sessionId },
     );
-    return paginatedResponse(res, data, page, limit, total, "Configurations retrieved successfully");
+    return paginatedResponse(
+      res,
+      data,
+      page,
+      limit,
+      total,
+      "Configurations retrieved successfully",
+    );
   } catch (error: any) {
     return errorResponse(res, error.message, 500);
   }

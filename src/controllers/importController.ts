@@ -27,29 +27,19 @@ import { getErrorMessage } from "../utils/typeGuards.js";
  *         content:
  *           application/json:
  *             schema:
- *               type: object
- *               properties:
- *                 success:
- *                   type: boolean
- *                   example: true
- *                 data:
- *                   type: object
- *                   properties:
- *                     successCount:
- *                       type: integer
- *                     errors:
- *                       type: array
- *                       items:
- *                         type: object
- *                         properties:
- *                           row:
- *                             type: integer
- *                           message:
- *                             type: string
+ *               $ref: '#/components/schemas/ImportResultResponse'
  *       400:
  *         description: Bad Request
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
  *       500:
  *         description: Server Error
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
  */
 export const importTopics = async (
   req: Request,
@@ -99,29 +89,19 @@ export const importTopics = async (
  *         content:
  *           application/json:
  *             schema:
- *               type: object
- *               properties:
- *                 success:
- *                   type: boolean
- *                   example: true
- *                 data:
- *                   type: object
- *                   properties:
- *                     successCount:
- *                       type: integer
- *                     errors:
- *                       type: array
- *                       items:
- *                         type: object
- *                         properties:
- *                           row:
- *                             type: integer
- *                           message:
- *                             type: string
+ *               $ref: '#/components/schemas/ImportResultResponse'
  *       400:
  *         description: Bad Request
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
  *       500:
  *         description: Server Error
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
  */
 export const importLecturers = async (
   req: Request,
@@ -158,6 +138,10 @@ export const importLecturers = async (
  *               format: binary
  *       500:
  *         description: Server Error
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
  */
 export const downloadTopicTemplate = async (
   _req: Request,
@@ -196,6 +180,10 @@ export const downloadTopicTemplate = async (
  *               format: binary
  *       500:
  *         description: Server Error
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
  */
 export const downloadLecturerTemplate = async (
   _req: Request,

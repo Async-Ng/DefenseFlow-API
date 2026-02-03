@@ -44,6 +44,15 @@ export const updateTopic = async (id: number, data: UpdateTopicInput) => {
     }
   }
 
+  // Update supervisors if provided
+  if (data.supervisorIds !== undefined) {
+    if (data.supervisorIds.length === 0) {
+      throw new Error("Topic must have at least one supervisor");
+    }
+    await topicRepository.updateSupervisors(id, data.supervisorIds);
+    delete (data as any).supervisorIds; // Remove from data object to avoid Prisma error
+  }
+
   return await topicRepository.update(id, data);
 };
 

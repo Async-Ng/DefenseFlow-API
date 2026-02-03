@@ -9,18 +9,32 @@ import {
 } from "../utils/apiResponse.js";
 import { getErrorMessage } from "../utils/typeGuards.js";
 import { getIdParam, getPaginationParams } from "../utils/requestHelpers.js";
-import { UpdateTopicResultInput, UpdateTopicInput, TopicFilterQuery, TopicFilters } from "../types/index.js";
+import {
+  UpdateTopicResultInput,
+  UpdateTopicInput,
+  TopicFilterQuery,
+  TopicFilters,
+} from "../types/index.js";
 
 /**
  * Helper to parse topic filters
  */
 const getTopicFilters = (req: Request): TopicFilters => {
   const query = req.query as TopicFilterQuery;
+
+  let supervisorIds: number[] | undefined;
+  if (query.supervisorIds) {
+    const idsArray = Array.isArray(query.supervisorIds)
+      ? query.supervisorIds
+      : [query.supervisorIds];
+    supervisorIds = idsArray.map((id) => Number(id)).filter((id) => !isNaN(id));
+  }
+
   return {
     topicCode: query.topicCode as string,
     title: query.title as string,
     semesterId: query.semesterId ? Number(query.semesterId) : undefined,
-    supervisorId: query.supervisorId ? Number(query.supervisorId) : undefined,
+    supervisorIds,
   };
 };
 
@@ -54,16 +68,25 @@ const getTopicFilters = (req: Request): TopicFilters => {
  *         schema:
  *           type: integer
  *       - in: query
- *         name: supervisorId
+ *         name: supervisorIds
  *         schema:
- *           type: integer
+ *           type: array
+ *           items:
+ *             type: integer
+ *         description: Filter by supervisor IDs (can provide multiple)
  *     responses:
  *       200:
- *         description: List of topics
+ *         description: List of topics retrieved successfully
  *         content:
  *           application/json:
  *             schema:
- *               $ref: '#/components/schemas/PaginatedResponse'
+ *               $ref: '#/components/schemas/TopicListResponse'
+ *       500:
+ *         description: Server Error
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
  */
 export const getAllTopics = async (
   req: Request,
@@ -101,16 +124,23 @@ export const getAllTopics = async (
  *           type: integer
  *     responses:
  *       200:
- *         description: Topic details
+ *         description: Topic details retrieved successfully
  *         content:
  *           application/json:
  *             schema:
- *               type: object
- *               properties:
- *                 success: { type: boolean }
- *                 data: { $ref: '#/components/schemas/Topic' }
+ *               $ref: '#/components/schemas/TopicResponse'
  *       404:
  *         description: Topic not found
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ *       500:
+ *         description: Server Error
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
  */
 export const getTopicById = async (
   req: Request,
@@ -150,10 +180,28 @@ export const getTopicById = async (
  *     responses:
  *       200:
  *         description: Topic updated successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/TopicResponse'
  *       404:
  *         description: Topic not found
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
  *       400:
  *         description: Validation error
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ValidationErrorResponse'
+ *       500:
+ *         description: Server Error
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
  */
 export const updateTopic = async (
   req: Request,
@@ -192,8 +240,22 @@ export const updateTopic = async (
  *     responses:
  *       200:
  *         description: Topic deleted successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ApiResponse'
  *       404:
  *         description: Topic not found
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ *       500:
+ *         description: Server Error
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
  */
 export const deleteTopic = async (
   req: Request,
@@ -274,7 +336,10 @@ export const updateTopicResult = async (
     const data: UpdateTopicResultInput = req.body;
 
     // Validate enum
-    if (!data.result || !["Pending", "Passed", "Failed"].includes(data.result)) {
+    if (
+      !data.result ||
+      !["Pending", "Passed", "Failed"].includes(data.result)
+    ) {
       return validationErrorResponse(res, {
         message: "Result must be one of: Pending, Passed, Failed",
       });

@@ -31,40 +31,19 @@ import type {
  *         content:
  *           application/json:
  *             schema:
- *               type: object
- *               properties:
- *                 success:
- *                   type: boolean
- *                   example: true
- *                 message:
- *                   type: string
- *                   example: "Session days retrieved successfully"
- *                 data:
- *                   type: array
- *                   items:
- *                     type: object
- *                     properties:
- *                       id:
- *                         type: integer
- *                         example: 1
- *                       sessionDayCode:
- *                         type: string
- *                         example: "SD001"
- *                       sessionId:
- *                         type: integer
- *                         example: 1
- *                       dayDate:
- *                         type: string
- *                         format: date
- *                         example: "2025-05-15"
- *                       note:
- *                         type: string
- *                         nullable: true
- *                         example: "Main defense day"
+ *               $ref: '#/components/schemas/ApiResponse'
  *       404:
  *         description: Session not found
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
  *       500:
  *         description: Server error
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
  */
 export const getSessionDays = async (
   req: Request<{ sessionId: string }>,
@@ -112,12 +91,28 @@ export const getSessionDays = async (
  *     responses:
  *       200:
  *         description: Session days with availability retrieved successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ApiResponse'
  *       400:
  *         description: Invalid parameters
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
  *       404:
  *         description: Session or lecturer not found
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
  *       500:
  *         description: Server error
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
  */
 export const getSessionDaysWithAvailability = async (
   req: Request<{ sessionId: string }, {}, {}, { lecturerId?: string }>,
@@ -139,11 +134,10 @@ export const getSessionDaysWithAvailability = async (
       return;
     }
 
-    const sessionDays =
-      await availabilityService.getSessionDaysWithAvailability(
-        sessionId,
-        lecturerId,
-      );
+    const sessionDays = await availabilityService.getSessionDaysWithAvailability(
+      sessionId,
+      lecturerId,
+    );
     successResponse(
       res,
       sessionDays,
@@ -184,57 +178,25 @@ export const getSessionDaysWithAvailability = async (
  *         content:
  *           application/json:
  *             schema:
- *               type: object
- *               properties:
- *                 success:
- *                   type: boolean
- *                   example: true
- *                 message:
- *                   type: string
- *                   example: "Lecturer status retrieved successfully"
- *                 data:
- *                   type: object
- *                   properties:
- *                     lecturerId:
- *                       type: integer
- *                       example: 1
- *                     sessionId:
- *                       type: integer
- *                       example: 1
- *                     isRegistrationOpen:
- *                       type: boolean
- *                       example: true
- *                     sessionConfig:
- *                       type: object
- *                       nullable: true
- *                       properties:
- *                         minTopics:
- *                           type: integer
- *                           example: 5
- *                         maxTopics:
- *                           type: integer
- *                           example: 20
- *                     availabilities:
- *                       type: array
- *                       items:
- *                         type: object
- *                         properties:
- *                           id:
- *                             type: integer
- *                             example: 1
- *                           sessionDayId:
- *                             type: integer
- *                             example: 1
- *                           status:
- *                             type: string
- *                             enum: [Available, Busy]
- *                             example: "Busy"
+ *               $ref: '#/components/schemas/ApiResponse'
  *       400:
  *         description: Invalid parameters
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
  *       404:
  *         description: Lecturer or session not found
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
  *       500:
  *         description: Server error
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
  */
 export const getLecturerStatus = async (
   req: Request<{ lecturerId: string }, {}, {}, { sessionId?: string }>,
@@ -307,35 +269,25 @@ export const getLecturerStatus = async (
  *         content:
  *           application/json:
  *             schema:
- *               type: object
- *               properties:
- *                 success:
- *                   type: boolean
- *                   example: true
- *                 message:
- *                   type: string
- *                   example: "Availability updated successfully"
- *                 data:
- *                   type: object
- *                   properties:
- *                     id:
- *                       type: integer
- *                       example: 1
- *                     lecturerId:
- *                       type: integer
- *                       example: 1
- *                     sessionDayId:
- *                       type: integer
- *                       example: 1
- *                     status:
- *                       type: string
- *                       example: "Busy"
+ *               $ref: '#/components/schemas/ApiResponse'
  *       400:
  *         description: Invalid input or registration closed
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
  *       404:
  *         description: Lecturer or session day not found
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
  *       500:
  *         description: Server error
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
  */
 export const updateAvailability = async (
   req: Request<{ lecturerId: string }, {}, UpdateAvailabilityInput>,
@@ -415,12 +367,28 @@ export const updateAvailability = async (
  *     responses:
  *       200:
  *         description: Availability updated successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ApiResponse'
  *       400:
  *         description: Invalid input or registration closed
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
  *       404:
  *         description: Lecturer or session day not found
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
  *       500:
  *         description: Server error
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
  */
 export const batchUpdateAvailability = async (
   req: Request<{ lecturerId: string }, {}, BatchUpdateAvailabilityInput>,
@@ -499,12 +467,28 @@ export const batchUpdateAvailability = async (
  *     responses:
  *       200:
  *         description: Availability removed successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ApiResponse'
  *       400:
  *         description: Invalid input or registration closed
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
  *       404:
  *         description: Lecturer or session day not found
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
  *       500:
  *         description: Server error
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
  */
 export const removeAvailability = async (
   req: Request<{ lecturerId: string; sessionDayId: string }>,
