@@ -134,6 +134,8 @@ export const updateAvailability = async (
     throw new Error("Registration is closed for scheduling processing");
   }
 
+  validateAvailabilityWindow(session);
+
   // Upsert the availability record
   return await availabilityRepository.upsertAvailability(
     lecturerId,
@@ -183,6 +185,8 @@ export const batchUpdateAvailability = async (
     if (session.status === "Locked") {
       throw new Error("Registration is closed for scheduling processing");
     }
+
+    validateAvailabilityWindow(session);
   }
 
   // Perform batch update
@@ -224,6 +228,28 @@ export const removeAvailability = async (
     throw new Error("Registration is closed for scheduling processing");
   }
 
+  validateAvailabilityWindow(session);
+
   // Delete the availability record
   await availabilityRepository.deleteAvailability(lecturerId, sessionDayId);
+};
+
+const validateAvailabilityWindow = (session: any) => {
+  const now = new Date();
+  
+  if (session.availabilityStartDate) {
+    const start = new Date(session.availabilityStartDate);
+    start.setHours(0, 0, 0, 0);
+    if (now < start) {
+      throw new Error("Registration period has not started yet");
+    }
+  }
+
+  if (session.availabilityEndDate) {
+    const end = new Date(session.availabilityEndDate);
+    end.setHours(23, 59, 59, 999);
+    if (now > end) {
+      throw new Error("Registration period has ended");
+    }
+  }
 };

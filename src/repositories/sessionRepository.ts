@@ -14,18 +14,8 @@ import type {
 /**
  * Convert time string (HH:MM:SS) to DateTime for Prisma Time fields
  */
-const timeToDateTime = (timeString: string | undefined): Date | null => {
-  if (!timeString) return null;
-  const [hours, minutes, seconds] = timeString.split(":");
-  const date = new Date();
-  date.setHours(
-    parseInt(hours),
-    parseInt(minutes),
-    parseInt(seconds || "0"),
-    0,
-  );
-  return date;
-};
+// Helper removed as workStartTime is now string
+
 
 /**
  * Create a new session
@@ -38,7 +28,9 @@ export const create = async (data: CreateSessionInput): Promise<Session> => {
       name: data.name,
       type: data.type || "Main",
       timePerTopic: data.timePerTopic,
-      workStartTime: timeToDateTime(data.workStartTime),
+      workStartTime: data.workStartTime,
+      availabilityStartDate: data.availabilityStartDate ? new Date(data.availabilityStartDate) : null,
+      availabilityEndDate: data.availabilityEndDate ? new Date(data.availabilityEndDate) : null,
     },
   });
 };
@@ -59,7 +51,9 @@ export const createWithDays = async (
         name: sessionData.name,
         type: sessionData.type || "Main",
         timePerTopic: sessionData.timePerTopic,
-        workStartTime: timeToDateTime(sessionData.workStartTime),
+        workStartTime: sessionData.workStartTime,
+        availabilityStartDate: sessionData.availabilityStartDate ? new Date(sessionData.availabilityStartDate) : null,
+        availabilityEndDate: sessionData.availabilityEndDate ? new Date(sessionData.availabilityEndDate) : null,
       },
     });
 
@@ -187,7 +181,12 @@ export const update = async (
   if (data.timePerTopic !== undefined)
     updateData.timePerTopic = data.timePerTopic;
   if (data.workStartTime !== undefined)
-    updateData.workStartTime = timeToDateTime(data.workStartTime);
+  if (data.workStartTime !== undefined)
+    updateData.workStartTime = data.workStartTime;
+  if (data.availabilityStartDate !== undefined)
+    updateData.availabilityStartDate = data.availabilityStartDate ? new Date(data.availabilityStartDate) : null;
+  if (data.availabilityEndDate !== undefined)
+    updateData.availabilityEndDate = data.availabilityEndDate ? new Date(data.availabilityEndDate) : null;
 
   if (data.sessionDays) {
     return await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
