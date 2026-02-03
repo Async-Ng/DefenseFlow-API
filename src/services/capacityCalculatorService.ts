@@ -198,7 +198,6 @@ function calculateRecommendations(
         suggestedChange: difference,
         reason: generateAdjustmentReason(
           currentSessionDays,
-          recommendedDays,
           totalTopics,
           difference
         ),
@@ -235,7 +234,6 @@ function calculateRecommendations(
  */
 function generateAdjustmentReason(
   currentDays: number,
-  recommendedDays: number,
   totalTopics: number,
   difference: number
 ): string {
