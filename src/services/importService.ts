@@ -5,6 +5,7 @@ interface TopicImportRow {
   topicCode: string;
   title: string;
   supervisorCodes: string[];
+  topicTypeName?: string;
 }
 
 interface LecturerImportRow {
@@ -45,10 +46,11 @@ export class ImportService {
     const processedCodes = new Set<string>();
 
     const rawRows = await this.parseExcel<TopicImportRow>(buffer, (row) => {
-      // Cell 1: Topic Code, Cell 2: Title, Cell 3+: Supervisor Codes (comma-separated or multiple columns)
+      // Cell 1: Topic Code, Cell 2: Title, Cell 3: Supervisor Codes, Cell 4: Topic Type
       const topicCode = row.getCell(1).text?.toString().trim();
       const title = row.getCell(2).text?.toString().trim();
       const supervisorCodesRaw = row.getCell(3).text?.toString().trim();
+      const topicTypeName = row.getCell(4).text?.toString().trim();
 
       if (!topicCode || !title || !supervisorCodesRaw) return null;
 
@@ -60,8 +62,14 @@ export class ImportService {
 
       if (supervisorCodes.length === 0) return null;
 
-      return { topicCode, title, supervisorCodes };
+      return { topicCode, title, supervisorCodes, topicTypeName };
     });
+
+    // Pre-fetch all topic types to minimize DB calls in loop
+    const allTopicTypes = await prisma.topicType.findMany();
+    const topicTypeMap = new Map(
+      allTopicTypes.map((t) => [t.name.toLowerCase(), t.id])
+    );
 
     for (let i = 0; i < rawRows.length; i++) {
       const row = rawRows[i];
@@ -110,10 +118,24 @@ export class ImportService {
         continue;
       }
 
+      // 3. Resolve Topic Type
+      let topicTypeId: number | undefined;
+      if (row.topicTypeName) {
+        topicTypeId = topicTypeMap.get(row.topicTypeName.toLowerCase());
+        if (!topicTypeId) {
+          errors.push({
+            row: rowNum,
+            message: `Topic Type '${row.topicTypeName}' not found.`,
+          });
+          continue;
+        }
+      }
+
       validTopics.push({
         topicCode: row.topicCode,
         title: row.title,
         semesterId: semesterId,
+        topicTypeId: topicTypeId,
         supervisorIds: supervisors.map((s) => s.id),
       });
 
@@ -234,6 +256,7 @@ export class ImportService {
         key: "supervisorCodes",
         width: 30,
       },
+      { header: "Topic Type", key: "topicTypeName", width: 20 },
     ];
 
     return ((await workbook.xlsx.writeBuffer()) as unknown) as Buffer;
