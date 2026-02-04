@@ -402,19 +402,7 @@ const options: swaggerJsdoc.Options = {
           },
         },
 
-        UpdateLecturerQualificationScoreInput: {
-          type: "object",
-          required: ["score"],
-          properties: {
-            score: {
-              type: "integer",
-              minimum: 0,
-              maximum: 5,
-              example: 4,
-              description: "Qualification proficiency score (0-5)",
-            },
-          },
-        },
+
         UpdateLecturerQualificationsInput: {
           type: "object",
           required: ["qualifications"],
