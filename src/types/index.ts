@@ -198,6 +198,10 @@ export type UpdateLecturerQualificationsInput = {
   qualifications: LecturerQualificationInput[];
 };
 
+export type UpdateLecturerQualificationInput = {
+  score: number;
+};
+
 export type LecturerWithQualifications = Lecturer & {
   lecturerQualifications: (LecturerQualification & {
     qualification: Qualification;

@@ -91,3 +91,97 @@ export const updateLecturerQualifications = async (
 
   return updated as LecturerWithQualifications;
 };
+
+/**
+ * Add qualifications to lecturer (Batch)
+ */
+export const addLecturerQualifications = async (
+  id: number,
+  qualifications: { qualificationId: number; score: number }[]
+): Promise<LecturerWithQualifications> => {
+  // Check if lecturer exists
+  const existing = await lecturerRepository.findById(id);
+  if (!existing) {
+    throw new Error(`Lecturer with ID ${id} not found`);
+  }
+
+  // Validate and Upsert
+  for (const q of qualifications) {
+    if (q.score < 0 || q.score > 5) {
+      throw new Error(
+        `Invalid qualification score ${q.score} for qualification ID ${q.qualificationId}. Score must be between 0 and 5.`
+      );
+    }
+
+    const exists = await lecturerRepository.qualificationExists(q.qualificationId);
+    if (!exists) {
+      throw new Error(`Qualification with ID ${q.qualificationId} not found`);
+    }
+
+    await lecturerRepository.upsertLecturerQualification(id, q.qualificationId, q.score);
+  }
+
+  // Return updated lecturer
+  const updated = await lecturerRepository.findById(id, true);
+  return updated as LecturerWithQualifications;
+};
+
+/**
+ * Update a specific qualification score for a lecturer
+ */
+export const updateLecturerQualification = async (
+  lecturerId: number,
+  qualificationId: number,
+  score: number
+): Promise<void> => {
+  // Check if lecturer exists
+  const existingLecturer = await lecturerRepository.findById(lecturerId);
+  if (!existingLecturer) {
+    throw new Error(`Lecturer with ID ${lecturerId} not found`);
+  }
+
+  // Check if qualification exists (as a general entity)
+  const qualificationExists = await lecturerRepository.qualificationExists(qualificationId);
+  if (!qualificationExists) {
+    throw new Error(`Qualification with ID ${qualificationId} not found`);
+  }
+
+  // Validate Score
+  if (score < 0 || score > 5) {
+      throw new Error(`Invalid qualification score ${score}. Score must be between 0 and 5.`);
+  }
+
+  // We use upsert here as "Update" in this context might imply setting the score even if it wasn't explicitly linked before,
+  // but logically "Update" usually implies the link exists.
+  // However, given the repository design, upsert is safe and idempotent.
+  // To be strict: We could check if the link exists first using `findLecturerQualifications`, but upsert is often acceptable for "create or update".
+  // Let's stick to upsert for simplicity unless strict 404 on "link not found" is required.
+  // If the user wants to strictly "Update existing", we'd need a check.
+  // For now, upsert covers both cases (Add/Update).
+  await lecturerRepository.upsertLecturerQualification(lecturerId, qualificationId, score);
+};
+
+/**
+ * Delete a qualification from a lecturer
+ */
+export const deleteLecturerQualification = async (
+  lecturerId: number,
+  qualificationId: number
+): Promise<void> => {
+   // Check if lecturer exists
+   const existingLecturer = await lecturerRepository.findById(lecturerId);
+   if (!existingLecturer) {
+     throw new Error(`Lecturer with ID ${lecturerId} not found`);
+   }
+ 
+  try {
+    await lecturerRepository.deleteLecturerQualification(lecturerId, qualificationId);
+  } catch (error: any) {
+    // Prisma throws error if record not found to delete? Depends on Prisma version/method.
+    // delete throws if not found.
+    if (error.code === "P2025") {
+       throw new Error(`Qualification with ID ${qualificationId} not assigned to lecturer ${lecturerId}`);
+    }
+    throw error;
+  }
+};

@@ -15,7 +15,16 @@ router.get("/:id", lecturerController.getLecturerById);
 
 
 
-// PATCH /api/lecturers/:id/qualifications - Update lecturer qualification scores
+// PATCH /api/lecturers/:id/qualifications - Batch update/upsert (legacy compatible)
 router.patch("/:id/qualifications", lecturerController.updateLecturerQualifications);
+
+// POST /api/lecturers/:id/qualifications - Add qualifications
+router.post("/:id/qualifications", lecturerController.addLecturerQualifications);
+
+// PUT /api/lecturers/:id/qualifications/:qualificationId - Update specific qualification score
+router.put("/:id/qualifications/:qualificationId", lecturerController.updateLecturerQualification);
+
+// DELETE /api/lecturers/:id/qualifications/:qualificationId - Remove qualification
+router.delete("/:id/qualifications/:qualificationId", lecturerController.deleteLecturerQualification);
 
 export default router;
