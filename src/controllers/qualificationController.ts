@@ -1,27 +1,27 @@
 import { Request, Response } from "express";
-import * as skillService from "../services/skillService.js";
+import * as qualificationService from "../services/qualificationService.js";
 import { successResponse, errorResponse } from "../utils/apiResponse.js";
-import { CreateSkillInput, UpdateSkillInput } from "../types/index.js";
+import { CreateQualificationInput, UpdateQualificationInput } from "../types/index.js";
 
 /**
  * @swagger
- * /api/skills:
+ * /api/qualifications:
  *   post:
- *     summary: Create a new skill
- *     tags: [Skills]
+ *     summary: Create a new qualification
+ *     tags: [Qualifications]
  *     requestBody:
  *       required: true
  *       content:
  *         application/json:
  *           schema:
- *             $ref: '#/components/schemas/CreateSkillInput'
+ *             $ref: '#/components/schemas/CreateQualificationInput'
  *     responses:
  *       201:
- *         description: Skill created successfully
+ *         description: Qualification created successfully
  *         content:
  *           application/json:
  *             schema:
- *               $ref: '#/components/schemas/SkillResponse'
+ *               $ref: '#/components/schemas/QualificationResponse'
  *       400:
  *         description: Validation error
  *         content:
@@ -29,7 +29,7 @@ import { CreateSkillInput, UpdateSkillInput } from "../types/index.js";
  *             schema:
  *               $ref: '#/components/schemas/ValidationErrorResponse'
  *       409:
- *         description: Skill already exists
+ *         description: Qualification already exists
  *         content:
  *           application/json:
  *             schema:
@@ -41,21 +41,21 @@ import { CreateSkillInput, UpdateSkillInput } from "../types/index.js";
  *             schema:
  *               $ref: '#/components/schemas/ErrorResponse'
  */
-export const createSkill = async (req: Request, res: Response) => {
+export const createQualification = async (req: Request, res: Response) => {
   try {
-    const input: CreateSkillInput = req.body;
+    const input: CreateQualificationInput = req.body;
 
     // validation
-    if (!input.skillCode || !input.name) {
+    if (!input.qualificationCode || !input.name) {
       return errorResponse(
         res,
-        "Missing required fields: skillCode, name",
+        "Missing required fields: qualificationCode, name",
         400,
       );
     }
 
-    const skill = await skillService.createSkill(input);
-    return successResponse(res, skill, "Skill created successfully", 201);
+    const qualification = await qualificationService.createQualification(input);
+    return successResponse(res, qualification, "Qualification created successfully", 201);
   } catch (error: any) {
     if (error.message.includes("already exists")) {
       return errorResponse(res, error.message, 409);
@@ -66,10 +66,10 @@ export const createSkill = async (req: Request, res: Response) => {
 
 /**
  * @swagger
- * /api/skills:
+ * /api/qualifications:
  *   get:
- *     summary: Get all skills
- *     tags: [Skills]
+ *     summary: Get all qualifications
+ *     tags: [Qualifications]
  *     parameters:
  *       - in: query
  *         name: page
@@ -82,7 +82,7 @@ export const createSkill = async (req: Request, res: Response) => {
  *           type: integer
  *           default: 10
  *       - in: query
- *         name: skillCode
+ *         name: qualificationCode
  *         schema:
  *           type: string
  *       - in: query
@@ -91,11 +91,11 @@ export const createSkill = async (req: Request, res: Response) => {
  *           type: string
  *     responses:
  *       200:
- *         description: List of skills
+ *         description: List of qualifications
  *         content:
  *           application/json:
  *             schema:
- *               $ref: '#/components/schemas/SkillListResponse'
+ *               $ref: '#/components/schemas/QualificationListResponse'
  *       500:
  *         description: Server Error
  *         content:
@@ -103,7 +103,7 @@ export const createSkill = async (req: Request, res: Response) => {
  *             schema:
  *               $ref: '#/components/schemas/ErrorResponse'
  */
-export const getSkills = async (req: Request, res: Response) => {
+export const getQualifications = async (req: Request, res: Response) => {
   try {
     const page = parseInt(req.query.page as string) || 1;
     const limit = parseInt(req.query.limit as string) || 10;
@@ -115,12 +115,12 @@ export const getSkills = async (req: Request, res: Response) => {
     };
 
     const filters = {
-      skillCode: getString(req.query.skillCode),
+      qualificationCode: getString(req.query.qualificationCode),
       name: getString(req.query.name),
     };
 
-    const result = await skillService.getAllSkills({ page, limit }, filters);
-    return successResponse(res, result, "Skills retrieved successfully");
+    const result = await qualificationService.getAllQualifications({ page, limit }, filters);
+    return successResponse(res, result, "Qualifications retrieved successfully");
   } catch (error: any) {
     return errorResponse(res, error.message, 500);
   }
@@ -128,10 +128,10 @@ export const getSkills = async (req: Request, res: Response) => {
 
 /**
  * @swagger
- * /api/skills/{id}:
+ * /api/qualifications/{id}:
  *   get:
- *     summary: Get skill by ID
- *     tags: [Skills]
+ *     summary: Get qualification by ID
+ *     tags: [Qualifications]
  *     parameters:
  *       - in: path
  *         name: id
@@ -140,13 +140,13 @@ export const getSkills = async (req: Request, res: Response) => {
  *           type: integer
  *     responses:
  *       200:
- *         description: Skill details
+ *         description: Qualification details
  *         content:
  *           application/json:
  *             schema:
- *               $ref: '#/components/schemas/SkillResponse'
+ *               $ref: '#/components/schemas/QualificationResponse'
  *       404:
- *         description: Skill not found
+ *         description: Qualification not found
  *         content:
  *           application/json:
  *             schema:
@@ -158,19 +158,19 @@ export const getSkills = async (req: Request, res: Response) => {
  *             schema:
  *               $ref: '#/components/schemas/ErrorResponse'
  */
-export const getSkill = async (req: Request, res: Response) => {
+export const getQualification = async (req: Request, res: Response) => {
   try {
     const id = parseInt(req.params.id as string);
     if (isNaN(id)) {
       return errorResponse(res, "Invalid ID", 400);
     }
 
-    const skill = await skillService.getSkillById(id);
-    if (!skill) {
-      return errorResponse(res, "Skill not found", 404);
+    const qualification = await qualificationService.getQualificationById(id);
+    if (!qualification) {
+      return errorResponse(res, "Qualification not found", 404);
     }
 
-    return successResponse(res, skill, "Skill retrieved successfully");
+    return successResponse(res, qualification, "Qualification retrieved successfully");
   } catch (error: any) {
     return errorResponse(res, error.message, 500);
   }
@@ -178,10 +178,10 @@ export const getSkill = async (req: Request, res: Response) => {
 
 /**
  * @swagger
- * /api/skills/{id}:
+ * /api/qualifications/{id}:
  *   put:
- *     summary: Update skill
- *     tags: [Skills]
+ *     summary: Update qualification
+ *     tags: [Qualifications]
  *     parameters:
  *       - in: path
  *         name: id
@@ -193,22 +193,22 @@ export const getSkill = async (req: Request, res: Response) => {
  *       content:
  *         application/json:
  *           schema:
- *             $ref: '#/components/schemas/UpdateSkillInput'
+ *             $ref: '#/components/schemas/UpdateQualificationInput'
  *     responses:
  *       200:
- *         description: Skill updated successfully
+ *         description: Qualification updated successfully
  *         content:
  *           application/json:
  *             schema:
- *               $ref: '#/components/schemas/SkillResponse'
+ *               $ref: '#/components/schemas/QualificationResponse'
  *       404:
- *         description: Skill not found
+ *         description: Qualification not found
  *         content:
  *           application/json:
  *             schema:
  *               $ref: '#/components/schemas/ErrorResponse'
  *       409:
- *         description: Skill code already exists
+ *         description: Qualification code already exists
  *         content:
  *           application/json:
  *             schema:
@@ -220,16 +220,16 @@ export const getSkill = async (req: Request, res: Response) => {
  *             schema:
  *               $ref: '#/components/schemas/ErrorResponse'
  */
-export const updateSkill = async (req: Request, res: Response) => {
+export const updateQualification = async (req: Request, res: Response) => {
   try {
     const id = parseInt(req.params.id as string);
     if (isNaN(id)) {
       return errorResponse(res, "Invalid ID", 400);
     }
 
-    const input: UpdateSkillInput = req.body;
-    const skill = await skillService.updateSkill(id, input);
-    return successResponse(res, skill, "Skill updated successfully");
+    const input: UpdateQualificationInput = req.body;
+    const qualification = await qualificationService.updateQualification(id, input);
+    return successResponse(res, qualification, "Qualification updated successfully");
   } catch (error: any) {
     if (error.message.includes("not found")) {
       return errorResponse(res, error.message, 404);
@@ -243,10 +243,10 @@ export const updateSkill = async (req: Request, res: Response) => {
 
 /**
  * @swagger
- * /api/skills/{id}:
+ * /api/qualifications/{id}:
  *   delete:
- *     summary: Delete skill
- *     tags: [Skills]
+ *     summary: Delete qualification
+ *     tags: [Qualifications]
  *     parameters:
  *       - in: path
  *         name: id
@@ -255,19 +255,19 @@ export const updateSkill = async (req: Request, res: Response) => {
  *           type: integer
  *     responses:
  *       200:
- *         description: Skill deleted successfully
+ *         description: Qualification deleted successfully
  *         content:
  *           application/json:
  *             schema:
  *               $ref: '#/components/schemas/ApiResponse'
  *       404:
- *         description: Skill not found
+ *         description: Qualification not found
  *         content:
  *           application/json:
  *             schema:
  *               $ref: '#/components/schemas/ErrorResponse'
  *       400:
- *         description: Cannot delete skill (used in other records)
+ *         description: Cannot delete qualification (used in other records)
  *         content:
  *           application/json:
  *             schema:
@@ -279,15 +279,15 @@ export const updateSkill = async (req: Request, res: Response) => {
  *             schema:
  *               $ref: '#/components/schemas/ErrorResponse'
  */
-export const deleteSkill = async (req: Request, res: Response) => {
+export const deleteQualification = async (req: Request, res: Response) => {
   try {
     const id = parseInt(req.params.id as string);
     if (isNaN(id)) {
       return errorResponse(res, "Invalid ID", 400);
     }
 
-    await skillService.deleteSkill(id);
-    return successResponse(res, null, "Skill deleted successfully");
+    await qualificationService.deleteQualification(id);
+    return successResponse(res, null, "Qualification deleted successfully");
   } catch (error: any) {
     if (error.message.includes("not found")) {
       return errorResponse(res, error.message, 404);
@@ -296,7 +296,7 @@ export const deleteSkill = async (req: Request, res: Response) => {
     if (error.code === "P2003") {
       return errorResponse(
         res,
-        "Cannot delete skill because it is being used",
+        "Cannot delete qualification because it is being used",
         400,
       );
     }

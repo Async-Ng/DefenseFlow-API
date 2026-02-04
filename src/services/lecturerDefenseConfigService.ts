@@ -1,22 +1,22 @@
-import * as lecturerSessionConfigRepo from "../repositories/lecturerSessionConfigRepository.js";
-import { LecturerSessionConfigInput, LecturerSessionConfig, UpdateLecturerSessionConfigInput } from "../types/index.js";
+import * as lecturerDefenseConfigRepo from "../repositories/lecturerDefenseConfigRepository.js";
+import { LecturerDefenseConfigInput, LecturerDefenseConfig, UpdateLecturerDefenseConfigInput } from "../types/index.js";
 
-export const getLecturerSessionConfig = async (
+export const getLecturerDefenseConfig = async (
   lecturerId: number,
-  sessionId: number
-): Promise<LecturerSessionConfig | null> => {
-  return await lecturerSessionConfigRepo.getByLecturerAndSession(lecturerId, sessionId);
+  defenseId: number
+): Promise<LecturerDefenseConfig | null> => {
+  return await lecturerDefenseConfigRepo.getByLecturerAndDefense(lecturerId, defenseId);
 };
 
-export const createLecturerSessionConfig = async (
-  input: LecturerSessionConfigInput
-): Promise<LecturerSessionConfig> => {
-  const { lecturerId, sessionId, minTopics, maxTopics } = input;
+export const createLecturerDefenseConfig = async (
+  input: LecturerDefenseConfigInput
+): Promise<LecturerDefenseConfig> => {
+  const { lecturerId, defenseId, minTopics, maxTopics } = input;
 
   // Check existence
-  const existing = await lecturerSessionConfigRepo.getByLecturerAndSession(lecturerId, sessionId);
+  const existing = await lecturerDefenseConfigRepo.getByLecturerAndDefense(lecturerId, defenseId);
   if (existing) {
-    throw new Error("Configuration already exists for this lecturer and session");
+    throw new Error("Configuration already exists for this lecturer and defense");
   }
 
   // Determine effective values (defaults)
@@ -30,17 +30,17 @@ export const createLecturerSessionConfig = async (
     throw new Error(`Minimum topics (${effectiveMin}) cannot be greater than Maximum topics (${effectiveMax})`);
   }
 
-  return await lecturerSessionConfigRepo.create(input);
+  return await lecturerDefenseConfigRepo.create(input);
 };
 
-export const updateLecturerSessionConfig = async (
+export const updateLecturerDefenseConfig = async (
   id: number,
-  input: UpdateLecturerSessionConfigInput
-): Promise<LecturerSessionConfig> => {
+  input: UpdateLecturerDefenseConfigInput
+): Promise<LecturerDefenseConfig> => {
   const { minTopics, maxTopics } = input;
   
   // Check existence
-  const existing = await lecturerSessionConfigRepo.getById(id);
+  const existing = await lecturerDefenseConfigRepo.getById(id);
   if (!existing) {
     throw new Error("Configuration not found");
   }
@@ -65,17 +65,17 @@ export const updateLecturerSessionConfig = async (
     throw new Error(`Minimum topics (${effectiveMin}) cannot be greater than Maximum topics (${effectiveMax})`);
   }
 
-  return await lecturerSessionConfigRepo.update(id, input);
+  return await lecturerDefenseConfigRepo.update(id, input);
 };
 
-export const getAllLecturerSessionConfigs = async (
+export const getAllLecturerDefenseConfigs = async (
   pagination: { page: number; limit: number },
-  filters: { lecturerId?: number; sessionId?: number }
+  filters: { lecturerId?: number; defenseId?: number }
 ) => {
   const { page, limit } = pagination;
   const skip = (page - 1) * limit;
 
-  const { data, total } = await lecturerSessionConfigRepo.getAll(
+  const { data, total } = await lecturerDefenseConfigRepo.getAll(
     { skip, take: limit },
     filters
   );
@@ -87,4 +87,3 @@ export const getAllLecturerSessionConfigs = async (
     limit
   };
 }; // Added by antigravity
-

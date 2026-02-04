@@ -1,31 +1,53 @@
 import { prisma } from "../config/prisma.js";
 import { AppError } from "../middleware/errorHandler.js";
-import * as councilRepository from "../repositories/councilRepository.js";
+import * as councilBoardRepository from "../repositories/councilBoardRepository.js";
 import {
   Lecturer,
   Topic,
-  SessionDay,
+  DefenseDay,
   LecturerDayAvailability,
-  Session,
+  Defense,
   CouncilRole,
   AvailabilityStatus,
   TopicSupervisor,
+  LecturerQualification,
+  Qualification,
 } from "../../generated/prisma/client.js";
 
+
 interface SchedulingData {
-  session: Session;
+  defense: Defense;
   topics: (Topic & {
     topicSupervisors: (TopicSupervisor & { lecturer: Lecturer })[];
   })[];
   lecturers: (Lecturer & {
     lecturerDayAvailability: LecturerDayAvailability[];
+    lecturerQualifications: (LecturerQualification & { qualification: Qualification })[];
   })[];
-  sessionDays: SessionDay[];
+  defenseDays: DefenseDay[];
+  commonQualifications: Qualification[];
 }
 
-export const generateSchedule = async (sessionId: number) => {
+// Helper to calculate total score for a lecturer
+const calculateTotalScore = (lecturer: Lecturer & { lecturerQualifications: (LecturerQualification & { qualification: Qualification })[] }, commonQualificationIds: number[]) => {
+  return lecturer.lecturerQualifications.reduce((sum, ls) => {
+    // Weight common qualifications higher
+    const weight = commonQualificationIds.includes(ls.qualification.id) ? 2 : 1;
+    return sum + ((ls.score || 0) * weight);
+  }, 0);
+};
+
+// Helper to check if a group covers all common qualifications
+const checkCommonQualificationCoverage = (group: (Lecturer & { lecturerQualifications: (LecturerQualification & { qualification: Qualification })[] })[], commonQualifications: Qualification[]) => {
+  const groupQualificationIds = new Set(
+    group.flatMap(l => l.lecturerQualifications.map(ls => ls.qualification.id))
+  );
+  return commonQualifications.every(s => groupQualificationIds.has(s.id));
+};
+
+export const generateSchedule = async (defenseId: number) => {
   // 1. Fetch Data & Validate Pre-conditions
-  const data = await fetchSchedulingData(sessionId);
+  const data = await fetchSchedulingData(defenseId);
   validatePreConditions(data);
 
   // 2. Capacity Check (Fail Fast)
@@ -35,7 +57,7 @@ export const generateSchedule = async (sessionId: number) => {
   const { scheduled, unscheduled } = runSchedulingAlgorithm(data);
 
   // 4. Persistence (Transactional)
-  await persistSchedule(sessionId, scheduled);
+  await persistSchedule(defenseId, scheduled);
 
   return {
     status: "success",
@@ -49,46 +71,45 @@ export const generateSchedule = async (sessionId: number) => {
 };
 
 /**
- * Get the generated schedule for a session
- * Restrict access based on publication status if needed (handled in controller usually, but safe to add logic here)
+ * Get the generated schedule for a defense
  */
-export const getSchedule = async (sessionId: number) => {
-  const session = await prisma.session.findUnique({
-    where: { id: sessionId },
+export const getSchedule = async (defenseId: number) => {
+  const defense = await prisma.defense.findUnique({
+    where: { id: defenseId },
   });
 
-  if (!session) throw new AppError(404, "Session not found");
+  if (!defense) throw new AppError(404, "Defense not found");
 
-  const councils = await councilRepository.findCouncilsBySession(sessionId);
+  const councilBoards = await councilBoardRepository.findCouncilBoardsByDefense(defenseId);
 
-  return councils;
+  return councilBoards;
 };
 
 /**
  * Publish the schedule (Official Release)
  */
-export const publishSchedule = async (sessionId: number) => {
-  return await prisma.session.update({
-    where: { id: sessionId },
+export const publishSchedule = async (defenseId: number) => {
+  return await prisma.defense.update({
+    where: { id: defenseId },
     data: { isSchedulePublished: true },
   });
 };
 
 const fetchSchedulingData = async (
-  sessionId: number,
+  defenseId: number,
 ): Promise<SchedulingData> => {
-  const session = await prisma.session.findUnique({
-    where: { id: sessionId },
+  const defense = await prisma.defense.findUnique({
+    where: { id: defenseId },
   });
 
-  if (!session) throw new AppError(404, "Session not found");
+  if (!defense) throw new AppError(404, "Defense not found");
 
   const topics = await prisma.topic.findMany({
     where: {
-      semesterId: session.semesterId,
-      topicSessionRegistrations: {
+      semesterId: defense.semesterId,
+      topicDefenseRegistrations: {
         some: {
-          sessionId: sessionId,
+          defenseId: defenseId,
         },
       },
     },
@@ -98,8 +119,8 @@ const fetchSchedulingData = async (
           lecturer: true,
         },
       },
-      topicSessionRegistrations: {
-        where: { sessionId: sessionId },
+      topicDefenseRegistrations: {
+        where: { defenseId: defenseId },
       },
     },
   });
@@ -107,56 +128,66 @@ const fetchSchedulingData = async (
   const lecturers = await prisma.lecturer.findMany({
     include: {
       lecturerDayAvailability: true,
+      lecturerQualifications: {
+        include: { qualification: true }
+      }
     },
   });
 
-  const sessionDays = await prisma.sessionDay.findMany({
-    where: { sessionId },
+  const defenseDays = await prisma.defenseDay.findMany({
+    where: { defenseId },
     orderBy: { dayDate: "asc" },
   });
 
-  return { session, topics, lecturers, sessionDays };
+  const commonQualifications = await prisma.qualification.findMany({
+    where: {
+      isCommon: true,
+    },
+  });
+
+  return { defense, topics, lecturers, defenseDays, commonQualifications };
 };
 
 const validatePreConditions = (data: SchedulingData) => {
-  if (data.sessionDays.length === 0) {
-    throw new AppError(400, "No session days defined for this session.");
+  if (data.defenseDays.length === 0) {
+    throw new AppError(400, "No defense days defined for this defense.");
   }
 };
 
 const validateCapacity = (data: SchedulingData) => {
-  const { session, topics, sessionDays } = data;
-  const timePerTopic = session.timePerTopic || 45;
+  const { defense, topics, defenseDays } = data;
+  const timePerTopic = defense.timePerTopic || 45;
   const workHoursPerDay = 8; // Assumption: 8 working hours
   const minutesPerDay = workHoursPerDay * 60;
 
   const totalMinutesNeeded = topics.length * timePerTopic;
-  const totalMinutesAvailable = sessionDays.length * minutesPerDay;
+  const totalMinutesAvailable = defenseDays.length * minutesPerDay;
 
   if (totalMinutesNeeded > totalMinutesAvailable) {
     throw new AppError(
       400,
-      `Insufficient capacity. Need ${totalMinutesNeeded} minutes but only have ${totalMinutesAvailable} minutes available across ${sessionDays.length} days.`,
+      `Insufficient capacity. Need ${totalMinutesNeeded} minutes but only have ${totalMinutesAvailable} minutes available across ${defenseDays.length} days.`,
     );
   }
 };
 
-interface ScheduledCouncil {
-  councilData: {
+interface ScheduledCouncilBoard {
+  boardData: {
     presidentId: number;
     secretaryId: number;
     memberIds: number[];
-    sessionDayId: number;
+    defenseDayId: number;
   };
   topics: Topic[];
 }
 
 const runSchedulingAlgorithm = (data: SchedulingData) => {
-  const { sessionDays, lecturers, session } = data;
+  const { defenseDays, lecturers, defense, commonQualifications } = data;
   let unscheduledTopics = [...data.topics];
-  const scheduled: ScheduledCouncil[] = [];
+  const scheduled: ScheduledCouncilBoard[] = [];
+  const commonQualificationIds = commonQualifications.map(s => s.id);
 
-  const timePerTopic = session.timePerTopic || 45;
+  const timePerTopic = defense.timePerTopic || 45;
   const minutesPerDay = 480; // 8 hours
   const maxTopicsPerDay = Math.floor(minutesPerDay / timePerTopic);
 
@@ -165,16 +196,16 @@ const runSchedulingAlgorithm = (data: SchedulingData) => {
     const lecturer = lecturers.find((l) => l.id === lecturerId);
     if (!lecturer) return false;
     const availability = lecturer.lecturerDayAvailability.find(
-      (a) => a.sessionDayId === dayId,
+      (a) => a.defenseDayId === dayId,
     );
-    // Explicit 'Busy' prevents scheduling. Missing record or 'Available' allows it.
+     // Explicit 'Busy' prevents scheduling. Missing record or 'Available' allows it.
     return !availability || availability.status !== AvailabilityStatus.Busy;
   };
 
   // Track assigned lecturers per day
   const dailyAssignedLecturers = new Map<number, Set<number>>(); // dayId -> Set(lecturerIds)
 
-  for (const day of sessionDays) {
+  for (const day of defenseDays) {
     if (unscheduledTopics.length === 0) break;
 
     if (!dailyAssignedLecturers.has(day.id)) {
@@ -183,15 +214,9 @@ const runSchedulingAlgorithm = (data: SchedulingData) => {
     const assignedForDay = dailyAssignedLecturers.get(day.id)!;
     let topicsScheduledToday = 0;
 
-    // Try to form councils and fill the day
+    // Try to form boards and fill the day
     let continueDay = true;
     while (continueDay && unscheduledTopics.length > 0 && topicsScheduledToday < maxTopicsPerDay) {
-      
-      // Calculate remaining slots for today
-      // Logic: A council can handle multiple topics. 
-      // Current simplified logic: One council structure per "Shift" or per "Batch"? 
-      // The previous logic created 1 council for ~5 topics.
-      // Let's keep the logic of forming a council and assigning as many topics as valid (up to limit).
       
       const remainingSlotsToday = maxTopicsPerDay - topicsScheduledToday;
       if (remainingSlotsToday <= 0) break;
@@ -206,52 +231,54 @@ const runSchedulingAlgorithm = (data: SchedulingData) => {
         break;
       }
 
-      // 2. Select Council Members (Greedy)
-      const presidents = candidates.filter((l) => l.isPresidentQualified);
-      if (presidents.length === 0) { continueDay = false; break; }
-      const president = presidents[0];
+      // 2. Select Board Members (Score-Based)
+      // Sort by total score (descending)
+      const sortedCandidates = [...candidates].sort((a, b) => 
+        calculateTotalScore(b, commonQualificationIds) - calculateTotalScore(a, commonQualificationIds)
+      );
 
-      const secretaries = candidates.filter((l) => l.isSecretaryQualified && l.id !== president.id);
-      if (secretaries.length === 0) { continueDay = false; break; }
-      const secretary = secretaries[0];
+      // Simple Greedy: Pick top 5
+      const selectedGroup = sortedCandidates.slice(0, 5);
 
-      const remaining = candidates.filter((l) => l.id !== president.id && l.id !== secretary.id);
-      if (remaining.length < 3) { continueDay = false; break; }
-      const members = remaining.slice(0, 3);
+      // Verify Common Qualifications Coverage
+      if (!checkCommonQualificationCoverage(selectedGroup, commonQualifications)) {
+        // Warning or retry logic
+      }
 
-      const councilIds = [president.id, secretary.id, ...members.map((m) => m.id)];
+      const president = selectedGroup[0];
+      const secretary = selectedGroup[1];
+      const members = selectedGroup.slice(2);
+      
+      const boardMemberIds = [president.id, secretary.id, ...members.map((m) => m.id)];
 
-      // 3. Select Topics for this Council
+      // 3. Select Topics for this Board
       const compatibleTopics = unscheduledTopics.filter((topic) => {
         const supervisors = topic.topicSupervisors.map((ts) => ts.lecturerId);
-        return !supervisors.some((sId) => councilIds.includes(sId));
+        return !supervisors.some((sId) => boardMemberIds.includes(sId));
       });
 
       if (compatibleTopics.length === 0) {
-        // Skip this president to avoid infinite loop on same candidate
+        // Skip this president/group
         assignedForDay.add(president.id); 
-        // Note: This is a hack to force different selection next iteration. 
-        // Ideally we would try next president without burning this one, but strict greedy is tricky.
         continue; 
       }
 
-      // Assign topics (up to remaining slots or max per council logic if any)
-      // We fill the council with as many as possible to maximize efficiency
+      // Assign topics
       const assignedTopics = compatibleTopics.slice(0, remainingSlotsToday);
 
-      // 4. Commit Council
+      // 4. Commit Board
       scheduled.push({
-        councilData: {
+        boardData: {
           presidentId: president.id,
           secretaryId: secretary.id,
           memberIds: members.map((m) => m.id),
-          sessionDayId: day.id,
+          defenseDayId: day.id,
         },
         topics: assignedTopics,
       });
 
       // Mark lecturers as assigned
-      councilIds.forEach((id) => assignedForDay.add(id));
+      boardMemberIds.forEach((id) => assignedForDay.add(id));
 
       // Update state
       const assignedIds = new Set(assignedTopics.map((t) => t.id));
@@ -263,58 +290,59 @@ const runSchedulingAlgorithm = (data: SchedulingData) => {
   return { scheduled, unscheduled: unscheduledTopics };
 };
 
-const persistSchedule = async (sessionId: number, scheduled: ScheduledCouncil[]) => {
-  const session = await prisma.session.findUnique({ where: { id: sessionId } });
-  if (!session) throw new AppError(404, "Session not found");
+const persistSchedule = async (defenseId: number, scheduled: ScheduledCouncilBoard[]) => {
+  const defense = await prisma.defense.findUnique({ where: { id: defenseId } });
+  if (!defense) throw new AppError(404, "Defense not found");
 
-  const timePerTopic = session.timePerTopic || 45;
-  const startHourStr = session.workStartTime || "07:30"; // Default start time
+  const timePerTopic = defense.timePerTopic || 45;
+  const startHourStr = defense.workStartTime || "07:30"; // Default start time
 
   await prisma.$transaction(async (tx) => {
     // 1. Clear old data
-    // Need to find councils first to delete matches? Prisma cascade should handle if configured.
-    // Assuming manual cleanup for safety or if cascade missing.
-    // Fetch old councils
-    const oldCouncils = await tx.council.findMany({
-      where: { sessionDay: { sessionId } }
+    const oldBoards = await tx.councilBoard.findMany({
+      where: { defenseDay: { defenseId } }
     });
     
-    // Delete matches (if not cascaded)
-    await tx.defenseMatch.deleteMany({
-      where: { councilId: { in: oldCouncils.map(c => c.id) } }
+    // Delete defense councils (matches)
+    await tx.defenseCouncil.deleteMany({
+      where: { councilBoardId: { in: oldBoards.map(c => c.id) } }
     });
 
-    // Delete councils
-    await tx.council.deleteMany({
-      where: { sessionDay: { sessionId } }
+    // Delete council members
+    await tx.councilBoardMember.deleteMany({
+      where: { councilBoardId: { in: oldBoards.map(c => c.id) } }
+    });
+
+    // Delete council boards
+    await tx.councilBoard.deleteMany({
+      where: { defenseDay: { defenseId } }
     });
 
     // 2. Create new data
-    // We need to track the "current time" cursor for each day to schedule topics sequentially across councils
-    const dayTimeCursors = new Map<number, number>(); // dayId -> minutes from midnight
+    const dayTimeCursors = new Map<number, number>(); // defenseDayId -> minutes from midnight
 
     const [startH, startM] = startHourStr.split(":").map(Number);
     const startMinutesFromMidnight = startH * 60 + startM;
 
     for (const item of scheduled) {
       // Initialize cursor for this day if new
-      if (!dayTimeCursors.has(item.councilData.sessionDayId)) {
-        dayTimeCursors.set(item.councilData.sessionDayId, startMinutesFromMidnight);
+      if (!dayTimeCursors.has(item.boardData.defenseDayId)) {
+        dayTimeCursors.set(item.boardData.defenseDayId, startMinutesFromMidnight);
       }
-      let currentCursor = dayTimeCursors.get(item.councilData.sessionDayId)!;
+      let currentCursor = dayTimeCursors.get(item.boardData.defenseDayId)!;
 
-      // Create Council
-      const council = await tx.council.create({
+      // Create Council Board
+      const board = await tx.councilBoard.create({
         data: {
-          councilCode: `CNCL-${sessionId}-${item.councilData.sessionDayId}-${Math.floor(Math.random() * 10000)}`,
-          sessionDayId: item.councilData.sessionDayId,
-          semesterId: item.topics[0]?.semesterId || session.semesterId,
-          name: "Defense Council",
-          councilMembers: {
+          boardCode: `CB-${defenseId}-${item.boardData.defenseDayId}-${Math.floor(Math.random() * 10000)}`,
+          defenseDayId: item.boardData.defenseDayId,
+          semesterId: item.topics[0]?.semesterId || defense.semesterId,
+          name: "Defense Council Board",
+          councilBoardMembers: {
             create: [
-              { lecturerId: item.councilData.presidentId, role: CouncilRole.President },
-              { lecturerId: item.councilData.secretaryId, role: CouncilRole.Secretary },
-              ...item.councilData.memberIds.map((id) => ({
+              { lecturerId: item.boardData.presidentId, role: CouncilRole.President },
+              { lecturerId: item.boardData.secretaryId, role: CouncilRole.Secretary },
+              ...item.boardData.memberIds.map((id) => ({
                 lecturerId: id,
                 role: CouncilRole.Member,
               })),
@@ -325,25 +353,25 @@ const persistSchedule = async (sessionId: number, scheduled: ScheduledCouncil[])
 
       // Create Matches with Time
       for (const topic of item.topics) {
-        const reg = (topic as any).topicSessionRegistrations?.[0];
+        const reg = (topic as any).topicDefenseRegistrations?.[0];
         if (!reg) continue;
 
         // Calculate Time
         const startTotalMins = currentCursor;
         const endTotalMins = currentCursor + timePerTopic;
 
-        // Convert back to Date/Time objects (Prisma Time is DateTime usually 1970-01-01)
+        // Convert back to Date/Time objects
         const startTime = new Date();
         startTime.setHours(Math.floor(startTotalMins / 60), startTotalMins % 60, 0, 0);
         
         const endTime = new Date();
         endTime.setHours(Math.floor(endTotalMins / 60), endTotalMins % 60, 0, 0);
 
-        await tx.defenseMatch.create({
+        await tx.defenseCouncil.create({
           data: {
-            matchCode: `MATCH-${topic.topicCode}`,
+            defenseCouncilCode: `DC-${topic.topicCode}`,
             registrationId: reg.id,
-            councilId: council.id,
+            councilBoardId: board.id,
             startTime: startTime,
             endTime: endTime,
           },
@@ -354,68 +382,66 @@ const persistSchedule = async (sessionId: number, scheduled: ScheduledCouncil[])
       }
 
       // Update cursor for this day
-      dayTimeCursors.set(item.councilData.sessionDayId, currentCursor);
+      dayTimeCursors.set(item.boardData.defenseDayId, currentCursor);
     }
   });
 };
 
 /**
- * Update a defense match (Manual Scheduling)
- * Allows changing time or moving to a different council.
+ * Update a defense council match (Manual Scheduling)
  */
-export const updateMatch = async (
-  matchId: number,
+export const updateDefenseCouncil = async (
+  defenseCouncilId: number,
   data: {
     startTime?: Date;
     endTime?: Date;
-    councilId?: number;
+    councilBoardId?: number;
   },
 ) => {
-  const match = await prisma.defenseMatch.findUnique({
-    where: { id: matchId },
+  const dc = await prisma.defenseCouncil.findUnique({
+    where: { id: defenseCouncilId },
   });
-  if (!match) throw new AppError(404, "Match not found");
+  if (!dc) throw new AppError(404, "Defense Council not found");
 
-  // Validate Council if changing
-  if (data.councilId && data.councilId !== match.councilId) {
-    const council = await prisma.council.findUnique({
-      where: { id: data.councilId },
+  // Validate Board if changing
+  if (data.councilBoardId && data.councilBoardId !== dc.councilBoardId) {
+    const board = await prisma.councilBoard.findUnique({
+      where: { id: data.councilBoardId },
     });
-    if (!council) throw new AppError(404, "Target council not found");
+    if (!board) throw new AppError(404, "Target council board not found");
   }
 
   // Perform Update
-  return await prisma.defenseMatch.update({
-    where: { id: matchId },
+  return await prisma.defenseCouncil.update({
+    where: { id: defenseCouncilId },
     data: {
       startTime: data.startTime,
       endTime: data.endTime,
-      councilId: data.councilId,
+      councilBoardId: data.councilBoardId,
     },
   });
 };
 
 /**
- * Update a council (Manual Scheduling)
- * Allows changing members.
+ * Update a council board (Manual Scheduling)
  */
-export const updateCouncil = async (
-  councilId: number,
+export const updateCouncilBoard = async (
+  councilBoardId: number,
   data: {
     presidentId?: number;
     secretaryId?: number;
     memberIds?: number[];
   },
 ) => {
-  const council = await prisma.council.findUnique({
-    where: { id: councilId },
-    include: { councilMembers: true },
+  const board = await prisma.councilBoard.findUnique({
+    where: { id: councilBoardId },
+    include: { councilBoardMembers: true },
   });
-  if (!council) throw new AppError(404, "Council not found");
+  if (!board) throw new AppError(404, "Council Board not found");
 
   return await prisma.$transaction(async (tx) => {
     // 1. Determine new member set
-    const currentMembers = council.councilMembers;
+    const currentMembers = board.councilBoardMembers;
     const currentPresidentId = currentMembers.find(m => m.role === CouncilRole.President)?.lecturerId;
     const currentSecretaryId = currentMembers.find(m => m.role === CouncilRole.Secretary)?.lecturerId;
     const currentMemberIds = currentMembers.filter(m => m.role === CouncilRole.Member).map(m => m.lecturerId!);
@@ -424,15 +450,9 @@ export const updateCouncil = async (
     const newSecretaryId = data.secretaryId ?? currentSecretaryId;
     const newMemberIds = data.memberIds ?? currentMemberIds;
 
-    // Validate inputs (basic check)
-    if (!newPresidentId || !newSecretaryId || newMemberIds.length === 0) {
-       // Allow partial updates or enforce complete council?
-       // For now, assume inputs must result in valid council structure if replacing.
-    }
-
     // 2. Clear old members
-    await tx.councilMember.deleteMany({
-      where: { councilId },
+    await tx.councilBoardMember.deleteMany({
+      where: { councilBoardId },
     });
 
     // 3. Create new members
@@ -442,17 +462,17 @@ export const updateCouncil = async (
       ...newMemberIds.map(id => ({ lecturerId: id, role: CouncilRole.Member }))
     ];
 
-    await tx.councilMember.createMany({
+    await tx.councilBoardMember.createMany({
       data: membersToCreate.map(m => ({
-        councilId,
+        councilBoardId,
         lecturerId: m.lecturerId,
         role: m.role
       }))
     });
 
-    return tx.council.findUnique({
-      where: { id: councilId },
-      include: { councilMembers: true }
+    return tx.councilBoard.findUnique({
+      where: { id: councilBoardId },
+      include: { councilBoardMembers: true }
     });
   });
 };

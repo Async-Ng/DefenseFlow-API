@@ -51,6 +51,24 @@ const options: swaggerJsdoc.Options = {
                 },
               },
             },
+
+            topicType: { $ref: "#/components/schemas/TopicType" },
+          },
+        },
+        TopicType: {
+          type: "object",
+          required: ["id", "name"],
+          properties: {
+            id: { type: "integer", example: 1 },
+            name: { type: "string", maxLength: 100, example: "Web Application" },
+            topics: {
+              type: "array",
+              items: { $ref: "#/components/schemas/Topic" },
+            },
+            qualifications: {
+              type: "array",
+              items: { $ref: "#/components/schemas/Qualification" },
+            },
           },
         },
         UpdateTopicInput: {
@@ -119,12 +137,12 @@ const options: swaggerJsdoc.Options = {
             },
           },
         },
-        Session: {
+        Defense: {
           type: "object",
-          required: ["id", "sessionCode", "semesterId"],
+          required: ["id", "defenseCode", "semesterId"],
           properties: {
             id: { type: "integer", example: 1 },
-            sessionCode: { type: "string", maxLength: 50, example: "SESS_001" },
+            defenseCode: { type: "string", maxLength: 50, example: "DEF_001" },
             semesterId: { type: "integer", example: 1 },
             name: {
               type: "string",
@@ -150,19 +168,19 @@ const options: swaggerJsdoc.Options = {
               nullable: true,
               example: "08:00:00",
             },
-            sessionDays: {
+            defenseDays: {
               type: "array",
               items: {
-                $ref: "#/components/schemas/SessionDay",
+                $ref: "#/components/schemas/DefenseDay",
               },
             },
           },
         },
-        CreateSessionInput: {
+        CreateDefenseInput: {
           type: "object",
-          required: ["sessionCode", "semesterId", "name"],
+          required: ["defenseCode", "semesterId", "name"],
           properties: {
-            sessionCode: { type: "string", maxLength: 50, example: "SESS_001" },
+            defenseCode: { type: "string", maxLength: 50, example: "DEF_001" },
             semesterId: { type: "integer", example: 1 },
             name: { type: "string", maxLength: 100, example: "Round 1" },
             type: {
@@ -176,18 +194,18 @@ const options: swaggerJsdoc.Options = {
               format: "time",
               example: "08:00:00",
             },
-            sessionDays: {
+            defenseDays: {
               type: "array",
               items: {
-                $ref: "#/components/schemas/CreateSessionDayInput",
+                $ref: "#/components/schemas/CreateDefenseDayInput",
               },
             },
           },
         },
-        UpdateSessionInput: {
+        UpdateDefenseInput: {
           type: "object",
           properties: {
-            sessionCode: { type: "string", maxLength: 50, example: "SESS_001" },
+            defenseCode: { type: "string", maxLength: 50, example: "DEF_001" },
             name: { type: "string", maxLength: 100, example: "Round 1" },
             type: { type: "string", enum: ["Main", "Resit"] },
             timePerTopic: { type: "integer", example: 45 },
@@ -196,25 +214,25 @@ const options: swaggerJsdoc.Options = {
               format: "time",
               example: "08:00:00",
             },
-            sessionDays: {
+            defenseDays: {
               type: "array",
               items: {
-                $ref: "#/components/schemas/CreateSessionDayInput",
+                $ref: "#/components/schemas/CreateDefenseDayInput",
               },
             },
           },
         },
-        SessionDay: {
+        DefenseDay: {
           type: "object",
-          required: ["id", "sessionDayCode", "sessionId", "dayDate"],
+          required: ["id", "defenseDayCode", "defenseId", "dayDate"],
           properties: {
             id: { type: "integer", example: 1 },
-            sessionDayCode: {
+            defenseDayCode: {
               type: "string",
               maxLength: 50,
-              example: "SD_001",
+              example: "DD_001",
             },
-            sessionId: { type: "integer", example: 1 },
+            defenseId: { type: "integer", example: 1 },
             dayDate: {
               type: "string",
               format: "date",
@@ -228,14 +246,14 @@ const options: swaggerJsdoc.Options = {
             },
           },
         },
-        CreateSessionDayInput: {
+        CreateDefenseDayInput: {
           type: "object",
-          required: ["sessionDayCode", "dayDate"],
+          required: ["defenseDayCode", "dayDate"],
           properties: {
-            sessionDayCode: {
+            defenseDayCode: {
               type: "string",
               maxLength: 50,
-              example: "SD_001",
+              example: "DD_001",
             },
             dayDate: { type: "string", format: "date", example: "2025-01-15" },
             note: {
@@ -267,30 +285,19 @@ const options: swaggerJsdoc.Options = {
               nullable: true,
               example: "nguyenvana@fpt.edu.vn",
             },
-            isPresidentQualified: {
-              type: "boolean",
-              example: true,
-              description:
-                "Whether lecturer is qualified to be council president",
-            },
-            isSecretaryQualified: {
-              type: "boolean",
-              example: false,
-              description:
-                "Whether lecturer is qualified to be council secretary",
-            },
-            lecturerSkills: {
+
+            lecturerQualifications: {
               type: "array",
-              items: { $ref: "#/components/schemas/LecturerSkill" },
+              items: { $ref: "#/components/schemas/LecturerQualification" },
             },
           },
         },
-        Skill: {
+        Qualification: {
           type: "object",
-          required: ["id", "skillCode"],
+          required: ["id", "qualificationCode"],
           properties: {
             id: { type: "integer", example: 1 },
-            skillCode: {
+            qualificationCode: {
               type: "string",
               maxLength: 50,
               example: "JAVA",
@@ -301,13 +308,22 @@ const options: swaggerJsdoc.Options = {
               nullable: true,
               example: "Java Programming",
             },
+            isCommon: {
+              type: "boolean",
+              default: false,
+              description: "Indicates if this is a common qualification required for all councils",
+            },
+            topicTypes: {
+              type: "array",
+              items: { $ref: "#/components/schemas/TopicType" },
+            },
           },
         },
-        CreateSkillInput: {
+        CreateQualificationInput: {
           type: "object",
-          required: ["skillCode", "name"],
+          required: ["qualificationCode", "name"],
           properties: {
-            skillCode: { type: "string", maxLength: 50, example: "JAVA" },
+            qualificationCode: { type: "string", maxLength: 50, example: "JAVA" },
             name: {
               type: "string",
               maxLength: 100,
@@ -315,10 +331,10 @@ const options: swaggerJsdoc.Options = {
             },
           },
         },
-        UpdateSkillInput: {
+        UpdateQualificationInput: {
           type: "object",
           properties: {
-            skillCode: { type: "string", maxLength: 50, example: "JAVA" },
+            qualificationCode: { type: "string", maxLength: 50, example: "JAVA" },
             name: {
               type: "string",
               maxLength: 100,
@@ -326,13 +342,13 @@ const options: swaggerJsdoc.Options = {
             },
           },
         },
-        LecturerSkill: {
+        LecturerQualification: {
           type: "object",
-          required: ["id", "lecturerId", "skillId"],
+          required: ["id", "lecturerId", "qualificationId"],
           properties: {
             id: { type: "integer", example: 1 },
             lecturerId: { type: "integer", example: 1 },
-            skillId: { type: "integer", example: 1 },
+            qualificationId: { type: "integer", example: 1 },
             score: {
               type: "integer",
               minimum: 0,
@@ -340,18 +356,18 @@ const options: swaggerJsdoc.Options = {
               nullable: true,
               default: 0,
               example: 4,
-              description: "Skill proficiency score (0-5)",
+              description: "Qualification proficiency score (0-5)",
             },
-            skill: { $ref: "#/components/schemas/Skill" },
+            qualification: { $ref: "#/components/schemas/Qualification" },
           },
         },
-        LecturerSessionConfig: {
+        LecturerDefenseConfig: {
           type: "object",
-          required: ["id", "lecturerId", "sessionId"],
+          required: ["id", "lecturerId", "defenseId"],
           properties: {
             id: { type: "integer", example: 1 },
             lecturerId: { type: "integer", example: 1 },
-            sessionId: { type: "integer", example: 1 },
+            defenseId: { type: "integer", example: 1 },
             minTopics: {
               type: "integer",
               example: 5,
@@ -366,60 +382,60 @@ const options: swaggerJsdoc.Options = {
             },
           },
         },
-        UpdateLecturerRolesInput: {
+
+        LecturerQualificationInput: {
           type: "object",
+          required: ["qualificationId", "score"],
           properties: {
-            isPresidentQualified: {
-              type: "boolean",
-              example: true,
-              description: "Set lecturer as qualified for president role",
-            },
-            isSecretaryQualified: {
-              type: "boolean",
-              example: false,
-              description: "Set lecturer as qualified for secretary role",
-            },
-          },
-        },
-        LecturerSkillInput: {
-          type: "object",
-          required: ["skillId", "score"],
-          properties: {
-            skillId: {
+            qualificationId: {
               type: "integer",
               example: 1,
-              description: "ID of the skill",
+              description: "ID of the qualification",
             },
             score: {
               type: "integer",
               minimum: 0,
               maximum: 5,
               example: 4,
-              description: "Skill proficiency score (0-5)",
+              description: "Qualification proficiency score (0-5)",
             },
           },
         },
-        UpdateLecturerSkillsInput: {
+
+        UpdateLecturerQualificationScoreInput: {
           type: "object",
-          required: ["skills"],
+          required: ["score"],
           properties: {
-            skills: {
+            score: {
+              type: "integer",
+              minimum: 0,
+              maximum: 5,
+              example: 4,
+              description: "Qualification proficiency score (0-5)",
+            },
+          },
+        },
+        UpdateLecturerQualificationsInput: {
+          type: "object",
+          required: ["qualifications"],
+          properties: {
+            qualifications: {
               type: "array",
-              items: { $ref: "#/components/schemas/LecturerSkillInput" },
+              items: { $ref: "#/components/schemas/LecturerQualificationInput" },
               example: [
-                { skillId: 1, score: 5 },
-                { skillId: 2, score: 3 },
+                { qualificationId: 1, score: 5 },
+                { qualificationId: 2, score: 3 },
               ],
             },
           },
         },
-        TopicSessionRegistration: {
+        TopicDefenseRegistration: {
           type: "object",
           properties: {
             id: { type: "integer", example: 1 },
             registrationCode: { type: "string", example: "REG_001" },
             topicId: { type: "integer", example: 10 },
-            sessionId: { type: "integer", example: 5 },
+            defenseId: { type: "integer", example: 5 },
             finalResult: {
               type: "string",
               enum: ["Pending", "Passed", "Failed"],
@@ -581,49 +597,49 @@ const options: swaggerJsdoc.Options = {
           enum: ["President", "Secretary", "Member"],
           example: "President",
         },
-        CouncilMember: {
+        CouncilBoardMember: {
           type: "object",
-          required: ["id", "councilId", "lecturerId", "role"],
+          required: ["id", "councilBoardId", "lecturerId", "role"],
           properties: {
             id: { type: "integer", example: 1 },
-            councilId: { type: "integer", example: 10 },
+            councilBoardId: { type: "integer", example: 10 },
             lecturerId: { type: "integer", example: 5 },
             role: { $ref: "#/components/schemas/CouncilRole" },
             lecturer: { $ref: "#/components/schemas/Lecturer" },
           },
         },
-        Council: {
+        CouncilBoard: {
           type: "object",
-          required: ["id", "councilCode", "sessionDayId", "semesterId"],
+          required: ["id", "boardCode", "defenseDayId", "semesterId"],
           properties: {
             id: { type: "integer", example: 10 },
-            councilCode: { type: "string", example: "CNCL-20250101-123" },
-            name: { type: "string", example: "Defense Council 1" },
-            sessionDayId: { type: "integer", example: 2 },
+            boardCode: { type: "string", example: "CB-20250101-123" },
+            name: { type: "string", example: "Defense Council Board 1" },
+            defenseDayId: { type: "integer", example: 2 },
             semesterId: { type: "integer", example: 1 },
-            councilMembers: {
+            councilBoardMembers: {
               type: "array",
-              items: { $ref: "#/components/schemas/CouncilMember" },
+              items: { $ref: "#/components/schemas/CouncilBoardMember" },
             },
-            defenseMatches: {
+            defenseCouncils: {
               type: "array",
-              items: { $ref: "#/components/schemas/DefenseMatch" },
+              items: { $ref: "#/components/schemas/DefenseCouncil" },
             },
           },
         },
-        DefenseMatch: {
+        DefenseCouncil: {
           type: "object",
-          required: ["id", "matchCode", "registrationId", "councilId"],
+          required: ["id", "defenseCouncilCode", "registrationId", "councilBoardId"],
           properties: {
             id: { type: "integer", example: 50 },
-            matchCode: { type: "string", example: "MTCH-TOPIC001-123" },
+            defenseCouncilCode: { type: "string", example: "DC-TOPIC001-123" },
             registrationId: { type: "integer", example: 5 },
-            councilId: { type: "integer", example: 10 },
+            councilBoardId: { type: "integer", example: 10 },
             startTime: { type: "string", format: "time", example: "08:00:00" },
             endTime: { type: "string", format: "time", example: "08:45:00" },
-            council: { $ref: "#/components/schemas/Council" },
+            councilBoard: { $ref: "#/components/schemas/CouncilBoard" },
             registration: {
-              $ref: "#/components/schemas/TopicSessionRegistration",
+              $ref: "#/components/schemas/TopicDefenseRegistration",
             },
           },
         },
@@ -730,28 +746,28 @@ const options: swaggerJsdoc.Options = {
             },
           },
         },
-        SessionResponse: {
+        DefenseResponse: {
           type: "object",
           properties: {
             success: { type: "boolean", example: true },
             message: {
               type: "string",
-              example: "Session retrieved successfully",
+              example: "Defense retrieved successfully",
             },
-            data: { $ref: "#/components/schemas/Session" },
+            data: { $ref: "#/components/schemas/Defense" },
           },
         },
-        SessionListResponse: {
+        DefenseListResponse: {
           type: "object",
           properties: {
             success: { type: "boolean", example: true },
             message: {
               type: "string",
-              example: "Sessions retrieved successfully",
+              example: "Defenses retrieved successfully",
             },
             data: {
               type: "array",
-              items: { $ref: "#/components/schemas/Session" },
+              items: { $ref: "#/components/schemas/Defense" },
             },
             meta: {
               type: "object",
@@ -802,339 +818,6 @@ const options: swaggerJsdoc.Options = {
                   properties: {
                     currentPage: { type: "integer", example: 1 },
                     pageSize: { type: "integer", example: 10 },
-                    totalItems: { type: "integer", example: 30 },
-                    totalPages: { type: "integer", example: 3 },
-                    hasNextPage: { type: "boolean", example: true },
-                    hasPreviousPage: { type: "boolean", example: false },
-                  },
-                },
-              },
-            },
-          },
-        },
-        SkillResponse: {
-          type: "object",
-          properties: {
-            success: { type: "boolean", example: true },
-            message: {
-              type: "string",
-              example: "Skill retrieved successfully",
-            },
-            data: { $ref: "#/components/schemas/Skill" },
-          },
-        },
-        SkillListResponse: {
-          type: "object",
-          properties: {
-            success: { type: "boolean", example: true },
-            message: {
-              type: "string",
-              example: "Skills retrieved successfully",
-            },
-            data: {
-              type: "array",
-              items: { $ref: "#/components/schemas/Skill" },
-            },
-            meta: {
-              type: "object",
-              properties: {
-                pagination: {
-                  type: "object",
-                  properties: {
-                    currentPage: { type: "integer", example: 1 },
-                    pageSize: { type: "integer", example: 10 },
-                    totalItems: { type: "integer", example: 25 },
-                    totalPages: { type: "integer", example: 3 },
-                    hasNextPage: { type: "boolean", example: true },
-                    hasPreviousPage: { type: "boolean", example: false },
-                  },
-                },
-              },
-            },
-          },
-        },
-        ImportResultResponse: {
-          type: "object",
-          properties: {
-            success: { type: "boolean", example: true },
-            message: { type: "string", example: "Import completed" },
-            data: {
-              type: "object",
-              properties: {
-                successCount: { type: "integer", example: 45 },
-                errors: {
-                  type: "array",
-                  items: {
-                    type: "object",
-                    properties: {
-                      row: { type: "integer", example: 5 },
-                      message: {
-                        type: "string",
-                        example: "Supervisor not found",
-                      },
-                    },
-                  },
-                },
-              },
-            },
-          },
-        },
-
-        // Capacity Calculator Schemas
-        CapacityCalculationRequest: {
-          type: "object",
-          required: ["semesterId"],
-          properties: {
-            semesterId: {
-              type: "integer",
-              example: 1,
-              description: "ID of the semester to calculate capacity for",
-            },
-            sessionId: {
-              type: "integer",
-              example: 1,
-              description:
-                "Optional: Specific session ID. If not provided, system will auto-select first session from semester (if exists)",
-            },
-            timePerTopic: {
-              type: "integer",
-              example: 90,
-              description:
-                "Optional: Time per topic in minutes. If not provided, will use session data or default to 90 minutes",
-            },
-            workHoursPerDay: {
-              type: "integer",
-              example: 480,
-              description: "Optional: Work hours per day in minutes. Default: 480 minutes (8 hours)",
-            },
-            councilSize: {
-              type: "integer",
-              example: 5,
-              description:
-                "Optional: Number of council members. Default: 5 (1 President + 1 Secretary + 3 Members)",
-            },
-            plannedDays: {
-              type: "integer",
-              example: 4,
-              description: "Optional: Planned number of days if no session exists",
-            },
-          },
-        },
-        SessionDayAdjustment: {
-          type: "object",
-          properties: {
-            shouldAdjust: {
-              type: "boolean",
-              example: true,
-              description: "Whether session days should be adjusted",
-            },
-            suggestedChange: {
-              type: "integer",
-              example: 2,
-              description:
-                "Number of days to add (+) or remove (-), e.g., +2 means add 2 days",
-            },
-            reason: {
-              type: "string",
-              example:
-                "Số ngày hiện tại (2) không đủ để chấm 120 đề tài. Cần tăng thêm 2 ngày để đảm bảo workload hợp lý.",
-              description: "Explanation for the adjustment recommendation",
-            },
-          },
-        },
-        TopicsPerCouncilPerDay: {
-          type: "object",
-          properties: {
-            minimum: {
-              type: "integer",
-              example: 10,
-              description: "Minimum topics a council can evaluate per day",
-            },
-            maximum: {
-              type: "integer",
-              example: 12,
-              description: "Maximum topics a council can evaluate per day",
-            },
-            average: {
-              type: "integer",
-              example: 11,
-              description: "Average topics a council should evaluate per day",
-            },
-          },
-        },
-        LecturerWorkload: {
-          type: "object",
-          properties: {
-            recommendedMin: {
-              type: "integer",
-              example: 18,
-              description: "Recommended minimum topics per lecturer",
-            },
-            recommendedMax: {
-              type: "integer",
-              example: 30,
-              description: "Recommended maximum topics per lecturer",
-            },
-            idealAverage: {
-              type: "integer",
-              example: 24,
-              description: "Ideal average topics per lecturer",
-            },
-          },
-        },
-        CapacityRecommendations: {
-          type: "object",
-          properties: {
-            minimumDaysRequired: {
-              type: "integer",
-              example: 3,
-              description: "Absolute minimum days needed",
-            },
-            recommendedDays: {
-              type: "integer",
-              example: 4,
-              description: "Recommended number of days with buffer",
-            },
-            currentSessionDays: {
-              type: "integer",
-              nullable: true,
-              example: 2,
-              description: "Current number of days if sessionId provided",
-            },
-            sessionDayAdjustment: {
-              allOf: [{ $ref: "#/components/schemas/SessionDayAdjustment" }],
-              nullable: true,
-              description: "Adjustment recommendation if sessionId provided",
-            },
-            minLecturersRequired: {
-              type: "integer",
-              example: 20,
-              description: "Minimum lecturers needed",
-            },
-            recommendedLecturers: {
-              type: "integer",
-              example: 30,
-              description: "Recommended number of lecturers for balanced workload",
-            },
-            maxLecturersNeeded: {
-              type: "integer",
-              example: 40,
-              description: "Maximum lecturers that could be utilized",
-            },
-            topicsPerCouncilPerDay: {
-              $ref: "#/components/schemas/TopicsPerCouncilPerDay",
-            },
-            councilsPerDay: {
-              type: "integer",
-              example: 4,
-              description: "Number of councils needed per day",
-            },
-            lecturerWorkload: {
-              $ref: "#/components/schemas/LecturerWorkload",
-            },
-          },
-        },
-        CapacityAnalysis: {
-          type: "object",
-          properties: {
-            totalTopics: {
-              type: "integer",
-              example: 120,
-              description: "Total number of topics in the semester",
-            },
-            timePerTopic: {
-              type: "integer",
-              example: 30,
-              description: "Time allocated per topic in minutes",
-            },
-            workHoursPerDay: {
-              type: "integer",
-              example: 480,
-              description: "Work hours per day in minutes",
-            },
-            councilSize: {
-              type: "integer",
-              example: 5,
-              description: "Number of members in each council",
-            },
-          },
-        },
-        CapacityCalculationResponse: {
-          type: "object",
-          properties: {
-            success: { type: "boolean", example: true },
-            message: {
-              type: "string",
-              example: "Capacity calculated successfully",
-            },
-            data: {
-              type: "object",
-              properties: {
-                semesterId: {
-                  type: "integer",
-                  example: 1,
-                },
-                sessionId: {
-                  type: "integer",
-                  nullable: true,
-                  example: 1,
-                },
-                analysis: {
-                  $ref: "#/components/schemas/CapacityAnalysis",
-                },
-                recommendations: {
-                  $ref: "#/components/schemas/CapacityRecommendations",
-                },
-                warnings: {
-                  type: "array",
-                  items: { type: "string" },
-                  example: [
-                    "Session hiện tại chỉ có 2 ngày, không đủ để chấm 120 đề tài với councilSize = 5",
-                  ],
-                },
-                suggestions: {
-                  type: "array",
-                  items: { type: "string" },
-                  example: [
-                    "Nên có ít nhất 30 giảng viên tham gia để cân bằng workload",
-                    "Đề xuất tăng số ngày từ 2 lên 4 ngày để giảm áp lực",
-                  ],
-                },
-              },
-            },
-          },
-        },
-        LecturerSessionConfigResponse: {
-          type: "object",
-          properties: {
-            success: { type: "boolean", example: true },
-            message: {
-              type: "string",
-              example: "Configuration retrieved successfully",
-            },
-            data: { $ref: "#/components/schemas/LecturerSessionConfig" },
-          },
-        },
-        LecturerSessionConfigListResponse: {
-          type: "object",
-          properties: {
-            success: { type: "boolean", example: true },
-            message: {
-              type: "string",
-              example: "Configurations retrieved successfully",
-            },
-            data: {
-              type: "array",
-              items: { $ref: "#/components/schemas/LecturerSessionConfig" },
-            },
-            meta: {
-              type: "object",
-              properties: {
-                pagination: {
-                  type: "object",
-                  properties: {
-                    currentPage: { type: "integer", example: 1 },
-                    pageSize: { type: "integer", example: 10 },
                     totalItems: { type: "integer", example: 50 },
                     totalPages: { type: "integer", example: 5 },
                     hasNextPage: { type: "boolean", example: true },
@@ -1145,155 +828,45 @@ const options: swaggerJsdoc.Options = {
             },
           },
         },
-        LecturerDayAvailability: {
+        QualificationResponse: {
           type: "object",
           properties: {
-            id: { type: "integer", example: 1 },
-            lecturerId: { type: "integer", example: 1 },
-            sessionDayId: { type: "integer", example: 1 },
-            status: {
+            success: { type: "boolean", example: true },
+            message: {
               type: "string",
-              enum: ["Available", "Busy"],
-              example: "Busy",
+              example: "Qualification retrieved successfully",
             },
+            data: { $ref: "#/components/schemas/Qualification" },
           },
         },
-        SessionDayWithAvailability: {
-          allOf: [
-            { $ref: "#/components/schemas/SessionDay" },
-            {
+        QualificationListResponse: {
+          type: "object",
+          properties: {
+            success: { type: "boolean", example: true },
+            message: {
+              type: "string",
+              example: "Qualifications retrieved successfully",
+            },
+            data: {
+              type: "array",
+              items: { $ref: "#/components/schemas/Qualification" },
+            },
+            meta: {
               type: "object",
               properties: {
-                lecturerDayAvailability: {
-                  type: "array",
-                  items: { $ref: "#/components/schemas/LecturerDayAvailability" },
+                pagination: {
+                  type: "object",
+                  properties: {
+                    currentPage: { type: "integer", example: 1 },
+                    pageSize: { type: "integer", example: 10 },
+                    totalItems: { type: "integer", example: 20 },
+                    totalPages: { type: "integer", example: 2 },
+                    hasNextPage: { type: "boolean", example: true },
+                    hasPreviousPage: { type: "boolean", example: false },
+                  },
                 },
               },
             },
-          ],
-        },
-        LecturerStatusResponseData: {
-          type: "object",
-          properties: {
-            lecturerId: { type: "integer", example: 1 },
-            sessionId: { type: "integer", example: 1 },
-            isRegistrationOpen: { type: "boolean", example: true },
-            sessionConfig: { $ref: "#/components/schemas/LecturerSessionConfig" },
-            availabilities: {
-              type: "array",
-              items: { $ref: "#/components/schemas/LecturerDayAvailability" },
-            },
-          },
-        },
-        SessionDaysResponse: {
-          type: "object",
-          properties: {
-            success: { type: "boolean", example: true },
-            message: {
-              type: "string",
-              example: "Session days retrieved successfully",
-            },
-            data: {
-              type: "array",
-              items: { $ref: "#/components/schemas/SessionDay" },
-            },
-          },
-        },
-        SessionDaysWithAvailabilityResponse: {
-          type: "object",
-          properties: {
-            success: { type: "boolean", example: true },
-            message: {
-              type: "string",
-              example: "Session days with availability retrieved successfully",
-            },
-            data: {
-              type: "array",
-              items: { $ref: "#/components/schemas/SessionDayWithAvailability" },
-            },
-          },
-        },
-        LecturerStatusResultResponse: {
-          type: "object",
-          properties: {
-            success: { type: "boolean", example: true },
-            message: {
-              type: "string",
-              example: "Lecturer status retrieved successfully",
-            },
-            data: { $ref: "#/components/schemas/LecturerStatusResponseData" },
-          },
-        },
-        AvailabilityResponse: {
-          type: "object",
-          properties: {
-            success: { type: "boolean", example: true },
-            message: {
-              type: "string",
-              example: "Availability updated successfully",
-            },
-            data: { $ref: "#/components/schemas/LecturerDayAvailability" },
-          },
-        },
-        AvailabilityListResponse: {
-          type: "object",
-          properties: {
-            success: { type: "boolean", example: true },
-            message: {
-              type: "string",
-              example: "Availability updated successfully for all days",
-            },
-            data: {
-              type: "array",
-              items: { $ref: "#/components/schemas/LecturerDayAvailability" },
-            },
-          },
-        },
-        ScheduleResponse: {
-          type: "object",
-          properties: {
-            success: { type: "boolean", example: true },
-            message: {
-              type: "string",
-              example: "Schedule retrieved successfully",
-            },
-            data: {
-              type: "array",
-              items: { $ref: "#/components/schemas/Council" },
-            },
-          },
-        },
-        ScheduleGenerationResponse: {
-          type: "object",
-          properties: {
-            success: { type: "boolean", example: true },
-            message: {
-              type: "string",
-              example: "Schedule generated successfully",
-            },
-            data: { $ref: "#/components/schemas/ScheduleGenerationResult" },
-          },
-        },
-        DefenseMatchResponse: {
-          type: "object",
-          properties: {
-            success: { type: "boolean", example: true },
-            message: {
-              type: "string",
-              example: "Match updated successfully",
-            },
-            data: { $ref: "#/components/schemas/DefenseMatch" },
-          },
-        },
-        CouncilResponse: {
-          type: "object",
-          properties: {
-            success: { type: "boolean", example: true },
-            message: {
-              type: "string",
-              example: "Council updated successfully",
-            },
-            data: { $ref: "#/components/schemas/Council" },
           },
         },
       },
@@ -1302,7 +875,7 @@ const options: swaggerJsdoc.Options = {
   apis:
     process.env.NODE_ENV === "production"
       ? ["./dist/src/routes/*.js", "./dist/src/controllers/*.js"]
-      : ["./src/routes/*.ts", "./src/controllers/*.ts"], // Path to API docs
+      : ["./src/routes/*.ts", "./src/controllers/*.ts"],
 };
 
 export const swaggerSpec = swaggerJsdoc(options);

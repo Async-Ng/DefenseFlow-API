@@ -8,32 +8,34 @@
 // ============================================================================
 import type {
   Semester,
-  Session,
-  SessionDay,
+  Defense,
+  DefenseDay,
   Topic,
-  Council,
+  CouncilBoard,
   Lecturer,
-  LecturerSkill,
-  Skill,
+  LecturerQualification,
+  Qualification,
   LecturerDayAvailability,
-  LecturerSessionConfig,
+  LecturerDefenseConfig,
   AvailabilityStatus,
-  SessionResult,
+  DefenseResult,
+  TopicType,
 } from "../../generated/prisma/client.js";
 
 export type {
   Semester,
-  Session,
-  SessionDay,
+  Defense,
+  DefenseDay,
   Topic,
-  Council,
+  CouncilBoard,
   Lecturer,
-  LecturerSkill,
-  Skill,
+  LecturerQualification,
+  Qualification,
   LecturerDayAvailability,
-  LecturerSessionConfig,
+  LecturerDefenseConfig,
   AvailabilityStatus,
-  SessionResult,
+  DefenseResult,
+  TopicType,
 };
 
 // ============================================================================
@@ -41,14 +43,14 @@ export type {
 // ============================================================================
 
 /**
- * Session type enumeration
+ * Defense type enumeration
  */
-export type SessionType = "Main" | "Resit";
+export type DefenseType = "Main" | "Resit";
 
 /**
- * Session type values as const
+ * Defense type values as const
  */
-export const SESSION_TYPES = {
+export const DEFENSE_TYPES = {
   MAIN: "Main" as const,
   RESIT: "Resit" as const,
 };
@@ -88,11 +90,11 @@ export type SemesterFilterQuery = {
 };
 
 /**
- * Session filter query parameters
+ * Defense filter query parameters
  */
-export type SessionFilterQuery = {
+export type DefenseFilterQuery = {
   semesterId?: string | string[];
-  sessionCode?: string | string[];
+  defenseCode?: string | string[];
   type?: string | string[];
 };
 
@@ -109,49 +111,49 @@ export type CreateSemesterInput = {
 
 export type UpdateSemesterInput = Partial<CreateSemesterInput>;
 
-export type CreateSessionInput = {
-  sessionCode: string;
+export type CreateDefenseInput = {
+  defenseCode: string;
   semesterId: number;
   name: string;
-  type?: SessionType;
+  type?: DefenseType;
   timePerTopic?: number;
   workStartTime?: string;
-  sessionDays?: CreateSessionDayInput[];
+  defenseDays?: CreateDefenseDayInput[];
   availabilityStartDate?: string;
   availabilityEndDate?: string;
 };
 
-export type CreateSessionDayInput = {
-  sessionDayCode: string;
+export type CreateDefenseDayInput = {
+  defenseDayCode: string;
   dayDate: string;
   note?: string;
 };
 
-export type UpdateSessionInput = {
-  sessionCode?: string;
+export type UpdateDefenseInput = {
+  defenseCode?: string;
   name?: string;
-  type?: SessionType;
+  type?: DefenseType;
   timePerTopic?: number;
   workStartTime?: string;
-  sessionDays?: CreateSessionDayInput[];
+  defenseDays?: CreateDefenseDayInput[];
   availabilityStartDate?: string;
   availabilityEndDate?: string;
 };
 
-export type LecturerSessionConfigInput = {
+export type LecturerDefenseConfigInput = {
   lecturerId: number;
-  sessionId: number;
+  defenseId: number;
   minTopics?: number;
   maxTopics?: number;
 };
 
-export type UpdateLecturerSessionConfigInput = {
+export type UpdateLecturerDefenseConfigInput = {
   minTopics?: number;
   maxTopics?: number;
 };
 
 export type UpdateTopicResultInput = {
-  result: SessionResult;
+  result: DefenseResult;
 };
 
 export type UpdateTopicInput = {
@@ -174,36 +176,35 @@ export type TopicFilters = {
   supervisorIds?: number[];
 };
 
-export type CreateSkillInput = {
-  skillCode: string; // Added
+export type CreateQualificationInput = {
+  qualificationCode: string;
   name: string;
   description?: string;
 };
 
-export type UpdateSkillInput = Partial<CreateSkillInput>;
+export type UpdateQualificationInput = Partial<CreateQualificationInput>;
 
-export type SkillFilterQuery = {
-  skillCode?: string; // Added
+export type QualificationFilterQuery = {
+  qualificationCode?: string;
   name?: string;
 };
 
-export type UpdateLecturerRolesInput = {
-  isPresidentQualified?: boolean;
-  isSecretaryQualified?: boolean;
-};
-
-export type LecturerSkillInput = {
-  skillId: number;
+export type LecturerQualificationInput = {
+  qualificationId: number;
   score: number;
 };
 
-export type UpdateLecturerSkillsInput = {
-  skills: LecturerSkillInput[];
+export type UpdateLecturerQualificationsInput = {
+  qualifications: LecturerQualificationInput[];
 };
 
-export type LecturerWithSkills = Lecturer & {
-  lecturerSkills: (LecturerSkill & {
-    skill: Skill;
+export type UpdateLecturerQualificationInput = {
+  score: number;
+};
+
+export type LecturerWithQualifications = Lecturer & {
+  lecturerQualifications: (LecturerQualification & {
+    qualification: Qualification;
   })[];
 };
 
@@ -212,9 +213,9 @@ export type LecturerWithSkills = Lecturer & {
 // ============================================================================
 
 /**
- * Session day with availability status
+ * Defense day with availability status
  */
-export type SessionDayWithAvailability = SessionDay & {
+export type DefenseDayWithAvailability = DefenseDay & {
   lecturerDayAvailability?: LecturerDayAvailability[];
 };
 
@@ -222,7 +223,7 @@ export type SessionDayWithAvailability = SessionDay & {
  * Lecturer availability status update input
  */
 export type UpdateAvailabilityInput = {
-  sessionDayId: number;
+  defenseDayId: number;
   status: AvailabilityStatus;
 };
 
@@ -238,9 +239,9 @@ export type BatchUpdateAvailabilityInput = {
  */
 export type LecturerStatusResponse = {
   lecturerId: number;
-  sessionId: number;
+  defenseId: number;
   isRegistrationOpen: boolean;
-  sessionConfig?: LecturerSessionConfig | null;
+  defenseConfig?: LecturerDefenseConfig | null;
   availabilities: LecturerDayAvailability[];
 };
 
@@ -291,10 +292,10 @@ export type SemesterFilters = {
   name?: string;
 };
 
-export type SessionFilters = {
-  sessionCode?: string;
+export type DefenseFilters = {
+  defenseCode?: string;
   semesterId?: number;
-  type?: SessionType;
+  type?: DefenseType;
 };
 
 export type LecturerFilters = {
@@ -320,7 +321,7 @@ export type ValidationResultWithDetails<T = unknown> = {
 
 export type DateValidationResult = ValidationResult;
 
-export type SessionDaysValidationResult = ValidationResultWithDetails<{
+export type DefenseDaysValidationResult = ValidationResultWithDetails<{
   invalidDates: Array<{
     date: string;
     reason: string;
@@ -336,7 +337,7 @@ export type SemesterValidationResult = {
   errors: string[];
 };
 
-export type SessionValidationResult = {
+export type DefenseValidationResult = {
   isValid: boolean;
   errors: string[];
 };
@@ -346,15 +347,15 @@ export type SessionValidationResult = {
 // ============================================================================
 
 export type IncludeOptions = {
-  sessions?: boolean;
-  sessionDays?: boolean;
+  defenses?: boolean;
+  defenseDays?: boolean;
   topics?: boolean;
-  councils?: boolean;
+  councilBoards?: boolean;
   semester?: boolean;
 };
 
-export type SessionDependencies = {
-  hasCouncils: boolean;
+export type DefenseDependencies = {
+  hasCouncilBoards: boolean;
   hasRegistrations: boolean;
 };
 
@@ -367,26 +368,26 @@ export type SessionDependencies = {
  */
 export type CapacityCalculationRequest = {
   semesterId: number;
-  sessionId?: number; // If provided, will analyze current session days
-  timePerTopic?: number; // minutes, default from session or 30
+  defenseId?: number; // If provided, will analyze current defense days
+  timePerTopic?: number; // minutes, default from defense or 30
   workHoursPerDay?: number; // minutes, default 480 (8 hours)
-  councilSize?: number; // default 5 (1 President + 1 Secretary + 3 Members)
-  plannedDays?: number; // optional: planned days if no session exists
+  councilBoardSize?: number; // default 5 (1 President + 1 Secretary + 3 Members)
+  plannedDays?: number; // optional: planned days if no defense exists
 };
 
 /**
- * Session day adjustment recommendation
+ * Defense day adjustment recommendation
  */
-export type SessionDayAdjustment = {
+export type DefenseDayAdjustment = {
   shouldAdjust: boolean;
   suggestedChange: number; // +2 (add 2 days) or -1 (remove 1 day)
   reason: string;
 };
 
 /**
- * Topics per council per day breakdown
+ * Topics per council board per day breakdown
  */
-export type TopicsPerCouncilPerDay = {
+export type TopicsPerCouncilBoardPerDay = {
   minimum: number;
   maximum: number;
   average: number;
@@ -407,13 +408,13 @@ export type LecturerWorkload = {
 export type CapacityRecommendations = {
   minimumDaysRequired: number;
   recommendedDays: number;
-  currentSessionDays: number | null;
-  sessionDayAdjustment: SessionDayAdjustment | null;
+  currentDefenseDays: number | null;
+  defenseDayAdjustment: DefenseDayAdjustment | null;
   minLecturersRequired: number;
   recommendedLecturers: number;
   maxLecturersNeeded: number;
-  topicsPerCouncilPerDay: TopicsPerCouncilPerDay;
-  councilsPerDay: number;
+  topicsPerCouncilBoardPerDay: TopicsPerCouncilBoardPerDay;
+  councilBoardsPerDay: number;
   lecturerWorkload: LecturerWorkload;
 };
 
@@ -424,7 +425,7 @@ export type CapacityAnalysis = {
   totalTopics: number;
   timePerTopic: number;
   workHoursPerDay: number;
-  councilSize: number;
+  councilBoardSize: number;
 };
 
 /**
@@ -432,7 +433,7 @@ export type CapacityAnalysis = {
  */
 export type CapacityCalculationResponse = {
   semesterId: number;
-  sessionId: number | null;
+  defenseId: number | null;
   analysis: CapacityAnalysis;
   recommendations: CapacityRecommendations;
   warnings: string[];

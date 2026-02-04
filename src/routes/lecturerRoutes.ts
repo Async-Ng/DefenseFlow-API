@@ -13,10 +13,18 @@ router.get("/", lecturerController.getAllLecturers);
 // GET /api/lecturers/:id - Get lecturer by ID
 router.get("/:id", lecturerController.getLecturerById);
 
-// PATCH /api/lecturers/:id/roles - Update lecturer role eligibility
-router.patch("/:id/roles", lecturerController.updateLecturerRoles);
 
-// PATCH /api/lecturers/:id/skills - Update lecturer skill scores
-router.patch("/:id/skills", lecturerController.updateLecturerSkills);
+
+// PATCH /api/lecturers/:id/qualifications - Batch update/upsert (legacy compatible)
+router.patch("/:id/qualifications", lecturerController.updateLecturerQualifications);
+
+// POST /api/lecturers/:id/qualifications - Add qualifications
+router.post("/:id/qualifications", lecturerController.addLecturerQualifications);
+
+// PUT /api/lecturers/:id/qualifications/:qualificationId - Update specific qualification score
+router.put("/:id/qualifications/:qualificationId", lecturerController.updateLecturerQualification);
+
+// DELETE /api/lecturers/:id/qualifications/:qualificationId - Remove qualification
+router.delete("/:id/qualifications/:qualificationId", lecturerController.deleteLecturerQualification);
 
 export default router;

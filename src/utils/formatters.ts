@@ -3,14 +3,14 @@
  */
 
 /**
- * Format session data for API response
+ * Format defense data for API response
  * Specifically formats workStartTime from Date to HH:mm string
  */
-export const formatSession = (session: any): any => {
-  if (!session) return session;
+export const formatDefense = (defense: any): any => {
+  if (!defense) return defense;
 
   // Clone object to avoid mutation
-  const formatted = { ...session };
+  const formatted = { ...defense };
 
   // Format workStartTime if it exists
   // It is now a string "HH:mm" directly from DB, so no Date conversion needed
@@ -19,7 +19,7 @@ export const formatSession = (session: any): any => {
     formatted.workStartTime = String(formatted.workStartTime);
   }
 
-  // Recursively format nested objects if needed (e.g. if we had nested sessions)
+  // Recursively format nested objects if needed
   // For now, this is shallow as per current requirement
 
   return formatted;

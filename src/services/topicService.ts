@@ -69,7 +69,7 @@ export const deleteTopic = async (id: number) => {
   const registration = await topicRepository.findLatestRegistration(id);
   if (registration) {
     // If we want to block deletion if registered:
-    // throw new Error("Cannot delete topic that is registered in a session");
+    // throw new Error("Cannot delete topic that is registered in a defense");
   }
 
   // If we rely on Prisma cascade or just try-catch in controller for FK error
@@ -90,7 +90,7 @@ export const updateTopicResult = async (
 
   const registration = await topicRepository.findLatestRegistration(id);
   if (!registration) {
-    throw new Error("Topic is not registered in any session");
+    throw new Error("Topic is not registered in any defense");
   }
 
   return await topicRepository.updateRegistrationResult(

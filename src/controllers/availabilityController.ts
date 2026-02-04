@@ -14,26 +14,26 @@ import type {
 
 /**
  * @swagger
- * /api/availability/sessions/{sessionId}/days:
+ * /api/availability/defenses/{defenseId}/days:
  *   get:
- *     summary: Get all session days for a specific session
+ *     summary: Get all defense days for a specific defense
  *     tags: [Availability]
  *     parameters:
  *       - in: path
- *         name: sessionId
+ *         name: defenseId
  *         required: true
  *         schema:
  *           type: integer
- *         description: Session ID
+ *         description: Defense ID
  *     responses:
  *       200:
- *         description: Session days retrieved successfully
+ *         description: Defense days retrieved successfully
  *         content:
  *           application/json:
  *             schema:
- *               $ref: '#/components/schemas/SessionDaysResponse'
+ *               $ref: '#/components/schemas/DefenseDaysResponse'
  *       404:
- *         description: Session not found
+ *         description: Defense not found
  *         content:
  *           application/json:
  *             schema:
@@ -45,20 +45,20 @@ import type {
  *             schema:
  *               $ref: '#/components/schemas/ErrorResponse'
  */
-export const getSessionDays = async (
-  req: Request<{ sessionId: string }>,
+export const getDefenseDays = async (
+  req: Request<{ defenseId: string }>,
   res: Response,
 ): Promise<void> => {
   try {
-    const sessionId = parseInt(req.params.sessionId, 10);
+    const defenseId = parseInt(req.params.defenseId, 10);
 
-    if (isNaN(sessionId)) {
-      errorResponse(res, "Invalid session ID", 400);
+    if (isNaN(defenseId)) {
+      errorResponse(res, "Invalid defense ID", 400);
       return;
     }
 
-    const sessionDays = await availabilityService.getSessionDays(sessionId);
-    successResponse(res, sessionDays, "Session days retrieved successfully");
+    const defenseDays = await availabilityService.getDefenseDays(defenseId);
+    successResponse(res, defenseDays, "Defense days retrieved successfully");
   } catch (error) {
     const message = getErrorMessage(error);
     if (message.includes("not found")) {
@@ -71,17 +71,17 @@ export const getSessionDays = async (
 
 /**
  * @swagger
- * /api/availability/sessions/{sessionId}/days/with-availability:
+ * /api/availability/defenses/{defenseId}/days/with-availability:
  *   get:
- *     summary: Get session days with lecturer's availability status
+ *     summary: Get defense days with lecturer's availability status
  *     tags: [Availability]
  *     parameters:
  *       - in: path
- *         name: sessionId
+ *         name: defenseId
  *         required: true
  *         schema:
  *           type: integer
- *         description: Session ID
+ *         description: Defense ID
  *       - in: query
  *         name: lecturerId
  *         required: true
@@ -90,11 +90,11 @@ export const getSessionDays = async (
  *         description: Lecturer ID
  *     responses:
  *       200:
- *         description: Session days with availability retrieved successfully
+ *         description: Defense days with availability retrieved successfully
  *         content:
  *           application/json:
  *             schema:
- *               $ref: '#/components/schemas/SessionDaysWithAvailabilityResponse'
+ *               $ref: '#/components/schemas/DefenseDaysWithAvailabilityResponse'
  *       400:
  *         description: Invalid parameters
  *         content:
@@ -102,7 +102,7 @@ export const getSessionDays = async (
  *             schema:
  *               $ref: '#/components/schemas/ErrorResponse'
  *       404:
- *         description: Session or lecturer not found
+ *         description: Defense or lecturer not found
  *         content:
  *           application/json:
  *             schema:
@@ -114,18 +114,18 @@ export const getSessionDays = async (
  *             schema:
  *               $ref: '#/components/schemas/ErrorResponse'
  */
-export const getSessionDaysWithAvailability = async (
-  req: Request<{ sessionId: string }, {}, {}, { lecturerId?: string }>,
+export const getDefenseDaysWithAvailability = async (
+  req: Request<{ defenseId: string }, {}, {}, { lecturerId?: string }>,
   res: Response,
 ): Promise<void> => {
   try {
-    const sessionId = parseInt(req.params.sessionId, 10);
+    const defenseId = parseInt(req.params.defenseId, 10);
     const lecturerId = req.query.lecturerId
       ? parseInt(req.query.lecturerId, 10)
       : undefined;
 
-    if (isNaN(sessionId)) {
-      errorResponse(res, "Invalid session ID", 400);
+    if (isNaN(defenseId)) {
+      errorResponse(res, "Invalid defense ID", 400);
       return;
     }
 
@@ -134,14 +134,14 @@ export const getSessionDaysWithAvailability = async (
       return;
     }
 
-    const sessionDays = await availabilityService.getSessionDaysWithAvailability(
-      sessionId,
+    const defenseDays = await availabilityService.getDefenseDaysWithAvailability(
+      defenseId,
       lecturerId,
     );
     successResponse(
       res,
-      sessionDays,
-      "Session days with availability retrieved successfully",
+      defenseDays,
+      "Defense days with availability retrieved successfully",
     );
   } catch (error) {
     const message = getErrorMessage(error);
@@ -157,7 +157,7 @@ export const getSessionDaysWithAvailability = async (
  * @swagger
  * /api/availability/lecturers/{lecturerId}/status:
  *   get:
- *     summary: Get lecturer's registered status for a session
+ *     summary: Get lecturer's registered status for a defense
  *     tags: [Availability]
  *     parameters:
  *       - in: path
@@ -167,11 +167,11 @@ export const getSessionDaysWithAvailability = async (
  *           type: integer
  *         description: Lecturer ID
  *       - in: query
- *         name: sessionId
+ *         name: defenseId
  *         required: true
  *         schema:
  *           type: integer
- *         description: Session ID
+ *         description: Defense ID
  *     responses:
  *       200:
  *         description: Lecturer status retrieved successfully
@@ -186,7 +186,7 @@ export const getSessionDaysWithAvailability = async (
  *             schema:
  *               $ref: '#/components/schemas/ErrorResponse'
  *       404:
- *         description: Lecturer or session not found
+ *         description: Lecturer or defense not found
  *         content:
  *           application/json:
  *             schema:
@@ -199,13 +199,13 @@ export const getSessionDaysWithAvailability = async (
  *               $ref: '#/components/schemas/ErrorResponse'
  */
 export const getLecturerStatus = async (
-  req: Request<{ lecturerId: string }, {}, {}, { sessionId?: string }>,
+  req: Request<{ lecturerId: string }, {}, {}, { defenseId?: string }>,
   res: Response,
 ): Promise<void> => {
   try {
     const lecturerId = parseInt(req.params.lecturerId, 10);
-    const sessionId = req.query.sessionId
-      ? parseInt(req.query.sessionId, 10)
+    const defenseId = req.query.defenseId
+      ? parseInt(req.query.defenseId, 10)
       : undefined;
 
     if (isNaN(lecturerId)) {
@@ -213,14 +213,14 @@ export const getLecturerStatus = async (
       return;
     }
 
-    if (!sessionId || isNaN(sessionId)) {
-      errorResponse(res, "Valid session ID is required", 400);
+    if (!defenseId || isNaN(defenseId)) {
+      errorResponse(res, "Valid defense ID is required", 400);
       return;
     }
 
     const status = await availabilityService.getLecturerStatus(
       lecturerId,
-      sessionId,
+      defenseId,
     );
     successResponse(res, status, "Lecturer status retrieved successfully");
   } catch (error) {
@@ -237,7 +237,7 @@ export const getLecturerStatus = async (
  * @swagger
  * /api/availability/lecturers/{lecturerId}/availability:
  *   put:
- *     summary: Update lecturer availability for a specific session day
+ *     summary: Update lecturer availability for a specific defense day
  *     tags: [Availability]
  *     parameters:
  *       - in: path
@@ -253,10 +253,10 @@ export const getLecturerStatus = async (
  *           schema:
  *             type: object
  *             required:
- *               - sessionDayId
+ *               - defenseDayId
  *               - status
  *             properties:
- *               sessionDayId:
+ *               defenseDayId:
  *                 type: integer
  *                 example: 1
  *               status:
@@ -277,7 +277,7 @@ export const getLecturerStatus = async (
  *             schema:
  *               $ref: '#/components/schemas/ErrorResponse'
  *       404:
- *         description: Lecturer or session day not found
+ *         description: Lecturer or defense day not found
  *         content:
  *           application/json:
  *             schema:
@@ -295,15 +295,15 @@ export const updateAvailability = async (
 ): Promise<void> => {
   try {
     const lecturerId = parseInt(req.params.lecturerId, 10);
-    const { sessionDayId, status } = req.body;
+    const { defenseDayId, status } = req.body;
 
     if (isNaN(lecturerId)) {
       errorResponse(res, "Invalid lecturer ID", 400);
       return;
     }
 
-    if (!sessionDayId || !status) {
-      errorResponse(res, "Session day ID and status are required", 400);
+    if (!defenseDayId || !status) {
+      errorResponse(res, "Defense day ID and status are required", 400);
       return;
     }
 
@@ -314,7 +314,7 @@ export const updateAvailability = async (
 
     const availability = await availabilityService.updateAvailability(
       lecturerId,
-      sessionDayId,
+      defenseDayId,
       status,
     );
     successResponse(res, availability, "Availability updated successfully");
@@ -334,7 +334,7 @@ export const updateAvailability = async (
  * @swagger
  * /api/availability/lecturers/{lecturerId}/availability/batch:
  *   put:
- *     summary: Batch update lecturer availability for multiple session days
+ *     summary: Batch update lecturer availability for multiple defense days
  *     tags: [Availability]
  *     parameters:
  *       - in: path
@@ -357,7 +357,7 @@ export const updateAvailability = async (
  *                 items:
  *                   type: object
  *                   properties:
- *                     sessionDayId:
+ *                     defenseDayId:
  *                       type: integer
  *                       example: 1
  *                     status:
@@ -378,13 +378,19 @@ export const updateAvailability = async (
  *             schema:
  *               $ref: '#/components/schemas/ErrorResponse'
  *       404:
- *         description: Lecturer or session day not found
+ *         description: Lecturer or defense day not found
  *         content:
  *           application/json:
  *             schema:
  *               $ref: '#/components/schemas/ErrorResponse'
  *       500:
  *         description: Server error
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ *       207:
+ *         description: Multi-status (some successful, some failed)
  *         content:
  *           application/json:
  *             schema:
@@ -410,10 +416,10 @@ export const batchUpdateAvailability = async (
 
     // Validate each availability entry
     for (const avail of data.availabilities) {
-      if (!avail.sessionDayId || !avail.status) {
+      if (!avail.defenseDayId || !avail.status) {
         errorResponse(
           res,
-          "Each availability must have sessionDayId and status",
+          "Each availability must have defenseDayId and status",
           400,
         );
         return;
@@ -437,7 +443,7 @@ export const batchUpdateAvailability = async (
     const message = getErrorMessage(error);
     if (message.includes("not found")) {
       errorResponse(res, message, 404);
-    } else if (message.includes("closed") || message.includes("same session")) {
+    } else if (message.includes("closed") || message.includes("same defense")) {
       errorResponse(res, message, 400);
     } else {
       errorResponse(res, message, 500);
@@ -447,7 +453,7 @@ export const batchUpdateAvailability = async (
 
 /**
  * @swagger
- * /api/availability/lecturers/{lecturerId}/availability/{sessionDayId}:
+ * /api/availability/lecturers/{lecturerId}/availability/{defenseDayId}:
  *   delete:
  *     summary: Remove availability record (revert to Available)
  *     tags: [Availability]
@@ -459,11 +465,11 @@ export const batchUpdateAvailability = async (
  *           type: integer
  *         description: Lecturer ID
  *       - in: path
- *         name: sessionDayId
+ *         name: defenseDayId
  *         required: true
  *         schema:
  *           type: integer
- *         description: Session Day ID
+ *         description: Defense Day ID
  *     responses:
  *       200:
  *         description: Availability removed successfully
@@ -478,7 +484,7 @@ export const batchUpdateAvailability = async (
  *             schema:
  *               $ref: '#/components/schemas/ErrorResponse'
  *       404:
- *         description: Lecturer or session day not found
+ *         description: Lecturer or defense day not found
  *         content:
  *           application/json:
  *             schema:
@@ -491,24 +497,24 @@ export const batchUpdateAvailability = async (
  *               $ref: '#/components/schemas/ErrorResponse'
  */
 export const removeAvailability = async (
-  req: Request<{ lecturerId: string; sessionDayId: string }>,
+  req: Request<{ lecturerId: string; defenseDayId: string }>,
   res: Response,
 ): Promise<void> => {
   try {
     const lecturerId = parseInt(req.params.lecturerId, 10);
-    const sessionDayId = parseInt(req.params.sessionDayId, 10);
+    const defenseDayId = parseInt(req.params.defenseDayId, 10);
 
     if (isNaN(lecturerId)) {
       errorResponse(res, "Invalid lecturer ID", 400);
       return;
     }
 
-    if (isNaN(sessionDayId)) {
-      errorResponse(res, "Invalid session day ID", 400);
+    if (isNaN(defenseDayId)) {
+      errorResponse(res, "Invalid defense day ID", 400);
       return;
     }
 
-    await availabilityService.removeAvailability(lecturerId, sessionDayId);
+    await availabilityService.removeAvailability(lecturerId, defenseDayId);
     successResponse(
       res,
       null,

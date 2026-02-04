@@ -7,7 +7,7 @@ import * as semesterRepository from "../repositories/semesterRepository.js";
 import {
   validateSemesterData,
   validateDateRange,
-  validateSessionDaysInSemester,
+  validateDefenseDaysInSemester,
 } from "../domain/validators.js";
 import type {
   Semester,
@@ -100,8 +100,8 @@ export const updateSemester = async (
       throw new Error(dateValidation.error);
     }
 
-    // Check for conflicts with existing sessions
-    await checkSessionConflicts(id, newStartDate, newEndDate);
+    // Check for conflicts with existing defenses
+    await checkDefenseConflicts(id, newStartDate, newEndDate);
   }
 
   // Update semester
@@ -118,11 +118,11 @@ export const deleteSemester = async (id: number): Promise<Semester> => {
     throw new Error(`Semester with ID ${id} not found`);
   }
 
-  // Check for active sessions
-  const hasSessions = await semesterRepository.hasActiveSessions(id);
-  if (hasSessions) {
+  // Check for active defenses
+  const hasDefenses = await semesterRepository.hasActiveDefenses(id);
+  if (hasDefenses) {
     throw new Error(
-      "Cannot delete semester with active sessions. Please delete all sessions first.",
+      "Cannot delete semester with active defenses. Please delete all defenses first.",
     );
   }
 
@@ -131,32 +131,32 @@ export const deleteSemester = async (id: number): Promise<Semester> => {
 };
 
 /**
- * Check if updating semester dates would conflict with existing sessions
+ * Check if updating semester dates would conflict with existing defenses
  */
-const checkSessionConflicts = async (
+const checkDefenseConflicts = async (
   semesterId: number,
   newStartDate: string | Date | null,
   newEndDate: string | Date | null,
 ): Promise<void> => {
-  const sessions = await semesterRepository.getSessionsWithDays(semesterId);
+  const defenses = await semesterRepository.getDefensesWithDays(semesterId);
 
-  if (sessions.length === 0) {
+  if (defenses.length === 0) {
     return; // No conflicts
   }
 
-  // Collect all session days
-  const allSessionDays: Array<{ sessionDayCode: string; dayDate: Date }> = [];
-  for (const session of sessions) {
-    if (session.sessionDays) {
-      allSessionDays.push(...session.sessionDays);
+  // Collect all defense days
+  const allDefenseDays: Array<{ defenseDayCode: string; dayDate: Date }> = [];
+  for (const defense of defenses) {
+    if (defense.defenseDays) {
+      allDefenseDays.push(...defense.defenseDays);
     }
   }
 
-  // Validate session days against new semester dates
-  if (allSessionDays.length > 0) {
-    const validation = validateSessionDaysInSemester(
-      allSessionDays.map((d) => ({
-        sessionDayCode: d.sessionDayCode,
+  // Validate defense days against new semester dates
+  if (allDefenseDays.length > 0) {
+    const validation = validateDefenseDaysInSemester(
+      allDefenseDays.map((d) => ({
+        defenseDayCode: d.defenseDayCode,
         dayDate: d.dayDate.toISOString(),
       })),
       newStartDate,

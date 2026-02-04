@@ -1,15 +1,15 @@
 /**
  * Domain Validators
- * Business rule validations for Semesters and Sessions
+ * Business rule validations for Semesters and Defenses
  */
 
 import type {
   DateValidationResult,
-  SessionDaysValidationResult,
+  DefenseDaysValidationResult,
   FieldValidationResult,
   SemesterValidationResult,
-  SessionValidationResult,
-  CreateSessionDayInput,
+  DefenseValidationResult,
+  CreateDefenseDayInput,
 } from "../types/index.js";
 
 /**
@@ -41,17 +41,17 @@ export const validateDateRange = (
 };
 
 /**
- * Validate session days fall within semester date range
+ * Validate defense days fall within semester date range
  */
-export const validateSessionDaysInSemester = (
-  sessionDays: CreateSessionDayInput[],
+export const validateDefenseDaysInSemester = (
+  defenseDays: CreateDefenseDayInput[],
   semesterStartDate: string | Date | null | undefined,
   semesterEndDate: string | Date | null | undefined,
-): SessionDaysValidationResult => {
-  if (!sessionDays || sessionDays.length === 0) {
+): DefenseDaysValidationResult => {
+  if (!defenseDays || defenseDays.length === 0) {
     return {
       isValid: false,
-      error: "At least one session day is required",
+      error: "At least one defense day is required",
       details: { invalidDates: [] },
     };
   }
@@ -69,12 +69,12 @@ export const validateSessionDaysInSemester = (
 
   const invalidDates: Array<{ date: string; reason: string }> = [];
 
-  for (const sessionDay of sessionDays) {
-    const dayDate = new Date(sessionDay.dayDate);
+  for (const defenseDay of defenseDays) {
+    const dayDate = new Date(defenseDay.dayDate);
 
     if (isNaN(dayDate.getTime())) {
       invalidDates.push({
-        date: sessionDay.dayDate,
+        date: defenseDay.dayDate,
         reason: "Invalid date format",
       });
       continue;
@@ -82,7 +82,7 @@ export const validateSessionDaysInSemester = (
 
     if (dayDate < semesterStart || dayDate > semesterEnd) {
       invalidDates.push({
-        date: sessionDay.dayDate,
+        date: defenseDay.dayDate,
         reason: `Date must be between ${semesterStart.toISOString().split("T")[0]} and ${semesterEnd.toISOString().split("T")[0]}`,
       });
     }
@@ -91,7 +91,7 @@ export const validateSessionDaysInSemester = (
   if (invalidDates.length > 0) {
     return {
       isValid: false,
-      error: "Some session days fall outside the semester date range",
+      error: "Some defense days fall outside the semester date range",
       details: { invalidDates },
     };
   }
@@ -161,16 +161,16 @@ export const validateSemesterData = (
 };
 
 /**
- * Validate session data
+ * Validate defense data
  */
-export const validateSessionData = (
+export const validateDefenseData = (
   data: Record<string, unknown>,
-): SessionValidationResult => {
+): DefenseValidationResult => {
   const errors: string[] = [];
 
   // Check required fields
   const requiredValidation = validateRequiredFields(data, [
-    "sessionCode",
+    "defenseCode",
     "semesterId",
     "name",
   ]);

@@ -1,14 +1,14 @@
 import { prisma } from "../config/prisma.js";
 import { Prisma } from "../../generated/prisma/client.js";
 import type {
-  Session,
-  CreateSessionInput,
-  CreateSessionDayInput,
-  UpdateSessionInput,
+  Defense,
+  CreateDefenseInput,
+  CreateDefenseDayInput,
+  UpdateDefenseInput,
   PaginatedResult,
-  SessionFilters,
+  DefenseFilters,
   IncludeOptions,
-  SessionDependencies,
+  DefenseDependencies,
 } from "../types/index.js";
 
 /**
@@ -18,12 +18,12 @@ import type {
 
 
 /**
- * Create a new session
+ * Create a new defense
  */
-export const create = async (data: CreateSessionInput): Promise<Session> => {
-  return await prisma.session.create({
+export const create = async (data: CreateDefenseInput): Promise<Defense> => {
+  return await prisma.defense.create({
     data: {
-      sessionCode: data.sessionCode,
+      defenseCode: data.defenseCode,
       semesterId: data.semesterId,
       name: data.name,
       type: data.type || "Main",
@@ -36,62 +36,62 @@ export const create = async (data: CreateSessionInput): Promise<Session> => {
 };
 
 /**
- * Create session with session days in a transaction
+ * Create defense with defense days in a transaction
  */
 export const createWithDays = async (
-  sessionData: CreateSessionInput,
-  sessionDays: CreateSessionDayInput[],
+  defenseData: CreateDefenseInput,
+  defenseDays: CreateDefenseDayInput[],
 ): Promise<any> => {
   return await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
-    // Create session
-    const session = await tx.session.create({
+    // Create defense
+    const defense = await tx.defense.create({
       data: {
-        sessionCode: sessionData.sessionCode,
-        semesterId: sessionData.semesterId,
-        name: sessionData.name,
-        type: sessionData.type || "Main",
-        timePerTopic: sessionData.timePerTopic,
-        workStartTime: sessionData.workStartTime,
-        availabilityStartDate: sessionData.availabilityStartDate ? new Date(sessionData.availabilityStartDate) : null,
-        availabilityEndDate: sessionData.availabilityEndDate ? new Date(sessionData.availabilityEndDate) : null,
+        defenseCode: defenseData.defenseCode,
+        semesterId: defenseData.semesterId,
+        name: defenseData.name,
+        type: defenseData.type || "Main",
+        timePerTopic: defenseData.timePerTopic,
+        workStartTime: defenseData.workStartTime,
+        availabilityStartDate: defenseData.availabilityStartDate ? new Date(defenseData.availabilityStartDate) : null,
+        availabilityEndDate: defenseData.availabilityEndDate ? new Date(defenseData.availabilityEndDate) : null,
       },
     });
 
-    // Create session days
-    if (sessionDays && sessionDays.length > 0) {
-      await tx.sessionDay.createMany({
-        data: sessionDays.map((day) => ({
-          sessionDayCode: day.sessionDayCode,
-          sessionId: session.id,
+    // Create defense days
+    if (defenseDays && defenseDays.length > 0) {
+      await tx.defenseDay.createMany({
+        data: defenseDays.map((day) => ({
+          defenseDayCode: day.defenseDayCode,
+          defenseId: defense.id,
           dayDate: new Date(day.dayDate),
           note: day.note || null,
         })),
       });
     }
 
-    // Return session with days
-    return await tx.session.findUnique({
-      where: { id: session.id },
-      include: { sessionDays: true },
+    // Return defense with days
+    return await tx.defense.findUnique({
+      where: { id: defense.id },
+      include: { defenseDays: true },
     });
   });
 };
 
 /**
- * Find all sessions with pagination and filters
+ * Find all defenses with pagination and filters
  */
 export const findAll = async (
   page: number = 1,
   limit: number = 10,
-  filters: SessionFilters = {},
+  filters: DefenseFilters = {},
   include: IncludeOptions = {},
 ): Promise<PaginatedResult<any>> => {
   const skip = (page - 1) * limit;
-  const where: Prisma.SessionWhereInput = {};
+  const where: Prisma.DefenseWhereInput = {};
 
   // Apply filters
-  if (filters.sessionCode) {
-    where.sessionCode = { contains: filters.sessionCode };
+  if (filters.defenseCode) {
+    where.defenseCode = { contains: filters.defenseCode };
   }
   if (filters.semesterId) {
     where.semesterId = filters.semesterId;
@@ -101,20 +101,20 @@ export const findAll = async (
   }
 
   // Build include options
-  const includeOptions: Prisma.SessionInclude = {
+  const includeOptions: Prisma.DefenseInclude = {
     semester: true,
-    sessionDays: {
-      orderBy: { sessionDayCode: "asc" },
+    defenseDays: {
+      orderBy: { defenseDayCode: "asc" },
     },
   };
 
-  if (include.sessionDays) {
+  if (include.defenseDays) {
     // Already included by default, but keeping for compatibility or specific options if expanded later
-    includeOptions.sessionDays = true; 
+    includeOptions.defenseDays = true; 
   }
 
   const [data, total] = await Promise.all([
-    prisma.session.findMany({
+    prisma.defense.findMany({
       where,
       skip,
       take: limit,
@@ -124,63 +124,62 @@ export const findAll = async (
       ],
       include: includeOptions,
     }),
-    prisma.session.count({ where }),
+    prisma.defense.count({ where }),
   ]);
 
   return { data, total, page, limit };
 };
 
 /**
- * Find session by ID
+ * Find defense by ID
  */
 export const findById = async (
   id: number,
   include: IncludeOptions = {},
 ): Promise<any | null> => {
-  const includeOptions: Prisma.SessionInclude = {
+  const includeOptions: Prisma.DefenseInclude = {
     semester: true,
   };
 
-  if (include.sessionDays) {
-    includeOptions.sessionDays = true;
+  if (include.defenseDays) {
+    includeOptions.defenseDays = true;
   }
-  if (include.councils) {
-    includeOptions.sessionDays = {
-      include: { councils: true },
+  if (include.councilBoards) {
+    includeOptions.defenseDays = {
+      include: { councilBoards: true },
     };
   }
 
-  return await prisma.session.findUnique({
+  return await prisma.defense.findUnique({
     where: { id },
     include: includeOptions,
   });
 };
 
 /**
- * Find session by code
+ * Find defense by code
  */
-export const findByCode = async (sessionCode: string): Promise<any | null> => {
-  return await prisma.session.findUnique({
-    where: { sessionCode },
+export const findByCode = async (defenseCode: string): Promise<any | null> => {
+  return await prisma.defense.findUnique({
+    where: { defenseCode },
     include: { semester: true },
   });
 };
 
 /**
- * Update session
+ * Update defense
  */
 export const update = async (
   id: number,
-  data: UpdateSessionInput,
-): Promise<Session> => {
-  const updateData: Prisma.SessionUpdateInput = {};
+  data: UpdateDefenseInput,
+): Promise<Defense> => {
+  const updateData: Prisma.DefenseUpdateInput = {};
 
-  if (data.sessionCode !== undefined) updateData.sessionCode = data.sessionCode;
+  if (data.defenseCode !== undefined) updateData.defenseCode = data.defenseCode;
   if (data.name !== undefined) updateData.name = data.name;
   if (data.type !== undefined) updateData.type = data.type;
   if (data.timePerTopic !== undefined)
     updateData.timePerTopic = data.timePerTopic;
-  if (data.workStartTime !== undefined)
   if (data.workStartTime !== undefined)
     updateData.workStartTime = data.workStartTime;
   if (data.availabilityStartDate !== undefined)
@@ -188,37 +187,37 @@ export const update = async (
   if (data.availabilityEndDate !== undefined)
     updateData.availabilityEndDate = data.availabilityEndDate ? new Date(data.availabilityEndDate) : null;
 
-  if (data.sessionDays) {
+  if (data.defenseDays) {
     return await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
-      // Update session details
-      const session = await tx.session.update({
+      // Update defense details
+      const defense = await tx.defense.update({
         where: { id },
         data: updateData,
       });
 
-      // Handle session days sync
-      const existingDays = await tx.sessionDay.findMany({
-        where: { sessionId: id },
+      // Handle defense days sync
+      const existingDays = await tx.defenseDay.findMany({
+        where: { defenseId: id },
       });
-      const inputCodes = data.sessionDays!.map((d) => d.sessionDayCode);
+      const inputCodes = data.defenseDays!.map((d) => d.defenseDayCode);
 
       // 1. Delete days not in input
       const toDelete = existingDays.filter(
-        (d) => !inputCodes.includes(d.sessionDayCode),
+        (d) => !inputCodes.includes(d.defenseDayCode),
       );
       for (const day of toDelete) {
-        await tx.sessionDay.delete({ where: { id: day.id } });
+        await tx.defenseDay.delete({ where: { id: day.id } });
       }
 
       // 2. Create or Update days
-      for (const dayInput of data.sessionDays!) {
+      for (const dayInput of data.defenseDays!) {
         const existingDay = existingDays.find(
-          (d) => d.sessionDayCode === dayInput.sessionDayCode,
+          (d) => d.defenseDayCode === dayInput.defenseDayCode,
         );
 
         if (existingDay) {
           // Update
-          await tx.sessionDay.update({
+          await tx.defenseDay.update({
             where: { id: existingDay.id },
             data: {
               dayDate: new Date(dayInput.dayDate),
@@ -227,10 +226,10 @@ export const update = async (
           });
         } else {
           // Create
-          await tx.sessionDay.create({
+          await tx.defenseDay.create({
             data: {
-              sessionDayCode: dayInput.sessionDayCode,
-              sessionId: id,
+              defenseDayCode: dayInput.defenseDayCode,
+              defenseId: id,
               dayDate: new Date(dayInput.dayDate),
               note: dayInput.note || null,
             },
@@ -238,55 +237,55 @@ export const update = async (
         }
       }
 
-      return session;
+      return defense;
     });
   }
 
-  return await prisma.session.update({
+  return await prisma.defense.update({
     where: { id },
     data: updateData,
   });
 };
 
 /**
- * Delete session
+ * Delete defense
  */
-export const deleteSession = async (id: number): Promise<Session> => {
-  // Delete in transaction to handle session days
+export const deleteDefense = async (id: number): Promise<Defense> => {
+  // Delete in transaction to handle defense days
   return await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
-    // Delete session days first
-    await tx.sessionDay.deleteMany({
-      where: { sessionId: id },
+    // Delete defense days first
+    await tx.defenseDay.deleteMany({
+      where: { defenseId: id },
     });
 
-    // Delete session
-    return await tx.session.delete({
+    // Delete defense
+    return await tx.defense.delete({
       where: { id },
     });
   });
 };
 
 /**
- * Check if session has dependencies (councils, registrations, etc.)
+ * Check if defense has dependencies (councilBoards, registrations, etc.)
  */
 export const checkDependencies = async (
-  sessionId: number,
-): Promise<SessionDependencies> => {
+  defenseId: number,
+): Promise<DefenseDependencies> => {
   const [councilCount, registrationCount] = await Promise.all([
-    prisma.council.count({
+    prisma.councilBoard.count({
       where: {
-        sessionDay: {
-          sessionId,
+        defenseDay: {
+          defenseId,
         },
       },
     }),
-    prisma.topicSessionRegistration.count({
-      where: { sessionId },
+    prisma.topicDefenseRegistration.count({
+      where: { defenseId },
     }),
   ]);
 
   return {
-    hasCouncils: councilCount > 0,
+    hasCouncilBoards: councilCount > 0,
     hasRegistrations: registrationCount > 0,
   };
 };
