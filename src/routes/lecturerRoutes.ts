@@ -21,8 +21,7 @@ router.patch("/:id/qualifications", lecturerController.updateLecturerQualificati
 // POST /api/lecturers/:id/qualifications - Add qualifications
 router.post("/:id/qualifications", lecturerController.addLecturerQualifications);
 
-// PUT /api/lecturers/:id/qualifications/:qualificationId - Update specific qualification score
-router.put("/:id/qualifications/:qualificationId", lecturerController.updateLecturerQualification);
+
 
 // DELETE /api/lecturers/:id/qualifications/:qualificationId - Remove qualification
 router.delete("/:id/qualifications/:qualificationId", lecturerController.deleteLecturerQualification);
