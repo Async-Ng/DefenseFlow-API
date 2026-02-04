@@ -13,10 +13,9 @@ router.get("/", lecturerController.getAllLecturers);
 // GET /api/lecturers/:id - Get lecturer by ID
 router.get("/:id", lecturerController.getLecturerById);
 
-// PATCH /api/lecturers/:id/roles - Update lecturer role eligibility
-router.patch("/:id/roles", lecturerController.updateLecturerRoles);
 
-// PATCH /api/lecturers/:id/skills - Update lecturer skill scores
-router.patch("/:id/skills", lecturerController.updateLecturerSkills);
+
+// PATCH /api/lecturers/:id/qualifications - Update lecturer qualification scores
+router.patch("/:id/qualifications", lecturerController.updateLecturerQualifications);
 
 export default router;

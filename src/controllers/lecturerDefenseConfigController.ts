@@ -1,18 +1,18 @@
 import { Request, Response } from "express";
-import * as lecturerSessionConfigService from "../services/lecturerSessionConfigService.js";
+import * as lecturerDefenseConfigService from "../services/lecturerDefenseConfigService.js";
 import {
   successResponse,
   errorResponse,
   paginatedResponse,
 } from "../utils/apiResponse.js";
-import { LecturerSessionConfigInput } from "../types/index.js";
+import { LecturerDefenseConfigInput } from "../types/index.js";
 
 /**
  * @swagger
- * /api/lecturer-configs:
+ * /api/lecturer-defense-configs:
  *   post:
- *     summary: Create lecturer session configuration
- *     tags: [Lecturer Configs]
+ *     summary: Create lecturer defense configuration
+ *     tags: [Lecturer Defense Configs]
  *     requestBody:
  *       required: true
  *       content:
@@ -21,11 +21,11 @@ import { LecturerSessionConfigInput } from "../types/index.js";
  *             type: object
  *             required:
  *               - lecturerId
- *               - sessionId
+ *               - defenseId
  *             properties:
  *               lecturerId:
  *                 type: integer
- *               sessionId:
+ *               defenseId:
  *                 type: integer
  *               minTopics:
  *                 type: integer
@@ -39,7 +39,7 @@ import { LecturerSessionConfigInput } from "../types/index.js";
  *         content:
  *           application/json:
  *             schema:
- *               $ref: '#/components/schemas/LecturerSessionConfigResponse'
+ *               $ref: '#/components/schemas/LecturerDefenseConfigResponse'
  *       400:
  *         description: Validation error
  *         content:
@@ -61,17 +61,17 @@ import { LecturerSessionConfigInput } from "../types/index.js";
  */
 export const createConfig = async (req: Request, res: Response) => {
   try {
-    const input: LecturerSessionConfigInput = req.body;
+    const input: LecturerDefenseConfigInput = req.body;
 
-    if (!input.lecturerId || !input.sessionId) {
+    if (!input.lecturerId || !input.defenseId) {
       return errorResponse(
         res,
-        "Missing required fields: lecturerId, sessionId",
+        "Missing required fields: lecturerId, defenseId",
         400,
       );
     }
 
-    const config = await lecturerSessionConfigService.createLecturerSessionConfig(
+    const config = await lecturerDefenseConfigService.createLecturerDefenseConfig(
       input,
     );
     return successResponse(
@@ -96,10 +96,10 @@ export const createConfig = async (req: Request, res: Response) => {
 
 /**
  * @swagger
- * /api/lecturer-configs/{id}:
+ * /api/lecturer-defense-configs/{id}:
  *   put:
- *     summary: Update lecturer session configuration
- *     tags: [Lecturer Configs]
+ *     summary: Update lecturer defense configuration
+ *     tags: [Lecturer Defense Configs]
  *     parameters:
  *       - in: path
  *         name: id
@@ -123,7 +123,7 @@ export const createConfig = async (req: Request, res: Response) => {
  *         content:
  *           application/json:
  *             schema:
- *               $ref: '#/components/schemas/LecturerSessionConfigResponse'
+ *               $ref: '#/components/schemas/LecturerDefenseConfigResponse'
  *       400:
  *         description: Validation error
  *         content:
@@ -151,7 +151,7 @@ export const updateConfig = async (req: Request, res: Response) => {
     }
 
     const input = req.body;
-    const config = await lecturerSessionConfigService.updateLecturerSessionConfig(
+    const config = await lecturerDefenseConfigService.updateLecturerDefenseConfig(
       id,
       input,
     );
@@ -172,10 +172,10 @@ export const updateConfig = async (req: Request, res: Response) => {
 
 /**
  * @swagger
- * /api/lecturer-configs:
+ * /api/lecturer-defense-configs:
  *   get:
- *     summary: Get all lecturer session configurations
- *     tags: [Lecturer Configs]
+ *     summary: Get all lecturer defense configurations
+ *     tags: [Lecturer Defense Configs]
  *     parameters:
  *       - in: query
  *         name: page
@@ -192,7 +192,7 @@ export const updateConfig = async (req: Request, res: Response) => {
  *         schema:
  *           type: integer
  *       - in: query
- *         name: sessionId
+ *         name: defenseId
  *         schema:
  *           type: integer
  *     responses:
@@ -201,7 +201,7 @@ export const updateConfig = async (req: Request, res: Response) => {
  *         content:
  *           application/json:
  *             schema:
- *               $ref: '#/components/schemas/LecturerSessionConfigListResponse'
+ *               $ref: '#/components/schemas/LecturerDefenseConfigListResponse'
  *       500:
  *         description: Server error
  *         content:
@@ -216,16 +216,16 @@ export const getConfigs = async (req: Request, res: Response) => {
     const lecturerId = req.query.lecturerId
       ? parseInt(req.query.lecturerId as string)
       : undefined;
-    const sessionId = req.query.sessionId
-      ? parseInt(req.query.sessionId as string)
+    const defenseId = req.query.defenseId
+      ? parseInt(req.query.defenseId as string)
       : undefined;
 
     const {
       data,
       total,
-    } = await lecturerSessionConfigService.getAllLecturerSessionConfigs(
+    } = await lecturerDefenseConfigService.getAllLecturerDefenseConfigs(
       { page, limit },
-      { lecturerId, sessionId },
+      { lecturerId, defenseId },
     );
     return paginatedResponse(
       res,

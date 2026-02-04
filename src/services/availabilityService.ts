@@ -5,8 +5,8 @@
 
 import * as availabilityRepository from "../repositories/availabilityRepository.js";
 import type {
-  SessionDay,
-  SessionDayWithAvailability,
+  DefenseDay,
+  DefenseDayWithAvailability,
   LecturerDayAvailability,
   LecturerStatusResponse,
   BatchUpdateAvailabilityInput,
@@ -14,33 +14,32 @@ import type {
 } from "../types/index.js";
 
 /**
- * Get all session days for a specific session (for active session)
- * Acceptance Criteria: API to retrieve all valid SessionDays for the active Session
+ * Get all defense days for a specific defense (for active defense)
  */
-export const getSessionDays = async (
-  sessionId: number,
-): Promise<SessionDay[]> => {
-  // Verify session exists
-  const session = await availabilityRepository.getSessionById(sessionId);
-  if (!session) {
-    throw new Error(`Session with ID ${sessionId} not found`);
+export const getDefenseDays = async (
+  defenseId: number,
+): Promise<DefenseDay[]> => {
+  // Verify defense exists
+  const defense = await availabilityRepository.getDefenseById(defenseId);
+  if (!defense) {
+    throw new Error(`Defense with ID ${defenseId} not found`);
   }
 
-  // Get all session days for this session
-  return await availabilityRepository.getSessionDaysBySessionId(sessionId);
+  // Get all defense days for this defense
+  return await availabilityRepository.getDefenseDaysByDefenseId(defenseId);
 };
 
 /**
- * Get session days with lecturer's availability
+ * Get defense days with lecturer's availability
  */
-export const getSessionDaysWithAvailability = async (
-  sessionId: number,
+export const getDefenseDaysWithAvailability = async (
+  defenseId: number,
   lecturerId: number,
-): Promise<SessionDayWithAvailability[]> => {
-  // Verify session exists
-  const session = await availabilityRepository.getSessionById(sessionId);
-  if (!session) {
-    throw new Error(`Session with ID ${sessionId} not found`);
+): Promise<DefenseDayWithAvailability[]> => {
+  // Verify defense exists
+  const defense = await availabilityRepository.getDefenseById(defenseId);
+  if (!defense) {
+    throw new Error(`Defense with ID ${defenseId} not found`);
   }
 
   // Verify lecturer exists
@@ -49,24 +48,23 @@ export const getSessionDaysWithAvailability = async (
     throw new Error(`Lecturer with ID ${lecturerId} not found`);
   }
 
-  return await availabilityRepository.getSessionDaysWithAvailability(
-    sessionId,
+  return await availabilityRepository.getDefenseDaysWithAvailability(
+    defenseId,
     lecturerId,
   );
 };
 
 /**
  * Get current lecturer's registered status
- * Acceptance Criteria: API to get the current lecturer's registered status
  */
 export const getLecturerStatus = async (
   lecturerId: number,
-  sessionId: number,
+  defenseId: number,
 ): Promise<LecturerStatusResponse> => {
-  // Verify session exists
-  const session = await availabilityRepository.getSessionById(sessionId);
-  if (!session) {
-    throw new Error(`Session with ID ${sessionId} not found`);
+  // Verify defense exists
+  const defense = await availabilityRepository.getDefenseById(defenseId);
+  if (!defense) {
+    throw new Error(`Defense with ID ${defenseId} not found`);
   }
 
   // Verify lecturer exists
@@ -75,37 +73,36 @@ export const getLecturerStatus = async (
     throw new Error(`Lecturer with ID ${lecturerId} not found`);
   }
 
-  // Get lecturer's session configuration
-  const sessionConfig = await availabilityRepository.getLecturerSessionConfig(
+  // Get lecturer's defense configuration
+  const defenseConfig = await availabilityRepository.getLecturerDefenseConfig(
     lecturerId,
-    sessionId,
+    defenseId,
   );
 
   // Get lecturer's availability records
   const availabilities = await availabilityRepository.getLecturerAvailability(
     lecturerId,
-    sessionId,
+    defenseId,
   );
 
-  // Determine if registration is open (session not locked)
-  const isRegistrationOpen = session.status !== "Locked";
+  // Determine if registration is open (defense not locked)
+  const isRegistrationOpen = defense.status !== "Locked";
 
   return {
     lecturerId,
-    sessionId,
+    defenseId,
     isRegistrationOpen,
-    sessionConfig,
+    defenseConfig,
     availabilities,
   };
 };
 
 /**
  * Update lecturer availability for a specific day
- * Acceptance Criteria: Endpoint to save/update the "Busy" status for specific days
  */
 export const updateAvailability = async (
   lecturerId: number,
-  sessionDayId: number,
+  defenseDayId: number,
   status: AvailabilityStatus,
 ): Promise<LecturerDayAvailability> => {
   // Verify lecturer exists
@@ -114,32 +111,31 @@ export const updateAvailability = async (
     throw new Error(`Lecturer with ID ${lecturerId} not found`);
   }
 
-  // Verify session day exists
-  const sessionDay =
-    await availabilityRepository.getSessionDayById(sessionDayId);
-  if (!sessionDay) {
-    throw new Error(`Session day with ID ${sessionDayId} not found`);
+  // Verify defense day exists
+  const defenseDay =
+    await availabilityRepository.getDefenseDayById(defenseDayId);
+  if (!defenseDay) {
+    throw new Error(`Defense day with ID ${defenseDayId} not found`);
   }
 
-  // Get the session to check if it's locked
-  const session = await availabilityRepository.getSessionById(
-    sessionDay.sessionId,
+  // Get the defense to check if it's locked
+  const defense = await availabilityRepository.getDefenseById(
+    defenseDay.defenseId,
   );
-  if (!session) {
-    throw new Error(`Session not found`);
+  if (!defense) {
+    throw new Error(`Defense not found`);
   }
 
-  // Acceptance Criteria: Add logic to prevent updates if the session is "Locked" by Admin
-  if (session.status === "Locked") {
+  if (defense.status === "Locked") {
     throw new Error("Registration is closed for scheduling processing");
   }
 
-  validateAvailabilityWindow(session);
+  validateAvailabilityWindow(defense);
 
   // Upsert the availability record
   return await availabilityRepository.upsertAvailability(
     lecturerId,
-    sessionDayId,
+    defenseDayId,
     status,
   );
 };
@@ -157,36 +153,36 @@ export const batchUpdateAvailability = async (
     throw new Error(`Lecturer with ID ${lecturerId} not found`);
   }
 
-  // Validate all session days exist and belong to the same session
-  const sessionDayIds = data.availabilities.map((a) => a.sessionDayId);
-  let sessionId: number | null = null;
+  // Validate all defense days exist and belong to the same defense
+  const defenseDayIds = data.availabilities.map((a) => a.defenseDayId);
+  let defenseId: number | null = null;
 
-  for (const sessionDayId of sessionDayIds) {
-    const sessionDay =
-      await availabilityRepository.getSessionDayById(sessionDayId);
-    if (!sessionDay) {
-      throw new Error(`Session day with ID ${sessionDayId} not found`);
+  for (const defenseDayId of defenseDayIds) {
+    const defenseDay =
+      await availabilityRepository.getDefenseDayById(defenseDayId);
+    if (!defenseDay) {
+      throw new Error(`Defense day with ID ${defenseDayId} not found`);
     }
 
-    if (sessionId === null) {
-      sessionId = sessionDay.sessionId;
-    } else if (sessionId !== sessionDay.sessionId) {
-      throw new Error("All session days must belong to the same session");
+    if (defenseId === null) {
+      defenseId = defenseDay.defenseId;
+    } else if (defenseId !== defenseDay.defenseId) {
+      throw new Error("All defense days must belong to the same defense");
     }
   }
 
-  // Check if session is locked
-  if (sessionId) {
-    const session = await availabilityRepository.getSessionById(sessionId);
-    if (!session) {
-      throw new Error(`Session not found`);
+  // Check if defense is locked
+  if (defenseId) {
+    const defense = await availabilityRepository.getDefenseById(defenseId);
+    if (!defense) {
+      throw new Error(`Defense not found`);
     }
 
-    if (session.status === "Locked") {
+    if (defense.status === "Locked") {
       throw new Error("Registration is closed for scheduling processing");
     }
 
-    validateAvailabilityWindow(session);
+    validateAvailabilityWindow(defense);
   }
 
   // Perform batch update
@@ -201,7 +197,7 @@ export const batchUpdateAvailability = async (
  */
 export const removeAvailability = async (
   lecturerId: number,
-  sessionDayId: number,
+  defenseDayId: number,
 ): Promise<void> => {
   // Verify lecturer exists
   const lecturer = await availabilityRepository.getLecturerById(lecturerId);
@@ -209,44 +205,44 @@ export const removeAvailability = async (
     throw new Error(`Lecturer with ID ${lecturerId} not found`);
   }
 
-  // Verify session day exists
-  const sessionDay =
-    await availabilityRepository.getSessionDayById(sessionDayId);
-  if (!sessionDay) {
-    throw new Error(`Session day with ID ${sessionDayId} not found`);
+  // Verify defense day exists
+  const defenseDay =
+    await availabilityRepository.getDefenseDayById(defenseDayId);
+  if (!defenseDay) {
+    throw new Error(`Defense day with ID ${defenseDayId} not found`);
   }
 
-  // Check if session is locked
-  const session = await availabilityRepository.getSessionById(
-    sessionDay.sessionId,
+  // Check if defense is locked
+  const defense = await availabilityRepository.getDefenseById(
+    defenseDay.defenseId,
   );
-  if (!session) {
-    throw new Error(`Session not found`);
+  if (!defense) {
+    throw new Error(`Defense not found`);
   }
 
-  if (session.status === "Locked") {
+  if (defense.status === "Locked") {
     throw new Error("Registration is closed for scheduling processing");
   }
 
-  validateAvailabilityWindow(session);
+  validateAvailabilityWindow(defense);
 
   // Delete the availability record
-  await availabilityRepository.deleteAvailability(lecturerId, sessionDayId);
+  await availabilityRepository.deleteAvailability(lecturerId, defenseDayId);
 };
 
-const validateAvailabilityWindow = (session: any) => {
+const validateAvailabilityWindow = (defense: any) => {
   const now = new Date();
   
-  if (session.availabilityStartDate) {
-    const start = new Date(session.availabilityStartDate);
+  if (defense.availabilityStartDate) {
+    const start = new Date(defense.availabilityStartDate);
     start.setHours(0, 0, 0, 0);
     if (now < start) {
       throw new Error("Registration period has not started yet");
     }
   }
 
-  if (session.availabilityEndDate) {
-    const end = new Date(session.availabilityEndDate);
+  if (defense.availabilityEndDate) {
+    const end = new Date(defense.availabilityEndDate);
     end.setHours(23, 59, 59, 999);
     if (now > end) {
       throw new Error("Registration period has ended");

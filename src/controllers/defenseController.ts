@@ -1,5 +1,5 @@
 import { Request, Response } from "express";
-import * as sessionService from "../services/sessionService.js";
+import * as defenseService from "../services/defenseService.js";
 import {
   successResponse,
   errorResponse,
@@ -13,30 +13,30 @@ import {
   getIdParam,
   getPaginationParams,
   getIncludeOptions,
-  getSessionFilters,
+  getDefenseFilters,
 } from "../utils/requestHelpers.js";
-import { formatSession } from "../utils/formatters.js";
-import type { CreateSessionInput, UpdateSessionInput } from "../types/index.js";
+import { formatDefense } from "../utils/formatters.js";
+import type { CreateDefenseInput, UpdateDefenseInput } from "../types/index.js";
 
 /**
  * @swagger
- * /api/sessions:
+ * /api/defenses:
  *   post:
- *     summary: Create a new session with session days
- *     tags: [Sessions]
+ *     summary: Create a new defense with defense days
+ *     tags: [Defenses]
  *     requestBody:
  *       required: true
  *       content:
  *         application/json:
  *           schema:
- *             $ref: '#/components/schemas/CreateSessionInput'
+ *             $ref: '#/components/schemas/CreateDefenseInput'
  *     responses:
  *       201:
- *         description: Session created successfully
+ *         description: Defense created successfully
  *         content:
  *           application/json:
  *             schema:
- *               $ref: '#/components/schemas/SessionResponse'
+ *               $ref: '#/components/schemas/DefenseResponse'
  *       400:
  *         description: Validation error
  *         content:
@@ -50,20 +50,20 @@ import type { CreateSessionInput, UpdateSessionInput } from "../types/index.js";
  *             schema:
  *               $ref: '#/components/schemas/ErrorResponse'
  */
-export const createSession = async (
+export const createDefense = async (
   req: Request,
   res: Response,
 ): Promise<Response> => {
   try {
     // Extract input data
-    const data: CreateSessionInput = req.body;
+    const data: CreateDefenseInput = req.body;
 
     // Process
-    const session = await sessionService.createSession(data);
+    const defense = await defenseService.createDefense(data);
     return createdResponse(
       res,
-      formatSession(session),
-      "Session created successfully",
+      formatDefense(defense),
+      "Defense created successfully",
     );
   } catch (error: unknown) {
     const message = getErrorMessage(error);
@@ -82,10 +82,10 @@ export const createSession = async (
 
 /**
  * @swagger
- * /api/sessions:
+ * /api/defenses:
  *   get:
- *     summary: Get all sessions
- *     tags: [Sessions]
+ *     summary: Get all defenses
+ *     tags: [Defenses]
  *     parameters:
  *       - in: query
  *         name: page
@@ -98,7 +98,7 @@ export const createSession = async (
  *           type: integer
  *           default: 10
  *       - in: query
- *         name: sessionCode
+ *         name: defenseCode
  *         schema:
  *           type: string
  *       - in: query
@@ -112,11 +112,11 @@ export const createSession = async (
  *           enum: [Main, Resit]
  *     responses:
  *       200:
- *         description: List of sessions
+ *         description: List of defenses
  *         content:
  *           application/json:
  *             schema:
- *               $ref: '#/components/schemas/SessionListResponse'
+ *               $ref: '#/components/schemas/DefenseListResponse'
  *       500:
  *         description: Server Error
  *         content:
@@ -124,31 +124,31 @@ export const createSession = async (
  *             schema:
  *               $ref: '#/components/schemas/ErrorResponse'
  */
-export const getAllSessions = async (
+export const getAllDefenses = async (
   req: Request,
   res: Response,
 ): Promise<Response> => {
   try {
     // Extract input data
     const { page, limit } = getPaginationParams(req);
-    const filters = getSessionFilters(req);
+    const filters = getDefenseFilters(req);
     const include = getIncludeOptions(req);
 
     // Process
-    const result = await sessionService.getAllSessions(
+    const result = await defenseService.getAllDefenses(
       page,
       limit,
       filters,
       include,
     );
-    const formattedData = result.data.map(formatSession);
+    const formattedData = result.data.map(formatDefense);
     return paginatedResponse(
       res,
       formattedData,
       page,
       limit,
       result.total,
-      "Sessions retrieved successfully",
+      "Defenses retrieved successfully",
     );
   } catch (error: unknown) {
     return errorResponse(res, getErrorMessage(error), 500);
@@ -157,10 +157,10 @@ export const getAllSessions = async (
 
 /**
  * @swagger
- * /api/sessions/{id}:
+ * /api/defenses/{id}:
  *   get:
- *     summary: Get session by ID
- *     tags: [Sessions]
+ *     summary: Get defense by ID
+ *     tags: [Defenses]
  *     parameters:
  *       - in: path
  *         name: id
@@ -169,13 +169,13 @@ export const getAllSessions = async (
  *           type: integer
  *     responses:
  *       200:
- *         description: Session details
+ *         description: Defense details
  *         content:
  *           application/json:
  *             schema:
- *               $ref: '#/components/schemas/SessionResponse'
+ *               $ref: '#/components/schemas/DefenseResponse'
  *       404:
- *         description: Session not found
+ *         description: Defense not found
  *         content:
  *           application/json:
  *             schema:
@@ -187,7 +187,7 @@ export const getAllSessions = async (
  *             schema:
  *               $ref: '#/components/schemas/ErrorResponse'
  */
-export const getSessionById = async (
+export const getDefenseById = async (
   req: Request,
   res: Response,
 ): Promise<Response> => {
@@ -197,11 +197,11 @@ export const getSessionById = async (
     const include = getIncludeOptions(req);
 
     // Process
-    const session = await sessionService.getSessionById(id, include);
+    const defense = await defenseService.getDefenseById(id, include);
     return successResponse(
       res,
-      formatSession(session),
-      "Session retrieved successfully",
+      formatDefense(defense),
+      "Defense retrieved successfully",
     );
   } catch (error: unknown) {
     const message = getErrorMessage(error);
@@ -214,10 +214,10 @@ export const getSessionById = async (
 
 /**
  * @swagger
- * /api/sessions/{id}:
+ * /api/defenses/{id}:
  *   patch:
- *     summary: Update session details and session days
- *     tags: [Sessions]
+ *     summary: Update defense details and defense days
+ *     tags: [Defenses]
  *     parameters:
  *       - in: path
  *         name: id
@@ -229,16 +229,16 @@ export const getSessionById = async (
  *       content:
  *         application/json:
  *           schema:
- *             $ref: '#/components/schemas/UpdateSessionInput'
+ *             $ref: '#/components/schemas/UpdateDefenseInput'
  *     responses:
  *       200:
- *         description: Session updated successfully
+ *         description: Defense updated successfully
  *         content:
  *           application/json:
  *             schema:
- *               $ref: '#/components/schemas/SessionResponse'
+ *               $ref: '#/components/schemas/DefenseResponse'
  *       404:
- *         description: Session not found
+ *         description: Defense not found
  *         content:
  *           application/json:
  *             schema:
@@ -256,21 +256,21 @@ export const getSessionById = async (
  *             schema:
  *               $ref: '#/components/schemas/ErrorResponse'
  */
-export const updateSession = async (
+export const updateDefense = async (
   req: Request,
   res: Response,
 ): Promise<Response> => {
   try {
     // Extract input data
     const id = getIdParam(req);
-    const data: UpdateSessionInput = req.body;
+    const data: UpdateDefenseInput = req.body;
 
     // Process
-    const session = await sessionService.updateSession(id, data);
+    const defense = await defenseService.updateDefense(id, data);
     return successResponse(
       res,
-      formatSession(session),
-      "Session updated successfully",
+      formatDefense(defense),
+      "Defense updated successfully",
     );
   } catch (error: unknown) {
     const message = getErrorMessage(error);
@@ -286,10 +286,10 @@ export const updateSession = async (
 
 /**
  * @swagger
- * /api/sessions/{id}:
+ * /api/defenses/{id}:
  *   delete:
- *     summary: Delete session
- *     tags: [Sessions]
+ *     summary: Delete defense
+ *     tags: [Defenses]
  *     parameters:
  *       - in: path
  *         name: id
@@ -298,19 +298,19 @@ export const updateSession = async (
  *           type: integer
  *     responses:
  *       200:
- *         description: Session deleted successfully
+ *         description: Defense deleted successfully
  *         content:
  *           application/json:
  *             schema:
  *               $ref: '#/components/schemas/ApiResponse'
  *       404:
- *         description: Session not found
+ *         description: Defense not found
  *         content:
  *           application/json:
  *             schema:
  *               $ref: '#/components/schemas/ErrorResponse'
  *       422:
- *         description: Cannot delete session
+ *         description: Cannot delete defense
  *         content:
  *           application/json:
  *             schema:
@@ -322,7 +322,7 @@ export const updateSession = async (
  *             schema:
  *               $ref: '#/components/schemas/ErrorResponse'
  */
-export const deleteSession = async (
+export const deleteDefense = async (
   req: Request,
   res: Response,
 ): Promise<Response> => {
@@ -331,8 +331,8 @@ export const deleteSession = async (
     const id = getIdParam(req);
 
     // Process
-    await sessionService.deleteSession(id);
-    return successResponse(res, {}, "Session deleted successfully");
+    await defenseService.deleteDefense(id);
+    return successResponse(res, {}, "Defense deleted successfully");
   } catch (error: unknown) {
     const message = getErrorMessage(error);
     if (message.includes("not found")) {

@@ -6,30 +6,24 @@
 import * as lecturerRepository from "../repositories/lecturerRepository.js";
 import type {
   Lecturer,
-  LecturerWithSkills,
-  UpdateLecturerRolesInput,
-  UpdateLecturerSkillsInput,
+  LecturerWithQualifications,
+  UpdateLecturerQualificationsInput,
   PaginatedResult,
   LecturerFilters,
 } from "../types/index.js";
 
 /**
- * Get lecturer by ID with skills
+ * Get lecturer by ID with qualifications
  */
 export const getLecturerById = async (
   id: number,
-): Promise<LecturerWithSkills> => {
+): Promise<LecturerWithQualifications> => {
   const lecturer = await lecturerRepository.findById(id, true);
   if (!lecturer) {
     throw new Error(`Lecturer with ID ${id} not found`);
   }
 
-  // Ensure role flags are boolean (convert null to false)
-  return {
-    ...lecturer,
-    isPresidentQualified: lecturer.isPresidentQualified ?? false,
-    isSecretaryQualified: lecturer.isSecretaryQualified ?? false,
-  } as LecturerWithSkills;
+  return lecturer as LecturerWithQualifications;
 };
 
 /**
@@ -42,92 +36,58 @@ export const getAllLecturers = async (
 ): Promise<PaginatedResult<Lecturer>> => {
   const result = await lecturerRepository.findAll(page, limit, filters);
 
-  // Ensure role flags are boolean for all lecturers
-  const data = result.data.map((lecturer) => ({
-    ...lecturer,
-    isPresidentQualified: lecturer.isPresidentQualified ?? false,
-    isSecretaryQualified: lecturer.isSecretaryQualified ?? false,
-  }));
-
   return {
     ...result,
-    data,
+    data: result.data,
   };
 };
 
 /**
- * Update lecturer roles
+ * Update lecturer qualifications
  */
-export const updateLecturerRoles = async (
+export const updateLecturerQualifications = async (
   id: number,
-  data: UpdateLecturerRolesInput,
-): Promise<Lecturer> => {
+  data: UpdateLecturerQualificationsInput,
+): Promise<LecturerWithQualifications> => {
   // Check if lecturer exists
   const existing = await lecturerRepository.findById(id);
   if (!existing) {
     throw new Error(`Lecturer with ID ${id} not found`);
   }
 
-  // Update roles
-  const updated = await lecturerRepository.updateRoles(id, data);
-
-  return {
-    ...updated,
-    isPresidentQualified: updated.isPresidentQualified ?? false,
-    isSecretaryQualified: updated.isSecretaryQualified ?? false,
-  };
-};
-
-/**
- * Update lecturer skills
- */
-export const updateLecturerSkills = async (
-  id: number,
-  data: UpdateLecturerSkillsInput,
-): Promise<LecturerWithSkills> => {
-  // Check if lecturer exists
-  const existing = await lecturerRepository.findById(id);
-  if (!existing) {
-    throw new Error(`Lecturer with ID ${id} not found`);
-  }
-
-  // Validate skill scores
-  for (const skillInput of data.skills) {
-    if (skillInput.score < 0 || skillInput.score > 5) {
+  // Validate qualification scores
+  for (const qualificationInput of data.qualifications) {
+    if (qualificationInput.score < 0 || qualificationInput.score > 5) {
       throw new Error(
-        `Invalid skill score ${skillInput.score} for skill ID ${skillInput.skillId}. Score must be between 0 and 5.`,
+        `Invalid qualification score ${qualificationInput.score} for qualification ID ${qualificationInput.qualificationId}. Score must be between 0 and 5.`,
       );
     }
 
-    // Check if skill exists
-    const skillExists = await lecturerRepository.skillExists(
-      skillInput.skillId,
+    // Check if qualification exists
+    const qualificationExists = await lecturerRepository.qualificationExists(
+      qualificationInput.qualificationId,
     );
-    if (!skillExists) {
-      throw new Error(`Skill with ID ${skillInput.skillId} not found`);
+    if (!qualificationExists) {
+      throw new Error(`Qualification with ID ${qualificationInput.qualificationId} not found`);
     }
   }
 
-  // Update skills
+  // Update qualifications
   await Promise.all(
-    data.skills.map((skillInput) =>
-      lecturerRepository.upsertLecturerSkill(
+    data.qualifications.map((qualificationInput) =>
+      lecturerRepository.upsertLecturerQualification(
         id,
-        skillInput.skillId,
-        skillInput.score,
+        qualificationInput.qualificationId,
+        qualificationInput.score,
       ),
     ),
   );
 
-  // Return updated lecturer with skills
+  // Return updated lecturer with qualifications
   const updated = await lecturerRepository.findById(id, true);
   if (!updated) {
     throw new Error(`Failed to retrieve updated lecturer`);
   }
 
-  return {
-    ...updated,
-    isPresidentQualified: updated.isPresidentQualified ?? false,
-    isSecretaryQualified: updated.isSecretaryQualified ?? false,
-  } as LecturerWithSkills;
+  return updated as LecturerWithQualifications;
 };

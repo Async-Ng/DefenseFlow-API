@@ -1,6 +1,6 @@
 /**
  * Capacity Calculator Service
- * Calculates session capacity and provides planning recommendations
+ * Calculates defense capacity and provides planning recommendations
  */
 
 import { prisma } from "../config/prisma.js";
@@ -9,7 +9,7 @@ import type {
   CapacityCalculationResponse,
   CapacityAnalysis,
   CapacityRecommendations,
-  SessionDayAdjustment,
+  DefenseDayAdjustment,
 } from "../types/index.js";
 
 /**
@@ -17,26 +17,26 @@ import type {
  */
 const DEFAULT_TIME_PER_TOPIC = 90; // minutes
 const DEFAULT_WORK_HOURS_PER_DAY = 480; // 8 hours in minutes
-const DEFAULT_COUNCIL_SIZE = 5; // 1 President + 1 Secretary + 3 Members
+const DEFAULT_COUNCIL_BOARD_SIZE = 5; // 1 President + 1 Secretary + 3 Members
 const DEFAULT_MIN_TOPICS_PER_LECTURER = 5;
 const DEFAULT_MAX_TOPICS_PER_LECTURER = 20;
 
 /**
- * Calculate session capacity and provide recommendations
- * Auto-derives parameters from semester's sessions or uses defaults
+ * Calculate defense capacity and provide recommendations
+ * Auto-derives parameters from semester's defenses or uses defaults
  */
 export async function calculateCapacity(
   request: CapacityCalculationRequest
 ): Promise<CapacityCalculationResponse> {
-  const { semesterId, sessionId, plannedDays } = request;
+  const { semesterId, defenseId, plannedDays } = request;
 
-  // Validate semester exists and fetch with sessions
+  // Validate semester exists and fetch with defenses
   const semester = await prisma.semester.findUnique({
     where: { id: semesterId },
     include: {
-      sessions: {
+      defenses: {
         include: {
-          sessionDays: true,
+          defenseDays: true,
         },
       },
     },
@@ -46,41 +46,41 @@ export async function calculateCapacity(
     throw new Error(`Semester with ID ${semesterId} not found`);
   }
 
-  // Get session data - priority: specified sessionId > first session from semester > null
-  let session = null;
-  let currentSessionDays = null;
+  // Get defense data - priority: specified defenseId > first defense from semester > null
+  let defense = null;
+  let currentDefenseDays = null;
 
-  if (sessionId) {
-    // Use specified session
-    session = await prisma.session.findUnique({
-      where: { id: sessionId },
+  if (defenseId) {
+    // Use specified defense
+    defense = await prisma.defense.findUnique({
+      where: { id: defenseId },
       include: {
-        sessionDays: true,
+        defenseDays: true,
       },
     });
 
-    if (!session) {
-      throw new Error(`Session with ID ${sessionId} not found`);
+    if (!defense) {
+      throw new Error(`Defense with ID ${defenseId} not found`);
     }
 
-    currentSessionDays = session.sessionDays.length;
-  } else if (semester.sessions && semester.sessions.length > 0) {
-    // Auto-select first session from semester if exists
-    session = semester.sessions[0];
-    currentSessionDays = session.sessionDays?.length || null;
+    currentDefenseDays = defense.defenseDays.length;
+  } else if (semester.defenses && semester.defenses.length > 0) {
+    // Auto-select first defense from semester if exists
+    defense = semester.defenses[0];
+    currentDefenseDays = defense.defenseDays?.length || null;
   }
 
   // Auto-derive configuration values with priority:
   // 1. Explicit request parameter
-  // 2. Session data (if session exists)
+  // 2. Defense data (if defense exists)
   // 3. Default constant
   const timePerTopic =
-    request.timePerTopic || session?.timePerTopic || DEFAULT_TIME_PER_TOPIC;
+    request.timePerTopic || defense?.timePerTopic || DEFAULT_TIME_PER_TOPIC;
 
   const workHoursPerDay =
     request.workHoursPerDay || DEFAULT_WORK_HOURS_PER_DAY;
 
-  const councilSize = request.councilSize || DEFAULT_COUNCIL_SIZE;
+  const councilBoardSize = request.councilBoardSize || DEFAULT_COUNCIL_BOARD_SIZE;
 
   // Count topics in semester
   const totalTopics = await prisma.topic.count({
@@ -92,13 +92,13 @@ export async function calculateCapacity(
     totalTopics,
     timePerTopic,
     workHoursPerDay,
-    councilSize,
+    councilBoardSize, 
   };
 
   // Calculate recommendations
   const recommendations = calculateRecommendations(
     analysis,
-    currentSessionDays,
+    currentDefenseDays,
     plannedDays
   );
 
@@ -108,7 +108,7 @@ export async function calculateCapacity(
 
   return {
     semesterId,
-    sessionId: session?.id || null,
+    defenseId: defense?.id || null,
     analysis,
     recommendations,
     warnings,
@@ -121,26 +121,26 @@ export async function calculateCapacity(
  */
 function calculateRecommendations(
   analysis: CapacityAnalysis,
-  currentSessionDays: number | null,
+  currentDefenseDays: number | null,
   plannedDays?: number
 ): CapacityRecommendations {
-  const { totalTopics, timePerTopic, workHoursPerDay, councilSize } = analysis;
+  const { totalTopics, timePerTopic, workHoursPerDay, councilBoardSize } = analysis;
 
-  // Calculate topics per council per day
-  const maxTopicsPerCouncilPerDay = Math.floor(workHoursPerDay / timePerTopic);
-  const minTopicsPerCouncilPerDay = Math.max(
+  // Calculate topics per board per day
+  const maxTopicsPerBoardPerDay = Math.floor(workHoursPerDay / timePerTopic);
+  const minTopicsPerBoardPerDay = Math.max(
     1,
-    Math.floor(maxTopicsPerCouncilPerDay * 0.8)
+    Math.floor(maxTopicsPerBoardPerDay * 0.8)
   ); // 80% of max
-  const avgTopicsPerCouncilPerDay = Math.floor(
-    (minTopicsPerCouncilPerDay + maxTopicsPerCouncilPerDay) / 2
+  const avgTopicsPerBoardPerDay = Math.floor(
+    (minTopicsPerBoardPerDay + maxTopicsPerBoardPerDay) / 2
   );
 
   // Calculate minimum days required
-  // Assume we can run multiple councils per day
-  const estimatedCouncilsPerDay = Math.max(1, Math.floor(totalTopics / 50)); // Rough estimate
+  // Assume we can run multiple boards per day
+  const estimatedBoardsPerDay = Math.max(1, Math.floor(totalTopics / 50)); // Rough estimate
   const minimumDaysRequired = Math.ceil(
-    totalTopics / (maxTopicsPerCouncilPerDay * estimatedCouncilsPerDay)
+    totalTopics / (maxTopicsPerBoardPerDay * estimatedBoardsPerDay)
   );
 
   // Calculate recommended days (add buffer)
@@ -149,28 +149,28 @@ function calculateRecommendations(
     Math.ceil(minimumDaysRequired * 1.2)
   );
 
-  // Use planned days or current session days or recommended days
+  // Use planned days or current defense days or recommended days
   const effectiveDays =
-    currentSessionDays || plannedDays || recommendedDays;
+    currentDefenseDays || plannedDays || recommendedDays;
 
-  // Calculate councils per day needed
-  const councilsPerDay = Math.ceil(
-    totalTopics / (avgTopicsPerCouncilPerDay * effectiveDays)
+  // Calculate boards per day needed
+  const boardsPerDay = Math.ceil(
+    totalTopics / (avgTopicsPerBoardPerDay * effectiveDays)
   );
 
   // Calculate lecturer requirements
-  // Each council needs councilSize lecturers
-  // Each lecturer can participate in multiple councils but has min/max limits
-  const totalCouncilSlots = totalTopics * councilSize;
+  // Each board needs councilBoardSize lecturers
+  // Each lecturer can participate in multiple boards but has min/max limits
+  const totalBoardSlots = totalTopics * councilBoardSize;
 
   // Minimum lecturers (if everyone works at max capacity)
   const minLecturersRequired = Math.ceil(
-    totalCouncilSlots / DEFAULT_MAX_TOPICS_PER_LECTURER
+    totalBoardSlots / DEFAULT_MAX_TOPICS_PER_LECTURER
   );
 
   // Maximum lecturers (if everyone works at min capacity)
   const maxLecturersNeeded = Math.ceil(
-    totalCouncilSlots / DEFAULT_MIN_TOPICS_PER_LECTURER
+    totalBoardSlots / DEFAULT_MIN_TOPICS_PER_LECTURER
   );
 
   // Recommended lecturers (balanced workload)
@@ -178,7 +178,7 @@ function calculateRecommendations(
     (DEFAULT_MIN_TOPICS_PER_LECTURER + DEFAULT_MAX_TOPICS_PER_LECTURER) / 2
   );
   const recommendedLecturers = Math.ceil(
-    totalCouncilSlots / idealTopicsPerLecturer
+    totalBoardSlots / idealTopicsPerLecturer
   );
 
   // Calculate lecturer workload recommendations
@@ -188,22 +188,22 @@ function calculateRecommendations(
     idealAverage: idealTopicsPerLecturer,
   };
 
-  // Calculate session day adjustment if session exists
-  let sessionDayAdjustment: SessionDayAdjustment | null = null;
-  if (currentSessionDays !== null) {
-    const difference = recommendedDays - currentSessionDays;
+  // Calculate defense day adjustment if defense exists
+  let defenseDayAdjustment: DefenseDayAdjustment | null = null;
+  if (currentDefenseDays !== null) {
+    const difference = recommendedDays - currentDefenseDays;
     if (Math.abs(difference) >= 1) {
-      sessionDayAdjustment = {
+      defenseDayAdjustment = {
         shouldAdjust: true,
         suggestedChange: difference,
         reason: generateAdjustmentReason(
-          currentSessionDays,
+          currentDefenseDays,
           totalTopics,
           difference
         ),
       };
     } else {
-      sessionDayAdjustment = {
+      defenseDayAdjustment = {
         shouldAdjust: false,
         suggestedChange: 0,
         reason: "Số ngày hiện tại phù hợp với số lượng đề tài.",
@@ -214,23 +214,23 @@ function calculateRecommendations(
   return {
     minimumDaysRequired,
     recommendedDays,
-    currentSessionDays,
-    sessionDayAdjustment,
+    currentDefenseDays,
+    defenseDayAdjustment,
     minLecturersRequired,
     recommendedLecturers,
     maxLecturersNeeded,
-    topicsPerCouncilPerDay: {
-      minimum: minTopicsPerCouncilPerDay,
-      maximum: maxTopicsPerCouncilPerDay,
-      average: avgTopicsPerCouncilPerDay,
+    topicsPerCouncilBoardPerDay: {
+      minimum: minTopicsPerBoardPerDay,
+      maximum: maxTopicsPerBoardPerDay,
+      average: avgTopicsPerBoardPerDay,
     },
-    councilsPerDay,
+    councilBoardsPerDay: boardsPerDay,
     lecturerWorkload,
   };
 }
 
 /**
- * Generate reason for session day adjustment
+ * Generate reason for defense day adjustment
  */
 function generateAdjustmentReason(
   currentDays: number,
@@ -255,7 +255,7 @@ function generateWarnings(
 ): string[] {
   const warnings: string[] = [];
   const { totalTopics } = analysis;
-  const { currentSessionDays, minimumDaysRequired, councilsPerDay } =
+  const { currentDefenseDays, minimumDaysRequired, councilBoardsPerDay } =
     recommendations;
 
   // Warning if no topics
@@ -263,10 +263,10 @@ function generateWarnings(
     warnings.push("Học kỳ chưa có đề tài nào. Vui lòng import đề tài trước.");
   }
 
-  // Warning if session days insufficient
-  if (currentSessionDays !== null && currentSessionDays < minimumDaysRequired) {
+  // Warning if defense days insufficient
+  if (currentDefenseDays !== null && currentDefenseDays < minimumDaysRequired) {
     warnings.push(
-      `Session hiện tại chỉ có ${currentSessionDays} ngày, không đủ để chấm ${totalTopics} đề tài (cần tối thiểu ${minimumDaysRequired} ngày).`
+      `Defense hiện tại chỉ có ${currentDefenseDays} ngày, không đủ để chấm ${totalTopics} đề tài (cần tối thiểu ${minimumDaysRequired} ngày).`
     );
   }
 
@@ -277,10 +277,10 @@ function generateWarnings(
     );
   }
 
-  // Warning if too many councils per day
-  if (councilsPerDay > 5) {
+  // Warning if too many boards per day
+  if (councilBoardsPerDay > 5) {
     warnings.push(
-      `Cần chạy ${councilsPerDay} hội đồng mỗi ngày, có thể gây khó khăn về logistics và phòng học.`
+      `Cần chạy ${councilBoardsPerDay} hội đồng mỗi ngày, có thể gây khó khăn về logistics và phòng học.`
     );
   }
 
@@ -295,42 +295,42 @@ function generateSuggestions(
   recommendations: CapacityRecommendations
 ): string[] {
   const suggestions: string[] = [];
-  const { totalTopics, councilSize } = analysis;
+  const { totalTopics, councilBoardSize } = analysis;
   const {
     recommendedLecturers,
-    topicsPerCouncilPerDay,
-    sessionDayAdjustment,
-    currentSessionDays,
+    topicsPerCouncilBoardPerDay,
+    defenseDayAdjustment,
+    currentDefenseDays,
     recommendedDays,
   } = recommendations;
 
   // Suggest lecturer count
   if (totalTopics > 0) {
     suggestions.push(
-      `Nên có ít nhất ${recommendedLecturers} giảng viên tham gia để cân bằng workload (mỗi hội đồng cần ${councilSize} thành viên).`
+      `Nên có ít nhất ${recommendedLecturers} giảng viên tham gia để cân bằng workload (mỗi hội đồng cần ${councilBoardSize} thành viên).`
     );
   }
 
-  // Suggest topics per council per day
+  // Suggest topics per board per day
   suggestions.push(
-    `Mỗi hội đồng nên chấm khoảng ${topicsPerCouncilPerDay.minimum}-${topicsPerCouncilPerDay.maximum} đề tài mỗi ngày.`
+    `Mỗi hội đồng nên chấm khoảng ${topicsPerCouncilBoardPerDay.minimum}-${topicsPerCouncilBoardPerDay.maximum} đề tài mỗi ngày.`
   );
 
-  // Suggest session day adjustment
-  if (sessionDayAdjustment?.shouldAdjust) {
-    const change = sessionDayAdjustment.suggestedChange;
+  // Suggest defense day adjustment
+  if (defenseDayAdjustment?.shouldAdjust) {
+    const change = defenseDayAdjustment.suggestedChange;
     if (change > 0) {
       suggestions.push(
-        `Đề xuất tăng số ngày từ ${currentSessionDays} lên ${recommendedDays} ngày để giảm áp lực cho giảng viên và hội đồng.`
+        `Đề xuất tăng số ngày từ ${currentDefenseDays} lên ${recommendedDays} ngày để giảm áp lực cho giảng viên và hội đồng.`
       );
     } else {
       suggestions.push(
-        `Có thể giảm số ngày từ ${currentSessionDays} xuống ${recommendedDays} ngày để tối ưu hóa thời gian.`
+        `Có thể giảm số ngày từ ${currentDefenseDays} xuống ${recommendedDays} ngày để tối ưu hóa thời gian.`
       );
     }
   }
 
-  // Suggest buffer days for large sessions
+  // Suggest buffer days for large defenses
   if (totalTopics > 100 && recommendedDays < 5) {
     suggestions.push(
       `Với ${totalTopics} đề tài, nên cân nhắc thêm 1-2 ngày dự phòng để xử lý các trường hợp bất ngờ.`

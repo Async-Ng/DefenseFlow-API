@@ -8,7 +8,7 @@ import { z } from "zod";
  * @swagger
  * /api/schedule/generate:
  *   post:
- *     summary: Generate schedule for a session
+ *     summary: Generate schedule for a defense
  *     tags: [Schedule]
  *     requestBody:
  *       required: true
@@ -17,11 +17,11 @@ import { z } from "zod";
  *           schema:
  *             type: object
  *             required:
- *               - sessionId
+ *               - defenseId
  *             properties:
- *               sessionId:
+ *               defenseId:
  *                 type: integer
- *                 description: Session ID to generate schedule for
+ *                 description: Defense ID to generate schedule for
  *                 example: 1
  *     responses:
  *       201:
@@ -50,7 +50,7 @@ export const generateSchedule = async (
 ) => {
   try {
     const schema = z.object({
-      sessionId: z.number({ required_error: "Session ID is required" }).int(),
+      defenseId: z.number({ required_error: "Defense ID is required" }).int(),
     });
 
     const validation = schema.safeParse(req.body);
@@ -59,9 +59,9 @@ export const generateSchedule = async (
       throw new AppError(400, validation.error.errors[0].message);
     }
 
-    const { sessionId } = validation.data;
+    const { defenseId } = validation.data;
 
-    const result = await scheduleService.generateSchedule(sessionId);
+    const result = await scheduleService.generateSchedule(defenseId);
 
     return successResponse(res, result, "Schedule generated successfully", 201);
   } catch (error) {
@@ -71,17 +71,17 @@ export const generateSchedule = async (
 
 /**
  * @swagger
- * /api/schedule/{sessionId}:
+ * /api/schedule/{defenseId}:
  *   get:
- *     summary: Get schedule for a session
+ *     summary: Get schedule for a defense
  *     tags: [Schedule]
  *     parameters:
  *       - in: path
- *         name: sessionId
+ *         name: defenseId
  *         required: true
  *         schema:
  *           type: integer
- *         description: Session ID to get schedule for
+ *         description: Defense ID to get schedule for
  *     responses:
  *       200:
  *         description: Schedule retrieved successfully
@@ -90,7 +90,7 @@ export const generateSchedule = async (
  *             schema:
  *               $ref: '#/components/schemas/ScheduleResponse'
  *       400:
- *         description: Invalid session ID
+ *         description: Invalid defense ID
  *         content:
  *           application/json:
  *             schema:
@@ -114,13 +114,13 @@ export const getSchedule = async (
   next: NextFunction,
 ) => {
   try {
-    const sessionId = parseInt(req.params.sessionId as string);
+    const defenseId = parseInt(req.params.defenseId as string);
 
-    if (isNaN(sessionId)) {
-      throw new AppError(400, "Invalid session ID");
+    if (isNaN(defenseId)) {
+      throw new AppError(400, "Invalid defense ID");
     }
 
-    const result = await scheduleService.getSchedule(sessionId);
+    const result = await scheduleService.getSchedule(defenseId);
 
     return successResponse(res, result, "Schedule retrieved successfully");
   } catch (error) {
@@ -132,7 +132,7 @@ export const getSchedule = async (
  * @swagger
  * /api/schedule/publish:
  *   post:
- *     summary: Publish the schedule for a session (making it visible to lecturers)
+ *     summary: Publish the schedule for a defense (making it visible to lecturers)
  *     tags: [Schedule]
  *     requestBody:
  *       required: true
@@ -141,9 +141,9 @@ export const getSchedule = async (
  *           schema:
  *             type: object
  *             required:
- *               - sessionId
+ *               - defenseId
  *             properties:
- *               sessionId:
+ *               defenseId:
  *                 type: integer
  *     responses:
  *       200:
@@ -159,7 +159,7 @@ export const getSchedule = async (
  *             schema:
  *               $ref: '#/components/schemas/ValidationErrorResponse'
  *       404:
- *         description: Session not found
+ *         description: Defense not found
  *         content:
  *           application/json:
  *             schema:
@@ -178,7 +178,7 @@ export const publishSchedule = async (
 ) => {
   try {
     const schema = z.object({
-      sessionId: z.number({ required_error: "Session ID is required" }).int(),
+      defenseId: z.number({ required_error: "Defense ID is required" }).int(),
     });
 
     const validation = schema.safeParse(req.body);
@@ -187,9 +187,9 @@ export const publishSchedule = async (
       throw new AppError(400, validation.error.errors[0].message);
     }
 
-    const { sessionId } = validation.data;
+    const { defenseId } = validation.data;
 
-    await scheduleService.publishSchedule(sessionId);
+    await scheduleService.publishSchedule(defenseId);
 
     return successResponse(res, null, "Schedule published successfully");
   } catch (error) {
@@ -199,13 +199,13 @@ export const publishSchedule = async (
 
 /**
  * @swagger
- * /api/schedule/matches/{matchId}:
+ * /api/schedule/defense-councils/{defenseCouncilId}:
  *   put:
- *     summary: Update a defense match (Manual Scheduling)
+ *     summary: Update a defense council (Manual Scheduling)
  *     tags: [Schedule]
  *     parameters:
  *       - in: path
- *         name: matchId
+ *         name: defenseCouncilId
  *         required: true
  *         schema:
  *           type: integer
@@ -222,15 +222,15 @@ export const publishSchedule = async (
  *               endTime:
  *                 type: string
  *                 format: date-time
- *               councilId:
+ *               councilBoardId:
  *                 type: integer
  *     responses:
  *       200:
- *         description: Match updated successfully
+ *         description: Defense Council updated successfully
  *         content:
  *           application/json:
  *             schema:
- *               $ref: '#/components/schemas/DefenseMatchResponse'
+ *               $ref: '#/components/schemas/DefenseCouncilResponse'
  *       400:
  *         description: Validation error
  *         content:
@@ -238,7 +238,7 @@ export const publishSchedule = async (
  *             schema:
  *               $ref: '#/components/schemas/ValidationErrorResponse'
  *       404:
- *         description: Match not found
+ *         description: Defense Council not found
  *         content:
  *           application/json:
  *             schema:
@@ -250,19 +250,19 @@ export const publishSchedule = async (
  *             schema:
  *               $ref: '#/components/schemas/ErrorResponse'
  */
-export const updateMatch = async (
+export const updateDefenseCouncil = async (
   req: Request,
   res: Response,
   next: NextFunction,
 ) => {
   try {
-    const matchId = parseInt(req.params.matchId as string);
-    if (isNaN(matchId)) throw new AppError(400, "Invalid match ID");
+    const defenseCouncilId = parseInt(req.params.defenseCouncilId as string);
+    if (isNaN(defenseCouncilId)) throw new AppError(400, "Invalid defense council ID");
 
     const schema = z.object({
       startTime: z.string().datetime().optional(),
       endTime: z.string().datetime().optional(),
-      councilId: z.number().int().optional(),
+      councilBoardId: z.number().int().optional(),
     });
 
     const validation = schema.safeParse(req.body);
@@ -273,11 +273,11 @@ export const updateMatch = async (
     const data = {
       startTime: validation.data.startTime ? new Date(validation.data.startTime) : undefined,
       endTime: validation.data.endTime ? new Date(validation.data.endTime) : undefined,
-      councilId: validation.data.councilId,
+      councilBoardId: validation.data.councilBoardId,
     };
 
-    const result = await scheduleService.updateMatch(matchId, data);
-    return successResponse(res, result, "Match updated successfully");
+    const result = await scheduleService.updateDefenseCouncil(defenseCouncilId, data);
+    return successResponse(res, result, "Defense Council updated successfully");
   } catch (error) {
     return next(error);
   }
@@ -285,13 +285,13 @@ export const updateMatch = async (
 
 /**
  * @swagger
- * /api/schedule/councils/{councilId}:
+ * /api/schedule/council-boards/{councilBoardId}:
  *   put:
- *     summary: Update a council (Manual Scheduling)
+ *     summary: Update a council board (Manual Scheduling)
  *     tags: [Schedule]
  *     parameters:
  *       - in: path
- *         name: councilId
+ *         name: councilBoardId
  *         required: true
  *         schema:
  *           type: integer
@@ -312,11 +312,11 @@ export const updateMatch = async (
  *                   type: integer
  *     responses:
  *       200:
- *         description: Council updated successfully
+ *         description: Council Board updated successfully
  *         content:
  *           application/json:
  *             schema:
- *               $ref: '#/components/schemas/CouncilResponse'
+ *               $ref: '#/components/schemas/CouncilBoardResponse'
  *       400:
  *         description: Validation error
  *         content:
@@ -324,7 +324,7 @@ export const updateMatch = async (
  *             schema:
  *               $ref: '#/components/schemas/ValidationErrorResponse'
  *       404:
- *         description: Council not found
+ *         description: Council Board not found
  *         content:
  *           application/json:
  *             schema:
@@ -336,14 +336,14 @@ export const updateMatch = async (
  *             schema:
  *               $ref: '#/components/schemas/ErrorResponse'
  */
-export const updateCouncil = async (
+export const updateCouncilBoard = async (
   req: Request,
   res: Response,
   next: NextFunction,
 ) => {
   try {
-    const councilId = parseInt(req.params.councilId as string);
-    if (isNaN(councilId)) throw new AppError(400, "Invalid council ID");
+    const councilBoardId = parseInt(req.params.councilBoardId as string);
+    if (isNaN(councilBoardId)) throw new AppError(400, "Invalid council board ID");
 
     const schema = z.object({
       presidentId: z.number().int().optional(),
@@ -356,8 +356,8 @@ export const updateCouncil = async (
       throw new AppError(400, validation.error.errors[0].message);
     }
 
-    const result = await scheduleService.updateCouncil(councilId, validation.data);
-    return successResponse(res, result, "Council updated successfully");
+    const result = await scheduleService.updateCouncilBoard(councilBoardId, validation.data);
+    return successResponse(res, result, "Council Board updated successfully");
   } catch (error) {
     return next(error);
   }

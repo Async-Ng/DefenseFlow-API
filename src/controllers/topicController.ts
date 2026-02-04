@@ -307,7 +307,7 @@ export const deleteTopic = async (
  *                   type: string
  *                   example: "Topic result updated successfully"
  *                 data:
- *                   $ref: '#/components/schemas/TopicSessionRegistration'
+ *                   $ref: '#/components/schemas/TopicDefenseRegistration'
  *       404:
  *         description: Topic or registration not found
  *         content:

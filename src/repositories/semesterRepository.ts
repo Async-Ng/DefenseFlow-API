@@ -64,16 +64,16 @@ export const findById = async (
 ): Promise<Semester | null> => {
   const includeOptions: Prisma.SemesterInclude = {};
 
-  if (include.sessions) {
-    includeOptions.sessions = include.sessionDays
-      ? { include: { sessionDays: true } }
+  if (include.defenses) {
+    includeOptions.defenses = include.defenseDays
+      ? { include: { defenseDays: true } }
       : true;
   }
   if (include.topics) {
     includeOptions.topics = true;
   }
-  if (include.councils) {
-    includeOptions.councils = true;
+  if (include.councilBoards) {
+    includeOptions.councilBoards = true;
   }
 
   return await prisma.semester.findUnique({
@@ -129,25 +129,25 @@ export const deleteSemester = async (id: number): Promise<Semester> => {
 };
 
 /**
- * Check if semester has active sessions
+ * Check if semester has active defenses
  */
-export const hasActiveSessions = async (
+export const hasActiveDefenses = async (
   semesterId: number,
 ): Promise<boolean> => {
-  const count = await prisma.session.count({
+  const count = await prisma.defense.count({
     where: { semesterId },
   });
   return count > 0;
 };
 
 /**
- * Get sessions for date conflict checking
+ * Get defenses for date conflict checking
  */
-export const getSessionsWithDays = async (
+export const getDefensesWithDays = async (
   semesterId: number,
 ): Promise<any[]> => {
-  return await prisma.session.findMany({
+  return await prisma.defense.findMany({
     where: { semesterId },
-    include: { sessionDays: true },
+    include: { defenseDays: true },
   });
 };

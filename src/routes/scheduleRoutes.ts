@@ -7,7 +7,7 @@ const router: express.Router = express.Router();
  * @swagger
  * /api/schedule/generate:
  *   post:
- *     summary: Generate draft schedule for a session
+ *     summary: Generate draft schedule for a defense
  *     tags: [Schedule]
  *     requestBody:
  *       required: true
@@ -16,9 +16,9 @@ const router: express.Router = express.Router();
  *           schema:
  *             type: object
  *             required:
- *               - sessionId
+ *               - defenseId
  *             properties:
- *               sessionId:
+ *               defenseId:
  *                 type: integer
  *     responses:
  *       201:
@@ -34,17 +34,17 @@ router.post("/generate", scheduleController.generateSchedule);
 
 /**
  * @swagger
- * /api/schedule/{sessionId}:
+ * /api/schedule/{defenseId}:
  *   get:
- *     summary: Get generated schedule for a session
+ *     summary: Get generated schedule for a defense
  *     tags: [Schedule]
  *     parameters:
  *       - in: path
- *         name: sessionId
+ *         name: defenseId
  *         schema:
  *           type: integer
  *         required: true
- *         description: ID of the session
+ *         description: ID of the defense
  *     responses:
  *       200:
  *         description: Schedule retrieved successfully
@@ -53,11 +53,11 @@ router.post("/generate", scheduleController.generateSchedule);
  *             schema:
  *               type: array
  *               items:
- *                 $ref: '#/components/schemas/Council'
+ *                 $ref: '#/components/schemas/CouncilBoard'
  *       404:
- *         description: Session not found
+ *         description: Defense not found
  */
-router.get("/:sessionId", scheduleController.getSchedule);
+router.get("/:defenseId", scheduleController.getSchedule);
 
 /**
  * @swagger
@@ -70,20 +70,20 @@ router.post("/publish", scheduleController.publishSchedule);
 
 /**
  * @swagger
- * /api/schedule/matches/{matchId}:
+ * /api/schedule/defense-councils/{defenseCouncilId}:
  *   put:
- *     summary: Update defense match
+ *     summary: Update defense council (Manual Scheduling)
  *     tags: [Schedule]
  */
-router.put("/matches/:matchId", scheduleController.updateMatch);
+router.put("/defense-councils/:defenseCouncilId", scheduleController.updateDefenseCouncil);
 
 /**
  * @swagger
- * /api/schedule/councils/{councilId}:
+ * /api/schedule/council-boards/{councilBoardId}:
  *   put:
- *     summary: Update council members
+ *     summary: Update council board members
  *     tags: [Schedule]
  */
-router.put("/councils/:councilId", scheduleController.updateCouncil);
+router.put("/council-boards/:councilBoardId", scheduleController.updateCouncilBoard);
 
 export default router;

@@ -2,11 +2,10 @@ import { prisma } from "../config/prisma.js";
 import { Prisma } from "../../generated/prisma/client.js";
 import type {
   Lecturer,
-  LecturerSkill,
-  UpdateLecturerRolesInput,
+  LecturerQualification,
   PaginatedResult,
   LecturerFilters,
-  LecturerWithSkills,
+  LecturerWithQualifications,
 } from "../types/index.js";
 
 /**
@@ -14,14 +13,14 @@ import type {
  */
 export const findById = async (
   id: number,
-  includeSkills: boolean = false,
-): Promise<LecturerWithSkills | Lecturer | null> => {
+  includeQualifications: boolean = false,
+): Promise<LecturerWithQualifications | Lecturer | null> => {
   const include: Prisma.LecturerInclude = {};
 
-  if (includeSkills) {
-    include.lecturerSkills = {
+  if (includeQualifications) {
+    include.lecturerQualifications = {
       include: {
-        skill: true,
+        qualification: true,
       },
     };
   }
@@ -63,9 +62,9 @@ export const findAll = async (
       take: limit,
       orderBy: { fullName: "asc" },
       include: {
-        lecturerSkills: {
+        lecturerQualifications: {
           include: {
-            skill: true,
+            qualification: true,
           },
         },
       },
@@ -76,41 +75,21 @@ export const findAll = async (
   return { data, total, page, limit };
 };
 
-/**
- * Update lecturer roles
- */
-export const updateRoles = async (
-  id: number,
-  data: UpdateLecturerRolesInput,
-): Promise<Lecturer> => {
-  const updateData: Prisma.LecturerUpdateInput = {};
 
-  if (data.isPresidentQualified !== undefined) {
-    updateData.isPresidentQualified = data.isPresidentQualified;
-  }
-  if (data.isSecretaryQualified !== undefined) {
-    updateData.isSecretaryQualified = data.isSecretaryQualified;
-  }
-
-  return await prisma.lecturer.update({
-    where: { id },
-    data: updateData,
-  });
-};
 
 /**
- * Upsert lecturer skill (create or update)
+ * Upsert lecturer qualification (create or update)
  */
-export const upsertLecturerSkill = async (
+export const upsertLecturerQualification = async (
   lecturerId: number,
-  skillId: number,
+  qualificationId: number,
   score: number,
-): Promise<LecturerSkill> => {
-  return await prisma.lecturerSkill.upsert({
+): Promise<LecturerQualification> => {
+  return await prisma.lecturerQualification.upsert({
     where: {
-      lecturerId_skillId: {
+      lecturerId_qualificationId: {
         lecturerId,
-        skillId,
+        qualificationId,
       },
     },
     update: {
@@ -118,49 +97,49 @@ export const upsertLecturerSkill = async (
     },
     create: {
       lecturerId,
-      skillId,
+      qualificationId,
       score,
     },
   });
 };
 
 /**
- * Delete lecturer skill
+ * Delete lecturer qualification
  */
-export const deleteLecturerSkill = async (
+export const deleteLecturerQualification = async (
   lecturerId: number,
-  skillId: number,
-): Promise<LecturerSkill> => {
-  return await prisma.lecturerSkill.delete({
+  qualificationId: number,
+): Promise<LecturerQualification> => {
+  return await prisma.lecturerQualification.delete({
     where: {
-      lecturerId_skillId: {
+      lecturerId_qualificationId: {
         lecturerId,
-        skillId,
+        qualificationId,
       },
     },
   });
 };
 
 /**
- * Find all skills for a lecturer
+ * Find all qualifications for a lecturer
  */
-export const findLecturerSkills = async (
+export const findLecturerQualifications = async (
   lecturerId: number,
-): Promise<LecturerSkill[]> => {
-  return await prisma.lecturerSkill.findMany({
+): Promise<LecturerQualification[]> => {
+  return await prisma.lecturerQualification.findMany({
     where: { lecturerId },
     include: {
-      skill: true,
+      qualification: true,
     },
   });
 };
 
 /**
- * Check if skill exists
+ * Check if qualification exists
  */
-export const skillExists = async (skillId: number): Promise<boolean> => {
-  const count = await prisma.skill.count({
-    where: { id: skillId },
+export const qualificationExists = async (qualificationId: number): Promise<boolean> => {
+  const count = await prisma.qualification.count({
+    where: { id: qualificationId },
   });
   return count > 0;
 };

@@ -5,22 +5,22 @@
 
 import { prisma } from "../config/prisma.js";
 import type {
-  SessionDay,
-  SessionDayWithAvailability,
+  DefenseDay,
+  DefenseDayWithAvailability,
   LecturerDayAvailability,
-  LecturerSessionConfig,
+  LecturerDefenseConfig,
   AvailabilityStatus,
 } from "../types/index.js";
 
 /**
- * Get all session days for a specific session
+ * Get all defense days for a specific defense
  */
-export const getSessionDaysBySessionId = async (
-  sessionId: number,
-): Promise<SessionDay[]> => {
-  return await prisma.sessionDay.findMany({
+export const getDefenseDaysByDefenseId = async (
+  defenseId: number,
+): Promise<DefenseDay[]> => {
+  return await prisma.defenseDay.findMany({
     where: {
-      sessionId,
+      defenseId,
     },
     orderBy: {
       dayDate: "asc",
@@ -29,15 +29,15 @@ export const getSessionDaysBySessionId = async (
 };
 
 /**
- * Get all session days for active session with lecturer availability
+ * Get all defense days for active defense with lecturer availability
  */
-export const getSessionDaysWithAvailability = async (
-  sessionId: number,
+export const getDefenseDaysWithAvailability = async (
+  defenseId: number,
   lecturerId: number,
-): Promise<SessionDayWithAvailability[]> => {
-  return await prisma.sessionDay.findMany({
+): Promise<DefenseDayWithAvailability[]> => {
+  return await prisma.defenseDay.findMany({
     where: {
-      sessionId,
+      defenseId,
     },
     include: {
       lecturerDayAvailability: {
@@ -53,24 +53,24 @@ export const getSessionDaysWithAvailability = async (
 };
 
 /**
- * Get lecturer's availability for a specific session
+ * Get lecturer's availability for a specific defense
  */
 export const getLecturerAvailability = async (
   lecturerId: number,
-  sessionId: number,
+  defenseId: number,
 ): Promise<LecturerDayAvailability[]> => {
   return await prisma.lecturerDayAvailability.findMany({
     where: {
       lecturerId,
-      sessionDay: {
-        sessionId,
+      defenseDay: {
+        defenseId,
       },
     },
     include: {
-      sessionDay: true,
+      defenseDay: true,
     },
     orderBy: {
-      sessionDay: {
+      defenseDay: {
         dayDate: "asc",
       },
     },
@@ -78,16 +78,16 @@ export const getLecturerAvailability = async (
 };
 
 /**
- * Get lecturer's session configuration
+ * Get lecturer's defense configuration
  */
-export const getLecturerSessionConfig = async (
+export const getLecturerDefenseConfig = async (
   lecturerId: number,
-  sessionId: number,
-): Promise<LecturerSessionConfig | null> => {
-  return await prisma.lecturerSessionConfig.findFirst({
+  defenseId: number,
+): Promise<LecturerDefenseConfig | null> => {
+  return await prisma.lecturerDefenseConfig.findFirst({
     where: {
       lecturerId,
-      sessionId,
+      defenseId,
     },
   });
 };
@@ -97,12 +97,12 @@ export const getLecturerSessionConfig = async (
  */
 export const findAvailabilityRecord = async (
   lecturerId: number,
-  sessionDayId: number,
+  defenseDayId: number,
 ): Promise<LecturerDayAvailability | null> => {
   return await prisma.lecturerDayAvailability.findFirst({
     where: {
       lecturerId,
-      sessionDayId,
+      defenseDayId,
     },
   });
 };
@@ -112,11 +112,11 @@ export const findAvailabilityRecord = async (
  */
 export const upsertAvailability = async (
   lecturerId: number,
-  sessionDayId: number,
+  defenseDayId: number,
   status: AvailabilityStatus,
 ): Promise<LecturerDayAvailability> => {
   // First, check if record exists
-  const existing = await findAvailabilityRecord(lecturerId, sessionDayId);
+  const existing = await findAvailabilityRecord(lecturerId, defenseDayId);
 
   if (existing) {
     // Update existing record
@@ -128,7 +128,7 @@ export const upsertAvailability = async (
         status,
       },
       include: {
-        sessionDay: true,
+        defenseDay: true,
       },
     });
   } else {
@@ -136,11 +136,11 @@ export const upsertAvailability = async (
     return await prisma.lecturerDayAvailability.create({
       data: {
         lecturerId,
-        sessionDayId,
+        defenseDayId,
         status,
       },
       include: {
-        sessionDay: true,
+        defenseDay: true,
       },
     });
   }
@@ -151,7 +151,7 @@ export const upsertAvailability = async (
  */
 export const batchUpdateAvailability = async (
   lecturerId: number,
-  updates: Array<{ sessionDayId: number; status: AvailabilityStatus }>,
+  updates: Array<{ defenseDayId: number; status: AvailabilityStatus }>,
 ): Promise<LecturerDayAvailability[]> => {
   const results: LecturerDayAvailability[] = [];
 
@@ -162,7 +162,7 @@ export const batchUpdateAvailability = async (
       const existing = await tx.lecturerDayAvailability.findFirst({
         where: {
           lecturerId,
-          sessionDayId: update.sessionDayId,
+          defenseDayId: update.defenseDayId,
         },
       });
 
@@ -178,7 +178,7 @@ export const batchUpdateAvailability = async (
             status: update.status,
           },
           include: {
-            sessionDay: true,
+            defenseDay: true,
           },
         });
       } else {
@@ -186,11 +186,11 @@ export const batchUpdateAvailability = async (
         result = await tx.lecturerDayAvailability.create({
           data: {
             lecturerId,
-            sessionDayId: update.sessionDayId,
+            defenseDayId: update.defenseDayId,
             status: update.status,
           },
           include: {
-            sessionDay: true,
+            defenseDay: true,
           },
         });
       }
@@ -207,9 +207,9 @@ export const batchUpdateAvailability = async (
  */
 export const deleteAvailability = async (
   lecturerId: number,
-  sessionDayId: number,
+  defenseDayId: number,
 ): Promise<void> => {
-  const existing = await findAvailabilityRecord(lecturerId, sessionDayId);
+  const existing = await findAvailabilityRecord(lecturerId, defenseDayId);
 
   if (existing) {
     await prisma.lecturerDayAvailability.delete({
@@ -221,25 +221,25 @@ export const deleteAvailability = async (
 };
 
 /**
- * Get session by ID with lock status (for validation)
+ * Get defense by ID with lock status (for validation)
  */
-export const getSessionById = async (sessionId: number) => {
-  return await prisma.session.findUnique({
+export const getDefenseById = async (defenseId: number) => {
+  return await prisma.defense.findUnique({
     where: {
-      id: sessionId,
+      id: defenseId,
     },
   });
 };
 
 /**
- * Get session day by ID
+ * Get defense day by ID
  */
-export const getSessionDayById = async (
-  sessionDayId: number,
-): Promise<SessionDay | null> => {
-  return await prisma.sessionDay.findUnique({
+export const getDefenseDayById = async (
+  defenseDayId: number,
+): Promise<DefenseDay | null> => {
+  return await prisma.defenseDay.findUnique({
     where: {
-      id: sessionDayId,
+      id: defenseDayId,
     },
   });
 };

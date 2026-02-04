@@ -4,9 +4,9 @@ import {
   successResponse,
   errorResponse,
   notFoundResponse,
-  createdResponse, // Keep createdResponse for createSemester
-  validationErrorResponse, // Keep validationErrorResponse for createSemester
-  paginatedResponse, // Keep paginatedResponse for getAllSemesters
+  createdResponse,
+  validationErrorResponse,
+  paginatedResponse,
 } from "../utils/apiResponse.js";
 import { getErrorMessage } from "../utils/typeGuards.js";
 import {
@@ -282,7 +282,7 @@ export const updateSemester = async (
  *             schema:
  *               $ref: '#/components/schemas/ErrorResponse'
  *       422:
- *         description: Cannot delete semester (e.g., has active sessions)
+ *         description: Cannot delete semester (e.g., has active defenses)
  *         content:
  *           application/json:
  *             schema:

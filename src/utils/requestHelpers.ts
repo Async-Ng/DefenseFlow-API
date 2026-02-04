@@ -8,8 +8,8 @@ import type {
   ValidatedPagination,
   ValidatedIncludeOptions,
   SemesterFilters,
-  SessionFilters,
-  SessionType,
+  DefenseFilters,
+  DefenseType,
 } from "../types/index.js";
 
 /**
@@ -94,21 +94,21 @@ export const getSemesterFilters = (req: Request): SemesterFilters => {
  * @param req - Express request object
  * @returns Session filter object
  */
-export const getSessionFilters = (req: Request): SessionFilters => {
+export const getDefenseFilters = (req: Request): DefenseFilters => {
   const semesterIdParam = req.query.semesterId;
-  const sessionCodeParam = req.query.sessionCode;
+  const defenseCodeParam = req.query.defenseCode;
   const typeParam = req.query.type;
 
-  let sessionType: SessionType | undefined = undefined;
+  let defenseType: DefenseType | undefined = undefined;
   if (isString(typeParam) && (typeParam === "Main" || typeParam === "Resit")) {
-    sessionType = typeParam;
+    defenseType = typeParam;
   }
 
   return {
     semesterId: isString(semesterIdParam)
       ? parseInt(semesterIdParam, 10)
       : undefined,
-    sessionCode: isString(sessionCodeParam) ? sessionCodeParam : undefined,
-    type: sessionType,
+    defenseCode: isString(defenseCodeParam) ? defenseCodeParam : undefined,
+    type: defenseType,
   };
 };

@@ -9,25 +9,25 @@ import * as availabilityController from "../controllers/availabilityController.j
 const router: express.Router = express.Router();
 
 // ============================================================================
-// Session Days Routes
+// Defense Days Routes
 // ============================================================================
 
 /**
- * GET /api/availability/sessions/:sessionId/days
- * Get all session days for a specific session
+ * GET /api/availability/defenses/:defenseId/days
+ * Get all defense days for a specific defense
  */
 router.get(
-  "/sessions/:sessionId/days",
-  availabilityController.getSessionDays,
+  "/defenses/:defenseId/days",
+  availabilityController.getDefenseDays,
 );
 
 /**
- * GET /api/availability/sessions/:sessionId/days/with-availability
- * Get session days with lecturer's availability status
+ * GET /api/availability/defenses/:defenseId/days/with-availability
+ * Get defense days with lecturer's availability status
  */
 router.get(
-  "/sessions/:sessionId/days/with-availability",
-  availabilityController.getSessionDaysWithAvailability,
+  "/defenses/:defenseId/days/with-availability",
+  availabilityController.getDefenseDaysWithAvailability,
 );
 
 // ============================================================================
@@ -36,7 +36,7 @@ router.get(
 
 /**
  * GET /api/availability/lecturers/:lecturerId/status
- * Get lecturer's registered status for a session
+ * Get lecturer's registered status for a defense
  */
 router.get(
   "/lecturers/:lecturerId/status",
@@ -45,7 +45,7 @@ router.get(
 
 /**
  * PUT /api/availability/lecturers/:lecturerId/availability
- * Update lecturer availability for a specific session day
+ * Update lecturer availability for a specific defense day
  */
 router.put(
   "/lecturers/:lecturerId/availability",
@@ -54,7 +54,7 @@ router.put(
 
 /**
  * PUT /api/availability/lecturers/:lecturerId/availability/batch
- * Batch update lecturer availability for multiple session days
+ * Batch update lecturer availability for multiple defense days
  */
 router.put(
   "/lecturers/:lecturerId/availability/batch",
@@ -62,11 +62,11 @@ router.put(
 );
 
 /**
- * DELETE /api/availability/lecturers/:lecturerId/availability/:sessionDayId
+ * DELETE /api/availability/lecturers/:lecturerId/availability/:defenseDayId
  * Remove availability record (revert to Available)
  */
 router.delete(
-  "/lecturers/:lecturerId/availability/:sessionDayId",
+  "/lecturers/:lecturerId/availability/:defenseDayId",
   availabilityController.removeAvailability,
 );
 
