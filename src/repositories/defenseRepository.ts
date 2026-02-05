@@ -279,7 +279,7 @@ export const checkDependencies = async (
         },
       },
     }),
-    prisma.topicDefenseRegistration.count({
+    prisma.topicDefense.count({
       where: { defenseId },
     }),
   ]);

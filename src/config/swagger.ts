@@ -417,11 +417,11 @@ const options: swaggerJsdoc.Options = {
             },
           },
         },
-        TopicDefenseRegistration: {
+        TopicDefense: {
           type: "object",
           properties: {
             id: { type: "integer", example: 1 },
-            registrationCode: { type: "string", example: "REG_001" },
+            topicDefenseCode: { type: "string", example: "DEF_TOPIC_001" },
             topicId: { type: "integer", example: 10 },
             defenseId: { type: "integer", example: 5 },
             finalResult: {
@@ -617,17 +617,17 @@ const options: swaggerJsdoc.Options = {
         },
         DefenseCouncil: {
           type: "object",
-          required: ["id", "defenseCouncilCode", "registrationId", "councilBoardId"],
+          required: ["id", "defenseCouncilCode", "topicDefenseId", "councilBoardId"],
           properties: {
             id: { type: "integer", example: 50 },
             defenseCouncilCode: { type: "string", example: "DC-TOPIC001-123" },
-            registrationId: { type: "integer", example: 5 },
+            topicDefenseId: { type: "integer", example: 5 },
             councilBoardId: { type: "integer", example: 10 },
             startTime: { type: "string", format: "time", example: "08:00:00" },
             endTime: { type: "string", format: "time", example: "08:45:00" },
             councilBoard: { $ref: "#/components/schemas/CouncilBoard" },
-            registration: {
-              $ref: "#/components/schemas/TopicDefenseRegistration",
+            topicDefense: {
+              $ref: "#/components/schemas/TopicDefense",
             },
           },
         },

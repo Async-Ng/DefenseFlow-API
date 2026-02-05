@@ -66,8 +66,8 @@ export const deleteTopic = async (id: number) => {
   }
 
   // Check for dependencies (simplified: relying on foreign key constraints for now or check registration)
-  const registration = await topicRepository.findLatestRegistration(id);
-  if (registration) {
+  const topicDefense = await topicRepository.findLatestTopicDefense(id);
+  if (topicDefense) {
     // If we want to block deletion if registered:
     // throw new Error("Cannot delete topic that is registered in a defense");
   }
@@ -88,13 +88,13 @@ export const updateTopicResult = async (
     throw new Error("Topic not found");
   }
 
-  const registration = await topicRepository.findLatestRegistration(id);
-  if (!registration) {
+  const topicDefense = await topicRepository.findLatestTopicDefense(id);
+  if (!topicDefense) {
     throw new Error("Topic is not registered in any defense");
   }
 
-  return await topicRepository.updateRegistrationResult(
-    registration.id,
+  return await topicRepository.updateTopicDefenseResult(
+    topicDefense.id,
     data.result,
   );
 };
