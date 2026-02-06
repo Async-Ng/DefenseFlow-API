@@ -19,6 +19,11 @@ interface SchedulingData {
   defense: Defense;
   topics: (Topic & {
     topicSupervisors: (TopicSupervisor & { lecturer: Lecturer })[];
+    topicType?: {
+      id: number;
+      name: string;
+      qualifications: Qualification[];
+    } | null;
   })[];
   lecturers: (Lecturer & {
     lecturerDayAvailability: LecturerDayAvailability[];
@@ -43,6 +48,72 @@ const checkCommonQualificationCoverage = (group: (Lecturer & { lecturerQualifica
     group.flatMap(l => l.lecturerQualifications.map(ls => ls.qualification.id))
   );
   return commonQualifications.every(s => groupQualificationIds.has(s.id));
+};
+
+// Helper to check if lecturer has ANY qualification matching topic type
+const hasTopicTypeQualification = (
+  lecturer: Lecturer & { lecturerQualifications: (LecturerQualification & { qualification: Qualification })[] },
+  topicTypeQualifications: Qualification[]
+) => {
+  if (!topicTypeQualifications || topicTypeQualifications.length === 0) {
+    return true; // No specific requirement
+  }
+  
+  const lecturerQualIds = new Set(
+    lecturer.lecturerQualifications.map(lq => lq.qualificationId)
+  );
+  
+  // Lecturer must have AT LEAST ONE qualification matching topic type
+  return topicTypeQualifications.some(tq => lecturerQualIds.has(tq.id));
+};
+
+// Helper to select best candidates with topic type matching
+// Returns up to `target` candidates, prioritizing those with topic type qual + highest scores
+const selectCandidatesWithTopicTypePreference = <
+  T extends Lecturer & {
+    lecturerDayAvailability: LecturerDayAvailability[];
+    lecturerQualifications: (LecturerQualification & { qualification: Qualification })[];
+  }
+>(
+  candidates: T[],
+  topicTypeQualifications: Qualification[],
+  commonQualificationIds: number[],
+  target: number = 5
+): {
+  selected: T[];
+  matchedCount: number;
+  totalMatched: number;
+} => {
+  // Separate into matched and unmatched
+  const matched: T[] = [];
+  const unmatched: T[] = [];
+  
+  candidates.forEach(c => {
+    if (hasTopicTypeQualification(c, topicTypeQualifications)) {
+      matched.push(c);
+    } else {
+      unmatched.push(c);
+    }
+  });
+  
+  // Sort both by score
+  const sortByScore = (a: T, b: T) =>
+    calculateTotalScore(b, commonQualificationIds) - calculateTotalScore(a, commonQualificationIds);
+  
+  matched.sort(sortByScore);
+  unmatched.sort(sortByScore);
+  
+  // Prioritize matched, then fill with unmatched if needed
+  const selected = [
+    ...matched.slice(0, target),
+    ...unmatched.slice(0, Math.max(0, target - matched.length))
+  ];
+  
+  return {
+    selected: selected.slice(0, target) as T[],
+    matchedCount: Math.min(matched.length, target),
+    totalMatched: matched.length
+  };
 };
 
 export const generateSchedule = async (defenseId: number) => {
@@ -121,6 +192,11 @@ const fetchSchedulingData = async (
       },
       topicDefenses: {
         where: { defenseId: defenseId },
+      },
+      topicType: {
+        include: {
+          qualifications: true,
+        },
       },
     },
   });
@@ -224,8 +300,29 @@ const runSchedulingAlgorithm = (data: SchedulingData) => {
         break;
       }
       
-      // Sort by total score
-      const sortedCandidates = [...candidates].sort((a, b) =>
+      // Get topic type qualifications
+      const topicTypeQualifications = topic.topicType?.qualifications || [];
+      
+      // Select candidates with topic type preference (prioritize matched, fill with others)
+      const { selected: preSelected, matchedCount, totalMatched } = selectCandidatesWithTopicTypePreference(
+        candidates,
+        topicTypeQualifications,
+        commonQualificationIds,
+        5
+      );
+      
+      if (preSelected.length < 5) {
+        continuePass1 = false;
+        break;
+      }
+      
+      // Log topic type matching status
+      if (topicTypeQualifications.length > 0) {
+        console.log(`Topic ${topic.topicCode} (${topic.topicType?.name}): ${matchedCount}/5 members with matching quals (${totalMatched} available)`);
+      }
+      
+      // Sort pre-selected by total score for coverage-first selection
+      const sortedCandidates = [...preSelected].sort((a, b) =>
         calculateTotalScore(b, commonQualificationIds) - calculateTotalScore(a, commonQualificationIds)
       );
       
@@ -299,11 +396,26 @@ const runSchedulingAlgorithm = (data: SchedulingData) => {
           continue;
         }
         
-        // Select top 5 by score (best-effort, no coverage requirement)
-        const sortedCandidates = [...candidates].sort((a, b) =>
-          calculateTotalScore(b, commonQualificationIds) - calculateTotalScore(a, commonQualificationIds)
+        // Get topic type qualifications
+        const topicTypeQualifications = topic.topicType?.qualifications || [];
+        
+        // Select with topic type preference (best-effort, no strict requirement)
+        const { selected: selectedGroup, matchedCount, totalMatched } = selectCandidatesWithTopicTypePreference(
+          candidates,
+          topicTypeQualifications,
+          commonQualificationIds,
+          5
         );
-        const selectedGroup = sortedCandidates.slice(0, 5);
+        
+        if (selectedGroup.length < 5) {
+          console.warn(`❌ Not enough lecturers for topic ${topic.topicCode}`);
+          continue;
+        }
+        
+        // Log topic type matching status
+        if (topicTypeQualifications.length > 0) {
+          console.log(`Pass 2: Topic ${topic.topicCode} (${topic.topicType?.name}): ${matchedCount}/5 members with matching quals`);
+        }
         
         // Log coverage status
         const hasFullCoverage = checkCommonQualificationCoverage(selectedGroup, commonQualifications);
