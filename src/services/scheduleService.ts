@@ -182,155 +182,163 @@ interface ScheduledCouncilBoard {
 }
 
 const runSchedulingAlgorithm = (data: SchedulingData) => {
-  const { defenseDays, lecturers, defense, commonQualifications } = data;
-  let unscheduledTopics = [...data.topics];
+  const { defenseDays, lecturers, commonQualifications, topics } = data;
   const scheduled: ScheduledCouncilBoard[] = [];
-  const commonQualificationIds = commonQualifications.map(s => s.id);
-
-  const timePerTopic = defense.timePerTopic || 45;
-  const minutesPerDay = 480; // 8 hours
-  const maxTopicsPerDay = Math.floor(minutesPerDay / timePerTopic);
-
-  // Helper to check availability
-  const isAvailable = (lecturerId: number, dayId: number): boolean => {
-    const lecturer = lecturers.find((l) => l.id === lecturerId);
-    if (!lecturer) return false;
-    const availability = lecturer.lecturerDayAvailability.find(
-      (a) => a.defenseDayId === dayId,
-    );
-     // Explicit 'Busy' prevents scheduling. Missing record or 'Available' allows it.
-    return !availability || availability.status !== AvailabilityStatus.Busy;
-  };
-
-  // Track assigned lecturers per day
-  const dailyAssignedLecturers = new Map<number, Set<number>>(); // dayId -> Set(lecturerIds)
-
-  for (const day of defenseDays) {
-    if (unscheduledTopics.length === 0) break;
-
-    if (!dailyAssignedLecturers.has(day.id)) {
-      dailyAssignedLecturers.set(day.id, new Set());
-    }
-    const assignedForDay = dailyAssignedLecturers.get(day.id)!;
-    let topicsScheduledToday = 0;
-
-    // Try to form boards and fill the day
-    let continueDay = true;
-    while (continueDay && unscheduledTopics.length > 0 && topicsScheduledToday < maxTopicsPerDay) {
+  const commonQualificationIds = commonQualifications.map(q => q.id);
+  
+  // Track which topics have been scheduled
+  const scheduledTopicIds = new Set<number>();
+  const skippedTopics: Topic[] = [];
+  
+  // Track lecturers used globally (can't be reused across days)
+  const usedLecturers = new Set<number>();
+  
+  // Helper: Get available candidates for a day
+  const getAvailableCandidates = (dayId: number) => {
+    return lecturers.filter(l => {
+      if (usedLecturers.has(l.id)) return false;
       
-      const remainingSlotsToday = maxTopicsPerDay - topicsScheduledToday;
-      if (remainingSlotsToday <= 0) break;
-
-      // 1. Identify Candidates
-      const candidates = lecturers.filter(
-        (l) => !assignedForDay.has(l.id) && isAvailable(l.id, day.id),
-      );
-
+      const availability = l.lecturerDayAvailability.find(a => a.defenseDayId === dayId);
+      return !availability || availability.status !== AvailabilityStatus.Busy;
+    });
+  };
+  
+  // =============================================================
+  // TWO-PASS STRATEGY
+  // =============================================================
+  
+  for (const defenseDay of defenseDays) {
+    // PASS 1: STRICT - Only boards with FULL common qualification coverage
+    console.log(`\n=== PASS 1 (Strict) for Day ${defenseDay.id} ===`);
+    
+    let continuePass1 = true;
+    while (continuePass1) {
+      const availableTopics = topics.filter(t => !scheduledTopicIds.has(t.id) && !skippedTopics.some(st => st.id === t.id));
+      if (availableTopics.length === 0) break;
+      
+      const topic = availableTopics[0];
+      const candidates = getAvailableCandidates(defenseDay.id);
+      
       if (candidates.length < 5) {
-        continueDay = false;
+        continuePass1 = false;
         break;
       }
-
-      // 2. Select Board Members (Coverage-First Strategy)
-      // Step 1: Ensure coverage for each common qualification
-      const selectedGroup: (Lecturer & { lecturerQualifications: (LecturerQualification & { qualification: Qualification })[] })[] = [];
-      const usedIds = new Set<number>();
-
-      // Sort candidates by total score for later use
-      const sortedCandidates = [...candidates].sort((a, b) => 
+      
+      // Sort by total score
+      const sortedCandidates = [...candidates].sort((a, b) =>
         calculateTotalScore(b, commonQualificationIds) - calculateTotalScore(a, commonQualificationIds)
       );
-
-      // First, select lecturers who have each common qualification (best score for each)
+      
+      // Coverage-First Selection
+      const selectedGroup: typeof candidates = [];
+      const usedIds = new Set<number>();
+      
+      // Step 1: Select best lecturer for each common qualification
       for (const commonQual of commonQualifications) {
-        const bestForQual = sortedCandidates.find(c => 
+        const bestForQual = sortedCandidates.find(c =>
           !usedIds.has(c.id) &&
-          c.lecturerQualifications.some(lq => 
+          c.lecturerQualifications.some(lq =>
             lq.qualification.id === commonQual.id && (lq.score || 0) > 0
           )
         );
-
-        if (!bestForQual) {
-          // Cannot find lecturer with this common qualification
-          // Skip to next day or next attempt
-          continueDay = false;
-          break;
+        
+        if (bestForQual) {
+          selectedGroup.push(bestForQual);
+          usedIds.add(bestForQual.id);
         }
-
-        selectedGroup.push(bestForQual);
-        usedIds.add(bestForQual.id);
       }
-
-      // If we couldn't satisfy common qualifications, skip this iteration
-      if (!continueDay) break;
-
-      // Step 2: Fill remaining spots (up to 5 total) with highest scoring candidates
-      while (selectedGroup.length < 5) {
+      
+      // Step 2: Fill remaining spots (up to 5)
+      while (selectedGroup.length < 5 && usedIds.size < sortedCandidates.length) {
         const next = sortedCandidates.find(c => !usedIds.has(c.id));
-        if (!next) {
-          // Not enough lecturers
-          continueDay = false;
-          break;
-        }
-        selectedGroup.push(next);
-        usedIds.add(next.id);
+        if (next) {
+          selectedGroup.push(next);
+          usedIds.add(next.id);
+        } else break;
       }
-
-      // Final validation: ensure we have exactly 5 members
+      
+      // Validate: must have exactly 5 members
       if (selectedGroup.length < 5) {
-        continueDay = false;
+        continuePass1 = false;
         break;
       }
-
-      // Double-check coverage (should always pass now, but for safety)
+      
+      // STRICT CHECK: If not full coverage, defer to Pass 2
       if (!checkCommonQualificationCoverage(selectedGroup, commonQualifications)) {
-        // This shouldn't happen with the new logic, but skip if it does
+        console.log(`⚠️  Topic ${topic.topicCode} lacks full coverage - deferring to Pass 2`);
+        skippedTopics.push(topic);
         continue;
       }
-
-      const president = selectedGroup[0];
-      const secretary = selectedGroup[1];
-      const members = selectedGroup.slice(2);
       
-      const boardMemberIds = [president.id, secretary.id, ...members.map((m) => m.id)];
-
-      // 3. Select Topics for this Board
-      const compatibleTopics = unscheduledTopics.filter((topic) => {
-        const supervisors = topic.topicSupervisors.map((ts) => ts.lecturerId);
-        return !supervisors.some((sId) => boardMemberIds.includes(sId));
-      });
-
-      if (compatibleTopics.length === 0) {
-        // Skip this president/group
-        assignedForDay.add(president.id); 
-        continue; 
-      }
-
-      // Assign topics
-      const assignedTopics = compatibleTopics.slice(0, remainingSlotsToday);
-
-      // 4. Commit Board
+      // Create board
       scheduled.push({
         boardData: {
-          presidentId: president.id,
-          secretaryId: secretary.id,
-          memberIds: members.map((m) => m.id),
-          defenseDayId: day.id,
+          presidentId: selectedGroup[0].id,
+          secretaryId: selectedGroup[1].id,
+          memberIds: selectedGroup.slice(2).map(l => l.id),
+          defenseDayId: defenseDay.id,
         },
-        topics: assignedTopics,
+        topics: [topic],
       });
-
-      // Mark lecturers as assigned
-      boardMemberIds.forEach((id) => assignedForDay.add(id));
-
-      // Update state
-      const assignedIds = new Set(assignedTopics.map((t) => t.id));
-      unscheduledTopics = unscheduledTopics.filter((t) => !assignedIds.has(t.id));
-      topicsScheduledToday += assignedTopics.length;
+      
+      scheduledTopicIds.add(topic.id);
+      selectedGroup.forEach(l => usedLecturers.add(l.id));
+    }
+    
+    // PASS 2: BEST-EFFORT for skipped topics
+    if (skippedTopics.length > 0) {
+      console.log(`\n=== PASS 2 (Best-Effort) for ${skippedTopics.length} skipped topics ===`);
+      
+      for (const topic of [...skippedTopics]) {
+        if (scheduledTopicIds.has(topic.id)) continue;
+        
+        const candidates = getAvailableCandidates(defenseDay.id);
+        
+        if (candidates.length < 5) {
+          console.warn(`❌ Not enough lecturers for topic ${topic.topicCode}`);
+          continue;
+        }
+        
+        // Select top 5 by score (best-effort, no coverage requirement)
+        const sortedCandidates = [...candidates].sort((a, b) =>
+          calculateTotalScore(b, commonQualificationIds) - calculateTotalScore(a, commonQualificationIds)
+        );
+        const selectedGroup = sortedCandidates.slice(0, 5);
+        
+        // Log coverage status
+        const hasFullCoverage = checkCommonQualificationCoverage(selectedGroup, commonQualifications);
+        if (!hasFullCoverage) {
+          const covered = commonQualifications.filter(q =>
+            selectedGroup.some(l => l.lecturerQualifications.some(lq => lq.qualificationId === q.id))
+          );
+          console.warn(`⚠️  Board for ${topic.topicCode} has partial coverage: ${covered.length}/${commonQualifications.length} common qualifications`);
+        }
+        
+        // Create board (best-effort)
+        scheduled.push({
+          boardData: {
+            presidentId: selectedGroup[0].id,
+            secretaryId: selectedGroup[1].id,
+            memberIds: selectedGroup.slice(2).map(l => l.id),
+            defenseDayId: defenseDay.id,
+          },
+          topics: [topic],
+        });
+        
+        scheduledTopicIds.add(topic.id);
+        selectedGroup.forEach(l => usedLecturers.add(l.id));
+        
+        // Remove from skipped list
+        const index = skippedTopics.findIndex(t => t.id === topic.id);
+        if (index !== -1) skippedTopics.splice(index, 1);
+      }
     }
   }
-
-  return { scheduled, unscheduled: unscheduledTopics };
+  
+  // Remaining unscheduled topics
+  const unscheduled = topics.filter(t => !scheduledTopicIds.has(t.id));
+  
+  return { scheduled, unscheduled };
 };
 
 const persistSchedule = async (defenseId: number, scheduled: ScheduledCouncilBoard[]) => {
