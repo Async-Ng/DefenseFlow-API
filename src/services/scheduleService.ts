@@ -107,7 +107,7 @@ const fetchSchedulingData = async (
   const topics = await prisma.topic.findMany({
     where: {
       semesterId: defense.semesterId,
-      topicDefenseRegistrations: {
+      topicDefenses: {
         some: {
           defenseId: defenseId,
         },
@@ -119,7 +119,7 @@ const fetchSchedulingData = async (
           lecturer: true,
         },
       },
-      topicDefenseRegistrations: {
+      topicDefenses: {
         where: { defenseId: defenseId },
       },
     },
@@ -231,18 +231,61 @@ const runSchedulingAlgorithm = (data: SchedulingData) => {
         break;
       }
 
-      // 2. Select Board Members (Score-Based)
-      // Sort by total score (descending)
+      // 2. Select Board Members (Coverage-First Strategy)
+      // Step 1: Ensure coverage for each common qualification
+      const selectedGroup: (Lecturer & { lecturerQualifications: (LecturerQualification & { qualification: Qualification })[] })[] = [];
+      const usedIds = new Set<number>();
+
+      // Sort candidates by total score for later use
       const sortedCandidates = [...candidates].sort((a, b) => 
         calculateTotalScore(b, commonQualificationIds) - calculateTotalScore(a, commonQualificationIds)
       );
 
-      // Simple Greedy: Pick top 5
-      const selectedGroup = sortedCandidates.slice(0, 5);
+      // First, select lecturers who have each common qualification (best score for each)
+      for (const commonQual of commonQualifications) {
+        const bestForQual = sortedCandidates.find(c => 
+          !usedIds.has(c.id) &&
+          c.lecturerQualifications.some(lq => 
+            lq.qualification.id === commonQual.id && (lq.score || 0) > 0
+          )
+        );
 
-      // Verify Common Qualifications Coverage
+        if (!bestForQual) {
+          // Cannot find lecturer with this common qualification
+          // Skip to next day or next attempt
+          continueDay = false;
+          break;
+        }
+
+        selectedGroup.push(bestForQual);
+        usedIds.add(bestForQual.id);
+      }
+
+      // If we couldn't satisfy common qualifications, skip this iteration
+      if (!continueDay) break;
+
+      // Step 2: Fill remaining spots (up to 5 total) with highest scoring candidates
+      while (selectedGroup.length < 5) {
+        const next = sortedCandidates.find(c => !usedIds.has(c.id));
+        if (!next) {
+          // Not enough lecturers
+          continueDay = false;
+          break;
+        }
+        selectedGroup.push(next);
+        usedIds.add(next.id);
+      }
+
+      // Final validation: ensure we have exactly 5 members
+      if (selectedGroup.length < 5) {
+        continueDay = false;
+        break;
+      }
+
+      // Double-check coverage (should always pass now, but for safety)
       if (!checkCommonQualificationCoverage(selectedGroup, commonQualifications)) {
-        // Warning or retry logic
+        // This shouldn't happen with the new logic, but skip if it does
+        continue;
       }
 
       const president = selectedGroup[0];
@@ -353,7 +396,7 @@ const persistSchedule = async (defenseId: number, scheduled: ScheduledCouncilBoa
 
       // Create Matches with Time
       for (const topic of item.topics) {
-        const reg = (topic as any).topicDefenseRegistrations?.[0];
+        const reg = (topic as any).topicDefenses?.[0];
         if (!reg) continue;
 
         // Calculate Time
