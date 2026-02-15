@@ -17,7 +17,7 @@ const options: swaggerJsdoc.Options = {
     },
     servers: [
       {
-        url: "https://defenseflow-api.onrender.com",
+        url: "https://defenseflow-api-7u97.onrender.com",
         description: "Production server",
       },
       {
