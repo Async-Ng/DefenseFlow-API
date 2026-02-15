@@ -264,7 +264,7 @@ const runSchedulingAlgorithm = (data: SchedulingData) => {
   
   // Track which topics have been scheduled
   const scheduledTopicIds = new Set<number>();
-  const skippedTopics: Topic[] = [];
+  const skippedTopics: typeof topics = [];
   
   // Track lecturers used globally (can't be reused across days)
   const usedLecturers = new Set<number>();
@@ -304,7 +304,7 @@ const runSchedulingAlgorithm = (data: SchedulingData) => {
       const topicTypeQualifications = topic.topicType?.qualifications || [];
       
       // Select candidates with topic type preference (prioritize matched, fill with others)
-      const { selected: preSelected, matchedCount, totalMatched } = selectCandidatesWithTopicTypePreference(
+      const { selected: preSelected, matchedCount } = selectCandidatesWithTopicTypePreference(
         candidates,
         topicTypeQualifications,
         commonQualificationIds,
@@ -318,7 +318,7 @@ const runSchedulingAlgorithm = (data: SchedulingData) => {
       
       // Log topic type matching status
       if (topicTypeQualifications.length > 0) {
-        console.log(`Topic ${topic.topicCode} (${topic.topicType?.name}): ${matchedCount}/5 members with matching quals (${totalMatched} available)`);
+        console.log(`Topic ${topic.topicCode} (${topic.topicType?.name || 'Unknown'}): ${matchedCount}/5 members with matching quals`);
       }
       
       // Sort pre-selected by total score for coverage-first selection
@@ -400,7 +400,7 @@ const runSchedulingAlgorithm = (data: SchedulingData) => {
         const topicTypeQualifications = topic.topicType?.qualifications || [];
         
         // Select with topic type preference (best-effort, no strict requirement)
-        const { selected: selectedGroup, matchedCount, totalMatched } = selectCandidatesWithTopicTypePreference(
+        const { selected: selectedGroup, matchedCount } = selectCandidatesWithTopicTypePreference(
           candidates,
           topicTypeQualifications,
           commonQualificationIds,
@@ -414,7 +414,7 @@ const runSchedulingAlgorithm = (data: SchedulingData) => {
         
         // Log topic type matching status
         if (topicTypeQualifications.length > 0) {
-          console.log(`Pass 2: Topic ${topic.topicCode} (${topic.topicType?.name}): ${matchedCount}/5 members with matching quals`);
+          console.log(`Pass 2: Topic ${topic.topicCode} (${topic.topicType?.name || 'Unknown'}): ${matchedCount}/5 members with matching quals`);
         }
         
         // Log coverage status
