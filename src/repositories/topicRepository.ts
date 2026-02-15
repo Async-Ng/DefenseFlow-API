@@ -1,7 +1,7 @@
 import { prisma } from "../config/prisma.js";
 import {
   DefenseResult,
-  TopicDefenseRegistration,
+  TopicDefense,
   Topic,
   Prisma,
 } from "../../generated/prisma/client.js";
@@ -131,10 +131,10 @@ export const deleteTopic = async (id: number): Promise<Topic> => {
 };
 
 /**
- * Find the latest topic defense registration for a topic
+ * Find the latest topic defense for a topic
  */
-export const findLatestRegistration = async (topicId: number) => {
-  return await prisma.topicDefenseRegistration.findFirst({
+export const findLatestTopicDefense = async (topicId: number) => {
+  return await prisma.topicDefense.findFirst({
     where: { topicId },
     orderBy: { id: "desc" },
     include: { defense: true }, // Changed from session to defense
@@ -142,14 +142,14 @@ export const findLatestRegistration = async (topicId: number) => {
 };
 
 /**
- * Update the final result of a topic defense registration
+ * Update the final result of a topic defense
  */
-export const updateRegistrationResult = async (
-  registrationId: number,
+export const updateTopicDefenseResult = async (
+  topicDefenseId: number,
   result: DefenseResult,
-): Promise<TopicDefenseRegistration> => {
-  return await prisma.topicDefenseRegistration.update({
-    where: { id: registrationId },
+): Promise<TopicDefense> => {
+  return await prisma.topicDefense.update({
+    where: { id: topicDefenseId },
     data: { finalResult: result },
   });
 };

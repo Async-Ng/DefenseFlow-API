@@ -113,12 +113,20 @@ export const findCouncilBoardsByDefense = async (
     include: {
       councilBoardMembers: {
         include: {
-          lecturer: true,
+          lecturer: {
+            include: {
+              lecturerQualifications: {
+                include: {
+                  qualification: true,
+                },
+              },
+            },
+          },
         },
       },
       defenseCouncils: {
         include: {
-          registration: {
+          topicDefense: {
             include: {
               topic: {
                 include: {
