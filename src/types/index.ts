@@ -20,6 +20,7 @@ import type {
   AvailabilityStatus,
   DefenseResult,
   TopicType,
+  TopicDefense,
 } from "../../generated/prisma/client.js";
 
 export type {
@@ -36,6 +37,7 @@ export type {
   AvailabilityStatus,
   DefenseResult,
   TopicType,
+  TopicDefense,
 };
 
 // ============================================================================
