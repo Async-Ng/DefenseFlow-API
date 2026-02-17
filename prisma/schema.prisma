@@ -26,6 +26,7 @@ model Qualification {
   name                   String                  @db.VarChar(100)
   isCommon               Boolean                 @default(false) @map("is_common")
   lecturerQualifications LecturerQualification[]
+  topicQualifications    TopicQualification[]
   topicTypes             TopicType[]             @relation("QualificationToTopicType")
 
   @@map("Qualifications")
@@ -46,15 +47,16 @@ model Lecturer {
 }
 
 model Topic {
-  id               Int                @id @default(autoincrement())
-  topicCode        String             @unique @map("topic_code") @db.VarChar(50)
-  semesterId       Int                @map("semester_id")
-  title            String?            @db.VarChar(255)
-  topicTypeId      Int?               @map("topic_type_id")
-  topicDefenses    TopicDefense[]
-  topicSupervisors TopicSupervisor[]
-  semester         Semester           @relation(fields: [semesterId], references: [id])
-  topicType        TopicType?         @relation(fields: [topicTypeId], references: [id])
+  id                  Int                  @id @default(autoincrement())
+  topicCode           String               @unique @map("topic_code") @db.VarChar(50)
+  semesterId          Int                  @map("semester_id")
+  title               String?              @db.VarChar(255)
+  topicTypeId         Int?                 @map("topic_type_id")
+  topicDefenses       TopicDefense[]
+  topicQualifications TopicQualification[]
+  topicSupervisors    TopicSupervisor[]
+  semester            Semester             @relation(fields: [semesterId], references: [id])
+  topicType           TopicType?           @relation(fields: [topicTypeId], references: [id])
 
   @@map("Topics")
 }
@@ -185,6 +187,17 @@ model TopicSupervisor {
   @@map("Topic_Supervisors")
 }
 
+model TopicQualification {
+  id              Int           @id @default(autoincrement())
+  topicId         Int           @map("topic_id")
+  qualificationId Int           @map("qualification_id")
+  topic           Topic         @relation(fields: [topicId], references: [id])
+  qualification   Qualification @relation(fields: [qualificationId], references: [id])
+
+  @@unique([topicId, qualificationId])
+  @@map("Topic_Qualifications")
+}
+
 model TopicDefense {
   id               Int              @id @default(autoincrement())
   topicDefenseCode String           @unique @map("registration_code") @db.VarChar(50)
@@ -195,7 +208,7 @@ model TopicDefense {
   defense          Defense?         @relation(fields: [defenseId], references: [id])
   topic            Topic?           @relation(fields: [topicId], references: [id])
 
-  @@map("Topic_Defense_Registrations")
+  @@map("Topic_Defenses")
 }
 
 enum DefenseStatus {
