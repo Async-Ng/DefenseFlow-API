@@ -191,6 +191,20 @@ export type QualificationFilterQuery = {
   name?: string;
 };
 
+export type CreateTopicTypeInput = {
+  name: string;
+  qualificationIds?: number[]; // Optional: link qualifications at creation time
+};
+
+export type UpdateTopicTypeInput = {
+  name?: string;
+  qualificationIds?: number[]; // If provided, syncs (replaces) the linked qualifications
+};
+
+export type TopicTypeFilterQuery = {
+  name?: string;
+};
+
 export type LecturerQualificationInput = {
   qualificationId: number;
   score: number;
