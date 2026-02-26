@@ -10,8 +10,17 @@ const router: express.Router = express.Router();
 // GET /api/lecturers - Get all lecturers with pagination
 router.get("/", lecturerController.getAllLecturers);
 
+// POST /api/lecturers - Create a lecturer
+router.post("/", lecturerController.createLecturer);
+
 // GET /api/lecturers/:id - Get lecturer by ID
 router.get("/:id", lecturerController.getLecturerById);
+
+// PATCH /api/lecturers/:id - Update lecturer details
+router.patch("/:id", lecturerController.updateLecturer);
+
+// DELETE /api/lecturers/:id - Delete lecturer
+router.delete("/:id", lecturerController.deleteLecturer);
 
 
 

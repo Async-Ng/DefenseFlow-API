@@ -3,6 +3,7 @@ import * as lecturerDefenseConfigService from "../services/lecturerDefenseConfig
 import {
   successResponse,
   errorResponse,
+  notFoundResponse,
   paginatedResponse,
 } from "../utils/apiResponse.js";
 import { LecturerDefenseConfigInput } from "../types/index.js";
@@ -236,6 +237,72 @@ export const getConfigs = async (req: Request, res: Response) => {
       "Configurations retrieved successfully",
     );
   } catch (error: any) {
+    return errorResponse(res, error.message, 500);
+  }
+};
+
+/**
+ * @swagger
+ * /api/lecturer-defense-configs/{id}:
+ *   get:
+ *     summary: Get lecturer defense configuration by ID
+ *     tags: [Lecturer Defense Configs]
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: integer
+ *     responses:
+ *       200:
+ *         description: Configuration retrieved successfully
+ *       404:
+ *         description: Configuration not found
+ *       500:
+ *         description: Server error
+ */
+export const getConfigById = async (req: Request, res: Response) => {
+  try {
+    const id = parseInt(req.params.id as string);
+    if (isNaN(id)) return errorResponse(res, "Invalid ID", 400);
+
+    const config = await lecturerDefenseConfigService.getLecturerDefenseConfigById(id);
+    return successResponse(res, config, "Configuration retrieved successfully");
+  } catch (error: any) {
+    if (error.message.includes("not found")) return notFoundResponse(res, error.message);
+    return errorResponse(res, error.message, 500);
+  }
+};
+
+/**
+ * @swagger
+ * /api/lecturer-defense-configs/{id}:
+ *   delete:
+ *     summary: Delete lecturer defense configuration
+ *     tags: [Lecturer Defense Configs]
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: integer
+ *     responses:
+ *       200:
+ *         description: Configuration deleted successfully
+ *       404:
+ *         description: Configuration not found
+ *       500:
+ *         description: Server error
+ */
+export const deleteConfig = async (req: Request, res: Response) => {
+  try {
+    const id = parseInt(req.params.id as string);
+    if (isNaN(id)) return errorResponse(res, "Invalid ID", 400);
+
+    await lecturerDefenseConfigService.deleteLecturerDefenseConfig(id);
+    return successResponse(res, null, "Configuration deleted successfully");
+  } catch (error: any) {
+    if (error.message.includes("not found")) return notFoundResponse(res, error.message);
     return errorResponse(res, error.message, 500);
   }
 };

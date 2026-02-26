@@ -70,3 +70,9 @@ export const getAll = async (
 
   return { data, total };
 };
+
+export const deleteById = async (id: number): Promise<LecturerDefenseConfig> => {
+  return prisma.lecturerDefenseConfig.delete({
+    where: { id },
+  });
+};

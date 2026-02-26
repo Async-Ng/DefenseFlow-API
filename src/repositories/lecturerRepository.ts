@@ -6,6 +6,8 @@ import type {
   PaginatedResult,
   LecturerFilters,
   LecturerWithQualifications,
+  CreateLecturerInput,
+  UpdateLecturerInput,
 } from "../types/index.js";
 
 /**
@@ -73,6 +75,43 @@ export const findAll = async (
   ]);
 
   return { data, total, page, limit };
+};
+
+/**
+ * Find lecturer by code
+ */
+export const findByCode = async (lecturerCode: string): Promise<Lecturer | null> => {
+  return await prisma.lecturer.findUnique({
+    where: { lecturerCode },
+  });
+};
+
+/**
+ * Create a new lecturer
+ */
+export const create = async (data: CreateLecturerInput): Promise<Lecturer> => {
+  return await prisma.lecturer.create({
+    data,
+  });
+};
+
+/**
+ * Update a lecturer
+ */
+export const update = async (id: number, data: UpdateLecturerInput): Promise<Lecturer> => {
+  return await prisma.lecturer.update({
+    where: { id },
+    data,
+  });
+};
+
+/**
+ * Delete a lecturer
+ */
+export const deleteLecturer = async (id: number): Promise<Lecturer> => {
+  return await prisma.lecturer.delete({
+    where: { id },
+  });
 };
 
 
