@@ -1,0 +1,71 @@
+import { prisma } from "../config/prisma.js";
+import { CreateTopicDefenseInput, TopicDefenseFilters } from "../types/index.js";
+
+const generateCode = (topicId: number, defenseId: number): string => {
+  const timestamp = Date.now().toString(36).toUpperCase();
+  return `TD-${topicId}-${defenseId}-${timestamp}`;
+};
+
+/**
+ * Create a TopicDefense registration
+ */
+export const create = async (data: CreateTopicDefenseInput) => {
+  return await prisma.topicDefense.create({
+    data: {
+      topicDefenseCode: generateCode(data.topicId, data.defenseId),
+      topicId: data.topicId,
+      defenseId: data.defenseId,
+    },
+    include: {
+      topic: true,
+      defense: true,
+    },
+  });
+};
+
+/**
+ * Find all TopicDefense records with optional filters
+ */
+export const findAll = async (filters: TopicDefenseFilters = {}) => {
+  return await prisma.topicDefense.findMany({
+    where: {
+      ...(filters.defenseId !== undefined && { defenseId: filters.defenseId }),
+      ...(filters.topicId !== undefined && { topicId: filters.topicId }),
+    },
+    include: {
+      topic: { include: { topicSupervisors: { include: { lecturer: true } } } },
+      defense: true,
+    },
+    orderBy: { id: "asc" },
+  });
+};
+
+/**
+ * Find a TopicDefense by ID
+ */
+export const findById = async (id: number) => {
+  return await prisma.topicDefense.findUnique({
+    where: { id },
+    include: {
+      topic: { include: { topicSupervisors: { include: { lecturer: true } } } },
+      defense: true,
+      defenseCouncils: true,
+    },
+  });
+};
+
+/**
+ * Check if a topic is already registered in a defense
+ */
+export const findByTopicAndDefense = async (topicId: number, defenseId: number) => {
+  return await prisma.topicDefense.findFirst({
+    where: { topicId, defenseId },
+  });
+};
+
+/**
+ * Delete a TopicDefense by ID
+ */
+export const remove = async (id: number) => {
+  return await prisma.topicDefense.delete({ where: { id } });
+};
