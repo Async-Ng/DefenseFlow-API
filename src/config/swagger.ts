@@ -61,13 +61,18 @@ const options: swaggerJsdoc.Options = {
           properties: {
             id: { type: "integer", example: 1 },
             name: { type: "string", maxLength: 100, example: "Web Application" },
-            topics: {
+            qualificationTopicTypes: {
               type: "array",
-              items: { $ref: "#/components/schemas/Topic" },
-            },
-            qualifications: {
-              type: "array",
-              items: { $ref: "#/components/schemas/Qualification" },
+              description: "Linked qualifications via junction table",
+              items: {
+                type: "object",
+                properties: {
+                  id: { type: "integer", example: 1 },
+                  qualificationId: { type: "integer", example: 2 },
+                  topicTypeId: { type: "integer", example: 1 },
+                  qualification: { $ref: "#/components/schemas/Qualification" },
+                },
+              },
             },
           },
         },
@@ -853,6 +858,33 @@ const options: swaggerJsdoc.Options = {
                     hasPreviousPage: { type: "boolean", example: false },
                   },
                 },
+              },
+            },
+          },
+        },
+        TopicTypeResponse: {
+          type: "object",
+          properties: {
+            success: { type: "boolean", example: true },
+            message: { type: "string", example: "Topic type retrieved successfully" },
+            data: { $ref: "#/components/schemas/TopicType" },
+          },
+        },
+        TopicTypeListResponse: {
+          type: "object",
+          properties: {
+            success: { type: "boolean", example: true },
+            message: { type: "string", example: "Topic types retrieved successfully" },
+            data: {
+              type: "object",
+              properties: {
+                data: {
+                  type: "array",
+                  items: { $ref: "#/components/schemas/TopicType" },
+                },
+                total: { type: "integer", example: 10 },
+                page: { type: "integer", example: 1 },
+                limit: { type: "integer", example: 10 },
               },
             },
           },

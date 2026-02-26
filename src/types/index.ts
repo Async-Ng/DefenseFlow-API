@@ -158,9 +158,18 @@ export type UpdateTopicResultInput = {
   result: DefenseResult;
 };
 
+export type CreateTopicInput = {
+  topicCode: string;
+  semesterId: number;
+  title?: string;
+  topicTypeId?: number;
+  supervisorIds?: number[];
+};
+
 export type UpdateTopicInput = {
   topicCode?: string;
   title?: string;
+  topicTypeId?: number;
   supervisorIds?: number[];
 };
 
@@ -216,6 +225,24 @@ export type UpdateLecturerQualificationsInput = {
 
 export type UpdateLecturerQualificationInput = {
   score: number;
+};
+
+export type CreateLecturerInput = {
+  lecturerCode: string;
+  fullName?: string;
+  email?: string;
+};
+
+export type UpdateLecturerInput = Partial<CreateLecturerInput>;
+
+export type CreateTopicDefenseInput = {
+  topicId: number;
+  defenseId: number;
+};
+
+export type TopicDefenseFilters = {
+  defenseId?: number;
+  topicId?: number;
 };
 
 export type LecturerWithQualifications = Lecturer & {
