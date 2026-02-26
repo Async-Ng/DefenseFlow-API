@@ -73,25 +73,120 @@ import type { CapacityCalculationRequest } from "../types/index.js";
  *         content:
  *           application/json:
  *             schema:
- *               $ref: '#/components/schemas/CapacityCalculationResponse'
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     semesterId:
+ *                       type: integer
+ *                     defenseId:
+ *                       type: integer
+ *                       nullable: true
+ *                     analysis:
+ *                       type: object
+ *                       properties:
+ *                         totalTopics:
+ *                           type: integer
+ *                         timePerTopic:
+ *                           type: integer
+ *                         workHoursPerDay:
+ *                           type: integer
+ *                         councilBoardSize:
+ *                           type: integer
+ *                     recommendations:
+ *                       type: object
+ *                       properties:
+ *                         minimumDaysRequired:
+ *                           type: integer
+ *                         recommendedDays:
+ *                           type: integer
+ *                         currentDefenseDays:
+ *                           type: integer
+ *                           nullable: true
+ *                         defenseDayAdjustment:
+ *                           type: object
+ *                           nullable: true
+ *                           properties:
+ *                             shouldAdjust:
+ *                               type: boolean
+ *                             suggestedChange:
+ *                               type: integer
+ *                             reason:
+ *                               type: string
+ *                         minLecturersRequired:
+ *                           type: integer
+ *                         recommendedLecturers:
+ *                           type: integer
+ *                         maxLecturersNeeded:
+ *                           type: integer
+ *                         topicsPerCouncilBoardPerDay:
+ *                           type: object
+ *                           properties:
+ *                             minimum:
+ *                               type: integer
+ *                             maximum:
+ *                               type: integer
+ *                             average:
+ *                               type: integer
+ *                         councilBoardsPerDay:
+ *                           type: integer
+ *                         lecturerWorkload:
+ *                           type: object
+ *                           properties:
+ *                             recommendedMin:
+ *                               type: integer
+ *                             recommendedMax:
+ *                               type: integer
+ *                             idealAverage:
+ *                               type: integer
+ *                     warnings:
+ *                       type: array
+ *                       items:
+ *                         type: string
+ *                     suggestions:
+ *                       type: array
+ *                       items:
+ *                         type: string
  *       400:
  *         description: Invalid input parameters
  *         content:
  *           application/json:
  *             schema:
- *               $ref: '#/components/schemas/ErrorResponse'
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: false
+ *                 error:
+ *                   type: string
  *       404:
  *         description: Semester or defense not found
  *         content:
  *           application/json:
  *             schema:
- *               $ref: '#/components/schemas/ErrorResponse'
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: false
+ *                 error:
+ *                   type: string
  *       500:
  *         description: Server error
  *         content:
  *           application/json:
  *             schema:
- *               $ref: '#/components/schemas/ErrorResponse'
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: false
+ *                 error:
+ *                   type: string
  */
 export async function calculateCapacity(
   req: Request,
