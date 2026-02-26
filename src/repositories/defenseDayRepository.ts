@@ -1,5 +1,5 @@
 import { prisma } from "../config/prisma.js";
-import { DefenseDay } from "@prisma/client";
+import { DefenseDay } from "../../generated/prisma/client.js";
 
 /**
  * Find a DefenseDay by ID

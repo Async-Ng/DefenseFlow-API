@@ -1,5 +1,5 @@
 import * as defenseDayRepository from "../repositories/defenseDayRepository.js";
-import { DefenseDay } from "@prisma/client";
+import { DefenseDay } from "../../generated/prisma/client.js";
 
 /**
  * Update a defense day
