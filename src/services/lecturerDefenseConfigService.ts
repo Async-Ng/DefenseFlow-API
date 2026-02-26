@@ -87,3 +87,15 @@ export const getAllLecturerDefenseConfigs = async (
     limit
   };
 }; // Added by antigravity
+
+export const getLecturerDefenseConfigById = async (id: number): Promise<LecturerDefenseConfig> => {
+  const config = await lecturerDefenseConfigRepo.getById(id);
+  if (!config) throw new Error("Configuration not found");
+  return config;
+};
+
+export const deleteLecturerDefenseConfig = async (id: number): Promise<void> => {
+  const config = await lecturerDefenseConfigRepo.getById(id);
+  if (!config) throw new Error("Configuration not found");
+  await lecturerDefenseConfigRepo.deleteById(id);
+};

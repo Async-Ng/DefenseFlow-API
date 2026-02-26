@@ -1,11 +1,14 @@
 import { Request, Response } from "express";
 import * as lecturerService from "../services/lecturerService.js";
-import { successResponse, errorResponse } from "../utils/apiResponse.js";
+import { successResponse, errorResponse, notFoundResponse, validationErrorResponse, createdResponse } from "../utils/apiResponse.js";
 import { getErrorMessage } from "../utils/typeGuards.js";
+import { getIdParam } from "../utils/requestHelpers.js";
 import type {
   IdParam,
   PaginationQuery,
   UpdateLecturerQualificationsInput,
+  CreateLecturerInput,
+  UpdateLecturerInput,
 } from "../types/index.js";
 
 // Define filter query type
@@ -63,8 +66,120 @@ export const getLecturerById = async (
   } catch (error: unknown) {
     const message = getErrorMessage(error);
     if (message.includes("not found")) {
-      return errorResponse(res, message, 404);
+      return notFoundResponse(res, message);
     }
+    return errorResponse(res, message, 500);
+  }
+};
+
+/**
+ * @swagger
+ * /api/lecturers:
+ *   post:
+ *     summary: Create a new lecturer
+ *     tags: [Lecturers]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             $ref: '#/components/schemas/CreateLecturerInput'
+ *     responses:
+ *       201:
+ *         description: Lecturer created successfully
+ *       400:
+ *         description: Validation error
+ *       500:
+ *         description: Server Error
+ */
+export const createLecturer = async (req: Request, res: Response): Promise<Response> => {
+  try {
+    const data: CreateLecturerInput = req.body;
+    if (!data.lecturerCode) {
+      return validationErrorResponse(res, { message: "lecturerCode is required" });
+    }
+    
+    const lecturer = await lecturerService.createLecturer(data);
+    return createdResponse(res, lecturer, "Lecturer created successfully");
+  } catch (error: unknown) {
+    const message = getErrorMessage(error);
+    if (message.includes("already exists")) {
+       return validationErrorResponse(res, { message });
+    }
+    return errorResponse(res, message, 500);
+  }
+};
+
+/**
+ * @swagger
+ * /api/lecturers/{id}:
+ *   patch:
+ *     summary: Update basic lecturer information
+ *     tags: [Lecturers]
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: integer
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             $ref: '#/components/schemas/UpdateLecturerInput'
+ *     responses:
+ *       200:
+ *         description: Lecturer updated
+ *       404:
+ *         description: Not found
+ *       500:
+ *         description: Server Error
+ */
+export const updateLecturer = async (req: Request, res: Response): Promise<Response> => {
+  try {
+    const id = getIdParam(req);
+    const data: UpdateLecturerInput = req.body;
+    
+    const lecturer = await lecturerService.updateLecturer(id, data);
+    return successResponse(res, lecturer, "Lecturer updated successfully");
+  } catch (error: unknown) {
+    const message = getErrorMessage(error);
+    if (message.includes("not found")) return notFoundResponse(res, message);
+    if (message.includes("already exists")) return validationErrorResponse(res, { message });
+    return errorResponse(res, message, 500);
+  }
+};
+
+/**
+ * @swagger
+ * /api/lecturers/{id}:
+ *   delete:
+ *     summary: Delete a lecturer
+ *     tags: [Lecturers]
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: integer
+ *     responses:
+ *       200:
+ *         description: Lecturer deleted
+ *       404:
+ *         description: Not found
+ *       500:
+ *         description: Server Error
+ */
+export const deleteLecturer = async (req: Request, res: Response): Promise<Response> => {
+  try {
+    const id = getIdParam(req);
+    
+    await lecturerService.deleteLecturer(id);
+    return successResponse(res, null, "Lecturer deleted successfully");
+  } catch (error: unknown) {
+    const message = getErrorMessage(error);
+    if (message.includes("not found")) return notFoundResponse(res, message);
     return errorResponse(res, message, 500);
   }
 };

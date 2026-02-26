@@ -10,6 +10,7 @@ import {
   updateDefense,
   deleteDefense,
 } from "../controllers/defenseController.js";
+import * as defenseDayController from "../controllers/defenseDayController.js";
 
 const router: express.Router = express.Router();
 
@@ -27,5 +28,9 @@ router.patch("/:id", updateDefense);
 
 // Delete defense
 router.delete("/:id", deleteDefense);
+
+// Defense Day endpoints (nested)
+router.patch("/:defenseId/days/:dayId", defenseDayController.updateDefenseDay);
+router.delete("/:defenseId/days/:dayId", defenseDayController.deleteDefenseDay);
 
 export default router;

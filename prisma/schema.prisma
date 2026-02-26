@@ -25,9 +25,9 @@ model Qualification {
   qualificationCode      String                  @unique @map("qualification_code") @db.VarChar(50)
   name                   String                  @db.VarChar(100)
   isCommon               Boolean                 @default(false) @map("is_common")
-  lecturerQualifications LecturerQualification[]
-  topicQualifications    TopicQualification[]
-  topicTypes             TopicType[]             @relation("QualificationToTopicType")
+  lecturerQualifications      LecturerQualification[]
+  topicQualifications         TopicQualification[]
+  qualificationTopicTypes     QualificationTopicType[]
 
   @@map("Qualifications")
 }
@@ -62,12 +62,23 @@ model Topic {
 }
 
 model TopicType {
-  id             Int             @id @default(autoincrement())
-  name           String          @unique @db.VarChar(100)
-  topics         Topic[]
-  qualifications Qualification[] @relation("QualificationToTopicType")
+  id                      Int                      @id @default(autoincrement())
+  name                    String                   @unique @db.VarChar(100)
+  topics                  Topic[]
+  qualificationTopicTypes QualificationTopicType[]
 
   @@map("Topic_Types")
+}
+
+model QualificationTopicType {
+  id              Int           @id @default(autoincrement())
+  qualificationId Int           @map("qualification_id")
+  topicTypeId     Int           @map("topic_type_id")
+  qualification   Qualification @relation(fields: [qualificationId], references: [id])
+  topicType       TopicType     @relation(fields: [topicTypeId], references: [id])
+
+  @@unique([qualificationId, topicTypeId])
+  @@map("Qualification_Topic_Types")
 }
 
 model Defense {

@@ -6,6 +6,7 @@ import {
   notFoundResponse,
   validationErrorResponse,
   paginatedResponse,
+  createdResponse,
 } from "../utils/apiResponse.js";
 import { getErrorMessage } from "../utils/typeGuards.js";
 import { getIdParam, getPaginationParams } from "../utils/requestHelpers.js";
@@ -14,6 +15,7 @@ import {
   UpdateTopicInput,
   TopicFilterQuery,
   TopicFilters,
+  CreateTopicInput,
 } from "../types/index.js";
 
 /**
@@ -37,6 +39,49 @@ const getTopicFilters = (req: Request): TopicFilters => {
     supervisorIds,
   };
 };
+
+/**
+ * @swagger
+ * /api/topics:
+ *   post:
+ *     summary: Create a new topic
+ *     tags: [Topics]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             $ref: '#/components/schemas/CreateTopicInput'
+ *     responses:
+ *       201:
+ *         description: Topic created successfully
+ *       400:
+ *         description: Validation error (duplicate code, invalid semester)
+ *       500:
+ *         description: Server Error
+ */
+export const createTopic = async (
+  req: Request,
+  res: Response,
+): Promise<Response> => {
+  try {
+    const data: CreateTopicInput = req.body;
+    if (!data.topicCode || !data.semesterId) {
+      return validationErrorResponse(res, {
+        message: "topicCode and semesterId are required",
+      });
+    }
+    const topic = await topicService.createTopic(data);
+    return createdResponse(res, topic, "Topic created successfully");
+  } catch (error: unknown) {
+    const message = getErrorMessage(error);
+    if (message.includes("already exists") || message.includes("not found")) {
+      return validationErrorResponse(res, { message });
+    }
+    return errorResponse(res, message, 500);
+  }
+};
+
 
 /**
  * @swagger

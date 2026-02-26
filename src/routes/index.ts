@@ -15,6 +15,8 @@ import topicRoutes from "./topicRoutes.js";
 import scheduleRoutes from "./scheduleRoutes.js";
 import capacityRoutes from "./capacityRoutes.js";
 import qualificationRoutes from "./qualificationRoutes.js";
+import topicTypeRoutes from "./topicTypeRoutes.js";
+import topicDefenseRoutes from "./topicDefenseRoutes.js";
 
 const router: express.Router = express.Router();
 
@@ -38,5 +40,7 @@ router.use("/topics", topicRoutes);
 router.use("/schedule", scheduleRoutes);
 router.use("/capacity", capacityRoutes);
 router.use("/qualifications", qualificationRoutes);
+router.use("/topic-types", topicTypeRoutes);
+router.use("/topic-defenses", topicDefenseRoutes);
 
 export default router;

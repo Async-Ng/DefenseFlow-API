@@ -6,6 +6,7 @@ import {
   Topic,
   DefenseDay,
   LecturerDayAvailability,
+  LecturerDefenseConfig,
   Defense,
   CouncilRole,
   AvailabilityStatus,
@@ -14,587 +15,598 @@ import {
   Qualification,
 } from "../../generated/prisma/client.js";
 
+// =============================================================================
+// TYPES
+// =============================================================================
 
-interface SchedulingData {
+type FullLecturer = Lecturer & {
+  lecturerDayAvailability: LecturerDayAvailability[];
+  lecturerQualifications: (LecturerQualification & { qualification: Qualification })[];
+};
+
+type FullTopic = Topic & {
+  topicSupervisors: (TopicSupervisor & { lecturer: Lecturer })[];
+  topicType?: {
+    id: number;
+    name: string;
+    qualificationTopicTypes: { qualification: Qualification }[];
+  } | null;
+  topicDefenses: { id: number; defenseId: number | null }[];
+};
+
+interface SchedulingContext {
   defense: Defense;
-  topics: (Topic & {
-    topicSupervisors: (TopicSupervisor & { lecturer: Lecturer })[];
-    topicType?: {
-      id: number;
-      name: string;
-      qualifications: Qualification[];
-    } | null;
-  })[];
-  lecturers: (Lecturer & {
-    lecturerDayAvailability: LecturerDayAvailability[];
-    lecturerQualifications: (LecturerQualification & { qualification: Qualification })[];
-  })[];
+  topics: FullTopic[];
+  lecturers: FullLecturer[];
   defenseDays: DefenseDay[];
   commonQualifications: Qualification[];
+  lecturerDefenseConfigs: LecturerDefenseConfig[];
 }
 
-// Helper to calculate total score for a lecturer
-const calculateTotalScore = (lecturer: Lecturer & { lecturerQualifications: (LecturerQualification & { qualification: Qualification })[] }, commonQualificationIds: number[]) => {
-  return lecturer.lecturerQualifications.reduce((sum, ls) => {
-    // Weight common qualifications higher
-    const weight = commonQualificationIds.includes(ls.qualification.id) ? 2 : 1;
-    return sum + ((ls.score || 0) * weight);
-  }, 0);
+interface SchedulingState {
+  /** lecturers used per day: defenseDayId → Set<lecturerId> */
+  usedLecturersPerDay: Map<number, Set<number>>;
+  lecturerTopicCount: Map<number, number>;
+  scheduledTopicIds: Set<number>;
+  configByLecturer: Map<number, LecturerDefenseConfig>;
+}
+
+/** Internal board representation (includes members for state tracking). */
+interface PlannedBoard {
+  presidentId: number;
+  secretaryId: number;
+  memberIds: number[];
+  defenseDayId: number;
+  topics: FullTopic[];
+  members: FullLecturer[];
+}
+
+// =============================================================================
+// CONSTRAINT FUNCTIONS
+// Each function enforces ONE scheduling rule and returns a boolean.
+// =============================================================================
+
+/**
+ * C1 — A lecturer may only serve on one board per defense day.
+ *      They can participate on different days if available.
+ */
+const isNotAlreadyAssignedOnDay = (
+  lecturerId: number,
+  defenseDayId: number,
+  state: SchedulingState
+): boolean => {
+  const usedOnDay = state.usedLecturersPerDay.get(defenseDayId);
+  return !usedOnDay || !usedOnDay.has(lecturerId);
 };
 
-// Helper to check if a group covers all common qualifications
-const checkCommonQualificationCoverage = (group: (Lecturer & { lecturerQualifications: (LecturerQualification & { qualification: Qualification })[] })[], commonQualifications: Qualification[]) => {
-  const groupQualificationIds = new Set(
-    group.flatMap(l => l.lecturerQualifications.map(ls => ls.qualification.id))
-  );
-  return commonQualifications.every(s => groupQualificationIds.has(s.id));
+/**
+ * C2 — A lecturer must not exceed their configured maxTopics limit.
+ */
+const isUnderTopicLimit = (lecturerId: number, state: SchedulingState): boolean => {
+  const config = state.configByLecturer.get(lecturerId);
+  if (!config?.maxTopics) return true;
+  return (state.lecturerTopicCount.get(lecturerId) ?? 0) < config.maxTopics;
 };
 
-// Helper to check if lecturer has ANY qualification matching topic type
-const hasTopicTypeQualification = (
-  lecturer: Lecturer & { lecturerQualifications: (LecturerQualification & { qualification: Qualification })[] },
+/**
+ * C3 — A lecturer must not be marked Busy on the given defense day.
+ */
+const isAvailableOnDay = (lecturer: FullLecturer, defenseDayId: number): boolean => {
+  const slot = lecturer.lecturerDayAvailability.find(a => a.defenseDayId === defenseDayId);
+  return !slot || slot.status !== AvailabilityStatus.Busy;
+};
+
+/**
+ * C4 (Soft) — A lecturer has at least one qualification matching the topic type.
+ * Returns true when there are no type requirements (unconstrained).
+ */
+const matchesTopicType = (
+  lecturer: FullLecturer,
   topicTypeQualifications: Qualification[]
-) => {
-  if (!topicTypeQualifications || topicTypeQualifications.length === 0) {
-    return true; // No specific requirement
-  }
-  
-  const lecturerQualIds = new Set(
-    lecturer.lecturerQualifications.map(lq => lq.qualificationId)
-  );
-  
-  // Lecturer must have AT LEAST ONE qualification matching topic type
-  return topicTypeQualifications.some(tq => lecturerQualIds.has(tq.id));
+): boolean => {
+  if (topicTypeQualifications.length === 0) return true;
+  const qualIds = new Set(lecturer.lecturerQualifications.map(lq => lq.qualificationId));
+  return topicTypeQualifications.some(q => qualIds.has(q.id));
 };
 
-// Helper to select best candidates with topic type matching
-// Returns up to `target` candidates, prioritizing those with topic type qual + highest scores
-const selectCandidatesWithTopicTypePreference = <
-  T extends Lecturer & {
-    lecturerDayAvailability: LecturerDayAvailability[];
-    lecturerQualifications: (LecturerQualification & { qualification: Qualification })[];
+/**
+ * C5 (Strict — Pass 1 only) — The council collectively covers ALL common qualifications.
+ */
+const coversAllCommonQualifications = (
+  group: FullLecturer[],
+  commonQualifications: Qualification[]
+): boolean => {
+  const groupQualIds = new Set(
+    group.flatMap(l => l.lecturerQualifications.map(lq => lq.qualificationId))
+  );
+  return commonQualifications.every(q => groupQualIds.has(q.id));
+};
+
+// =============================================================================
+// SCORING
+// =============================================================================
+
+/** Weighted score — common qualifications count double. */
+const calculateLecturerScore = (
+  lecturer: FullLecturer,
+  commonQualificationIds: number[]
+): number =>
+  lecturer.lecturerQualifications.reduce((sum, lq) => {
+    const weight = commonQualificationIds.includes(lq.qualificationId) ? 2 : 1;
+    return sum + (lq.score ?? 0) * weight;
+  }, 0);
+
+// =============================================================================
+// LOGGING HELPERS
+// =============================================================================
+
+const logTopicTypeMatch = (
+  pass: string,
+  topic: FullTopic,
+  topicTypeQuals: Qualification[],
+  matchedCount: number
+): void => {
+  if (topicTypeQuals.length > 0) {
+    console.log(`[${pass}] ${topic.topicCode} (${topic.topicType?.name}): ${matchedCount}/5 with topic-type quals`);
   }
->(
-  candidates: T[],
+};
+
+const logPartialCoverage = (
+  topic: FullTopic,
+  group: FullLecturer[],
+  commonQualifications: Qualification[]
+): void => {
+  const covered = commonQualifications.filter(q =>
+    group.some(l => l.lecturerQualifications.some(lq => lq.qualificationId === q.id))
+  ).length;
+  console.warn(`⚠️  [Pass2] ${topic.topicCode}: partial coverage ${covered}/${commonQualifications.length}`);
+};
+
+// =============================================================================
+// CANDIDATE POOL — applies C1 + C2 + C3
+// =============================================================================
+
+const getEligibleCandidates = (
+  lecturers: FullLecturer[],
+  defenseDayId: number,
+  state: SchedulingState
+): FullLecturer[] =>
+  lecturers.filter(l =>
+    isNotAlreadyAssignedOnDay(l.id, defenseDayId, state) &&
+    isUnderTopicLimit(l.id, state) &&
+    isAvailableOnDay(l, defenseDayId)
+  );
+
+// =============================================================================
+// TOPIC TYPE PREFERENCE — C4-aware candidate ranking
+// =============================================================================
+
+/**
+ * Sorts candidates so that topic-type matched lecturers appear first,
+ * then fills remaining slots with unmatched (by score).
+ */
+const selectWithTopicTypePreference = (
+  candidates: FullLecturer[],
   topicTypeQualifications: Qualification[],
   commonQualificationIds: number[],
-  target: number = 5
-): {
-  selected: T[];
-  matchedCount: number;
-  totalMatched: number;
-} => {
-  // Separate into matched and unmatched
-  const matched: T[] = [];
-  const unmatched: T[] = [];
-  
-  candidates.forEach(c => {
-    if (hasTopicTypeQualification(c, topicTypeQualifications)) {
-      matched.push(c);
-    } else {
-      unmatched.push(c);
+  count: number = 5
+): { selected: FullLecturer[]; matchedCount: number } => {
+  const byScore = (a: FullLecturer, b: FullLecturer) =>
+    calculateLecturerScore(b, commonQualificationIds) - calculateLecturerScore(a, commonQualificationIds);
+
+  const matched = candidates.filter(c => matchesTopicType(c, topicTypeQualifications)).sort(byScore);
+  const unmatched = candidates.filter(c => !matchesTopicType(c, topicTypeQualifications)).sort(byScore);
+
+  const selected = [...matched.slice(0, count), ...unmatched].slice(0, count);
+  return { selected, matchedCount: Math.min(matched.length, count) };
+};
+
+// =============================================================================
+// COUNCIL GROUP BUILDER — Coverage-First selection (C5 preparation)
+// =============================================================================
+
+/**
+ * Builds a council group using Coverage-First strategy:
+ * 1. Best-scoring lecturer per common qualification gets a seat.
+ * 2. Remaining seats filled by overall score.
+ */
+const buildCouncilGroup = (
+  pool: FullLecturer[],
+  commonQualifications: Qualification[],
+  commonQualificationIds: number[],
+  size: number = 5
+): FullLecturer[] => {
+  const sorted = [...pool].sort(
+    (a, b) => calculateLecturerScore(b, commonQualificationIds) - calculateLecturerScore(a, commonQualificationIds)
+  );
+  const group: FullLecturer[] = [];
+  const assigned = new Set<number>();
+
+  // Step 1: cover each common qualification
+  for (const qual of commonQualifications) {
+    const best = sorted.find(
+      c => !assigned.has(c.id) &&
+        c.lecturerQualifications.some(lq => lq.qualificationId === qual.id && (lq.score ?? 0) > 0)
+    );
+    if (best) { group.push(best); assigned.add(best.id); }
+  }
+
+  // Step 2: fill remaining seats by score
+  for (const candidate of sorted) {
+    if (group.length >= size) break;
+    if (!assigned.has(candidate.id)) { group.push(candidate); assigned.add(candidate.id); }
+  }
+
+  return group;
+};
+
+// =============================================================================
+// BOARD FACTORY
+// =============================================================================
+
+const buildPlannedBoard = (
+  members: FullLecturer[],
+  defenseDayId: number,
+  topics: FullTopic[]
+): PlannedBoard => ({
+  presidentId: members[0].id,
+  secretaryId: members[1].id,
+  memberIds: members.slice(2).map(l => l.id),
+  defenseDayId,
+  topics,
+  members,
+});
+
+// =============================================================================
+// STATE MUTATIONS
+// =============================================================================
+
+const commitBoardToState = (board: PlannedBoard, state: SchedulingState): void => {
+  // Mark each member as used for this specific day (C1)
+  if (!state.usedLecturersPerDay.has(board.defenseDayId)) {
+    state.usedLecturersPerDay.set(board.defenseDayId, new Set());
+  }
+  const usedOnDay = state.usedLecturersPerDay.get(board.defenseDayId)!;
+
+  board.members.forEach(l => {
+    usedOnDay.add(l.id);
+    state.lecturerTopicCount.set(l.id, (state.lecturerTopicCount.get(l.id) ?? 0) + 1);
+  });
+  board.topics.forEach(t => state.scheduledTopicIds.add(t.id));
+};
+
+// =============================================================================
+// UTILITIES
+// =============================================================================
+
+const getPendingTopics = (
+  topics: FullTopic[],
+  scheduledIds: Set<number>,
+  deferred: FullTopic[]
+): FullTopic[] =>
+  topics.filter(t => !scheduledIds.has(t.id) && !deferred.some(d => d.id === t.id));
+
+const minutesToDate = (totalMinutes: number): Date => {
+  const d = new Date();
+  d.setHours(Math.floor(totalMinutes / 60), totalMinutes % 60, 0, 0);
+  return d;
+};
+
+// =============================================================================
+// PASS 1: STRICT SCHEDULER
+// Requires FULL common qualification coverage (C5).
+// =============================================================================
+
+type Pass1Result = PlannedBoard | "deferred" | "insufficient_candidates";
+
+const tryScheduleStrict = (
+  topic: FullTopic,
+  candidates: FullLecturer[],
+  commonQualifications: Qualification[],
+  commonQualificationIds: number[],
+  defenseDayId: number
+): Pass1Result => {
+  if (candidates.length < 5) return "insufficient_candidates";
+
+  const topicTypeQuals = topic.topicType?.qualificationTopicTypes?.map(q => q.qualification) ?? [];
+  const { selected, matchedCount } = selectWithTopicTypePreference(candidates, topicTypeQuals, commonQualificationIds);
+
+  if (selected.length < 5) return "insufficient_candidates";
+
+  logTopicTypeMatch("Pass1", topic, topicTypeQuals, matchedCount);
+
+  const members = buildCouncilGroup(selected, commonQualifications, commonQualificationIds);
+  if (members.length < 5) return "insufficient_candidates";
+
+  if (!coversAllCommonQualifications(members, commonQualifications)) {
+    console.log(`⚠️  [Pass1] ${topic.topicCode}: incomplete coverage → deferred`);
+    return "deferred";
+  }
+
+  return buildPlannedBoard(members, defenseDayId, [topic]);
+};
+
+// =============================================================================
+// PASS 2: BEST-EFFORT SCHEDULER
+// Accepts partial common qualification coverage.
+// =============================================================================
+
+const tryScheduleBestEffort = (
+  topic: FullTopic,
+  candidates: FullLecturer[],
+  commonQualifications: Qualification[],
+  commonQualificationIds: number[],
+  defenseDayId: number
+): PlannedBoard | null => {
+  if (candidates.length < 5) {
+    console.warn(`❌ [Pass2] ${topic.topicCode}: not enough candidates (${candidates.length})`);
+    return null;
+  }
+
+  const topicTypeQuals = topic.topicType?.qualificationTopicTypes?.map(q => q.qualification) ?? [];
+  const { selected, matchedCount } = selectWithTopicTypePreference(candidates, topicTypeQuals, commonQualificationIds);
+
+  if (selected.length < 5) {
+    console.warn(`❌ [Pass2] ${topic.topicCode}: not enough candidates after filtering`);
+    return null;
+  }
+
+  logTopicTypeMatch("Pass2", topic, topicTypeQuals, matchedCount);
+
+  if (!coversAllCommonQualifications(selected, commonQualifications)) {
+    logPartialCoverage(topic, selected, commonQualifications);
+  }
+
+  return buildPlannedBoard(selected, defenseDayId, [topic]);
+};
+
+// =============================================================================
+// MAIN SCHEDULER ORCHESTRATOR
+// Pure two-pass scheduling loop — no business logic here.
+// =============================================================================
+
+const runScheduler = (ctx: SchedulingContext): { boards: PlannedBoard[]; unscheduled: FullTopic[] } => {
+  const { defenseDays, lecturers, commonQualifications, topics, lecturerDefenseConfigs } = ctx;
+  const commonQualificationIds = commonQualifications.map(q => q.id);
+
+  const state: SchedulingState = {
+    usedLecturersPerDay: new Map(),
+    lecturerTopicCount: new Map(),
+    scheduledTopicIds: new Set(),
+    configByLecturer: new Map(
+      lecturerDefenseConfigs
+        .filter(c => c.lecturerId != null)
+        .map(c => [c.lecturerId!, c])
+    ),
+  };
+
+  const boards: PlannedBoard[] = [];
+  const deferredTopics: FullTopic[] = [];
+
+  for (const day of defenseDays) {
+    console.log(`\n=== Defense Day ${day.id} ===`);
+
+    // ── Pass 1: Strict ──────────────────────────────────────────────────────
+    console.log("--- Pass 1 (Strict) ---");
+    let pass1Running = true;
+    while (pass1Running) {
+      const pending = getPendingTopics(topics, state.scheduledTopicIds, deferredTopics);
+      if (pending.length === 0) break;
+
+      const [topic] = pending;
+      const candidates = getEligibleCandidates(lecturers, day.id, state);
+      const result = tryScheduleStrict(topic, candidates, commonQualifications, commonQualificationIds, day.id);
+
+      if (result === "insufficient_candidates") { pass1Running = false; }
+      else if (result === "deferred") { deferredTopics.push(topic); }
+      else { boards.push(result); commitBoardToState(result, state); }
     }
-  });
-  
-  // Sort both by score
-  const sortByScore = (a: T, b: T) =>
-    calculateTotalScore(b, commonQualificationIds) - calculateTotalScore(a, commonQualificationIds);
-  
-  matched.sort(sortByScore);
-  unmatched.sort(sortByScore);
-  
-  // Prioritize matched, then fill with unmatched if needed
-  const selected = [
-    ...matched.slice(0, target),
-    ...unmatched.slice(0, Math.max(0, target - matched.length))
-  ];
-  
-  return {
-    selected: selected.slice(0, target) as T[],
-    matchedCount: Math.min(matched.length, target),
-    totalMatched: matched.length
-  };
-};
 
-export const generateSchedule = async (defenseId: number) => {
-  // 1. Fetch Data & Validate Pre-conditions
-  const data = await fetchSchedulingData(defenseId);
-  validatePreConditions(data);
+    // ── Pass 2: Best-Effort ─────────────────────────────────────────────────
+    if (deferredTopics.length > 0) {
+      console.log(`--- Pass 2 (Best-Effort): ${deferredTopics.length} deferred ---`);
+      for (const topic of [...deferredTopics]) {
+        if (state.scheduledTopicIds.has(topic.id)) continue;
 
-  // 2. Capacity Check (Fail Fast)
-  validateCapacity(data);
+        const candidates = getEligibleCandidates(lecturers, day.id, state);
+        const board = tryScheduleBestEffort(topic, candidates, commonQualifications, commonQualificationIds, day.id);
+        if (!board) continue;
 
-  // 3. Execution (In-Memory)
-  const { scheduled, unscheduled } = runSchedulingAlgorithm(data);
-
-  // 4. Persistence (Transactional)
-  await persistSchedule(defenseId, scheduled);
-
-  return {
-    status: "success",
-    metrics: {
-      totalTopics: data.topics.length,
-      scheduled: data.topics.length - unscheduled.length,
-      unscheduled: unscheduled.length,
-    },
-    unscheduledTopics: unscheduled.map((t) => t.topicCode),
-  };
-};
-
-/**
- * Get the generated schedule for a defense
- */
-export const getSchedule = async (defenseId: number) => {
-  const defense = await prisma.defense.findUnique({
-    where: { id: defenseId },
-  });
-
-  if (!defense) throw new AppError(404, "Defense not found");
-
-  const councilBoards = await councilBoardRepository.findCouncilBoardsByDefense(defenseId);
-
-  return councilBoards;
-};
-
-/**
- * Publish the schedule (Official Release)
- */
-export const publishSchedule = async (defenseId: number) => {
-  return await prisma.defense.update({
-    where: { id: defenseId },
-    data: { isSchedulePublished: true },
-  });
-};
-
-const fetchSchedulingData = async (
-  defenseId: number,
-): Promise<SchedulingData> => {
-  const defense = await prisma.defense.findUnique({
-    where: { id: defenseId },
-  });
-
-  if (!defense) throw new AppError(404, "Defense not found");
-
-  const topics = await prisma.topic.findMany({
-    where: {
-      semesterId: defense.semesterId,
-      topicDefenses: {
-        some: {
-          defenseId: defenseId,
-        },
-      },
-    },
-    include: {
-      topicSupervisors: {
-        include: {
-          lecturer: true,
-        },
-      },
-      topicDefenses: {
-        where: { defenseId: defenseId },
-      },
-      topicType: {
-        include: {
-          qualifications: true,
-        },
-      },
-    },
-  });
-
-  const lecturers = await prisma.lecturer.findMany({
-    include: {
-      lecturerDayAvailability: true,
-      lecturerQualifications: {
-        include: { qualification: true }
+        boards.push(board);
+        commitBoardToState(board, state);
+        deferredTopics.splice(deferredTopics.findIndex(t => t.id === topic.id), 1);
       }
-    },
-  });
+    }
+  }
 
-  const defenseDays = await prisma.defenseDay.findMany({
-    where: { defenseId },
-    orderBy: { dayDate: "asc" },
-  });
-
-  const commonQualifications = await prisma.qualification.findMany({
-    where: {
-      isCommon: true,
-    },
-  });
-
-  return { defense, topics, lecturers, defenseDays, commonQualifications };
+  return {
+    boards,
+    unscheduled: topics.filter(t => !state.scheduledTopicIds.has(t.id)),
+  };
 };
 
-const validatePreConditions = (data: SchedulingData) => {
-  if (data.defenseDays.length === 0) {
+// =============================================================================
+// DATA FETCHING
+// =============================================================================
+
+const fetchSchedulingContext = async (defenseId: number): Promise<SchedulingContext> => {
+  const defense = await prisma.defense.findUnique({ where: { id: defenseId } });
+  if (!defense) throw new AppError(404, "Defense not found");
+
+  const [topics, lecturers, defenseDays, commonQualifications, lecturerDefenseConfigs] = await Promise.all([
+    prisma.topic.findMany({
+      where: {
+        semesterId: defense.semesterId,
+        topicDefenses: { some: { defenseId } },
+      },
+      include: {
+        topicSupervisors: { include: { lecturer: true } },
+        topicDefenses: { where: { defenseId } },
+        topicType: { include: { qualificationTopicTypes: { include: { qualification: true } } } },
+      },
+    }),
+    prisma.lecturer.findMany({
+      include: {
+        lecturerDayAvailability: true,
+        lecturerQualifications: { include: { qualification: true } },
+      },
+    }),
+    prisma.defenseDay.findMany({
+      where: { defenseId },
+      orderBy: { dayDate: "asc" },
+    }),
+    prisma.qualification.findMany({ where: { isCommon: true } }),
+    prisma.lecturerDefenseConfig.findMany({ where: { defenseId } }),
+  ]);
+
+  return { defense, topics, lecturers, defenseDays, commonQualifications, lecturerDefenseConfigs };
+};
+
+// =============================================================================
+// VALIDATION
+// =============================================================================
+
+const validateDefenseReadiness = (ctx: SchedulingContext): void => {
+  if (ctx.defenseDays.length === 0) {
     throw new AppError(400, "No defense days defined for this defense.");
   }
 };
 
-const validateCapacity = (data: SchedulingData) => {
-  const { defense, topics, defenseDays } = data;
-  const timePerTopic = defense.timePerTopic || 45;
-  const workHoursPerDay = 8; // Assumption: 8 working hours
-  const minutesPerDay = workHoursPerDay * 60;
-
-  const totalMinutesNeeded = topics.length * timePerTopic;
-  const totalMinutesAvailable = defenseDays.length * minutesPerDay;
+const validateCapacity = (ctx: SchedulingContext): void => {
+  const timePerTopic = ctx.defense.timePerTopic ?? 45;
+  const totalMinutesNeeded = ctx.topics.length * timePerTopic;
+  const totalMinutesAvailable = ctx.defenseDays.length * 8 * 60;
 
   if (totalMinutesNeeded > totalMinutesAvailable) {
     throw new AppError(
       400,
-      `Insufficient capacity. Need ${totalMinutesNeeded} minutes but only have ${totalMinutesAvailable} minutes available across ${defenseDays.length} days.`,
+      `Insufficient capacity: need ${totalMinutesNeeded} min, have ${totalMinutesAvailable} min across ${ctx.defenseDays.length} day(s).`
     );
   }
 };
 
-interface ScheduledCouncilBoard {
-  boardData: {
-    presidentId: number;
-    secretaryId: number;
-    memberIds: number[];
-    defenseDayId: number;
-  };
-  topics: Topic[];
-}
+// =============================================================================
+// PERSISTENCE
+// =============================================================================
 
-const runSchedulingAlgorithm = (data: SchedulingData) => {
-  const { defenseDays, lecturers, commonQualifications, topics } = data;
-  const scheduled: ScheduledCouncilBoard[] = [];
-  const commonQualificationIds = commonQualifications.map(q => q.id);
-  
-  // Track which topics have been scheduled
-  const scheduledTopicIds = new Set<number>();
-  const skippedTopics: typeof topics = [];
-  
-  // Track lecturers used globally (can't be reused across days)
-  const usedLecturers = new Set<number>();
-  
-  // Helper: Get available candidates for a day
-  const getAvailableCandidates = (dayId: number) => {
-    return lecturers.filter(l => {
-      if (usedLecturers.has(l.id)) return false;
-      
-      const availability = l.lecturerDayAvailability.find(a => a.defenseDayId === dayId);
-      return !availability || availability.status !== AvailabilityStatus.Busy;
-    });
-  };
-  
-  // =============================================================
-  // TWO-PASS STRATEGY
-  // =============================================================
-  
-  for (const defenseDay of defenseDays) {
-    // PASS 1: STRICT - Only boards with FULL common qualification coverage
-    console.log(`\n=== PASS 1 (Strict) for Day ${defenseDay.id} ===`);
-    
-    let continuePass1 = true;
-    while (continuePass1) {
-      const availableTopics = topics.filter(t => !scheduledTopicIds.has(t.id) && !skippedTopics.some(st => st.id === t.id));
-      if (availableTopics.length === 0) break;
-      
-      const topic = availableTopics[0];
-      const candidates = getAvailableCandidates(defenseDay.id);
-      
-      if (candidates.length < 5) {
-        continuePass1 = false;
-        break;
-      }
-      
-      // Get topic type qualifications
-      const topicTypeQualifications = topic.topicType?.qualifications || [];
-      
-      // Select candidates with topic type preference (prioritize matched, fill with others)
-      const { selected: preSelected, matchedCount } = selectCandidatesWithTopicTypePreference(
-        candidates,
-        topicTypeQualifications,
-        commonQualificationIds,
-        5
-      );
-      
-      if (preSelected.length < 5) {
-        continuePass1 = false;
-        break;
-      }
-      
-      // Log topic type matching status
-      if (topicTypeQualifications.length > 0) {
-        console.log(`Topic ${topic.topicCode} (${topic.topicType?.name || 'Unknown'}): ${matchedCount}/5 members with matching quals`);
-      }
-      
-      // Sort pre-selected by total score for coverage-first selection
-      const sortedCandidates = [...preSelected].sort((a, b) =>
-        calculateTotalScore(b, commonQualificationIds) - calculateTotalScore(a, commonQualificationIds)
-      );
-      
-      // Coverage-First Selection
-      const selectedGroup: typeof candidates = [];
-      const usedIds = new Set<number>();
-      
-      // Step 1: Select best lecturer for each common qualification
-      for (const commonQual of commonQualifications) {
-        const bestForQual = sortedCandidates.find(c =>
-          !usedIds.has(c.id) &&
-          c.lecturerQualifications.some(lq =>
-            lq.qualification.id === commonQual.id && (lq.score || 0) > 0
-          )
-        );
-        
-        if (bestForQual) {
-          selectedGroup.push(bestForQual);
-          usedIds.add(bestForQual.id);
-        }
-      }
-      
-      // Step 2: Fill remaining spots (up to 5)
-      while (selectedGroup.length < 5 && usedIds.size < sortedCandidates.length) {
-        const next = sortedCandidates.find(c => !usedIds.has(c.id));
-        if (next) {
-          selectedGroup.push(next);
-          usedIds.add(next.id);
-        } else break;
-      }
-      
-      // Validate: must have exactly 5 members
-      if (selectedGroup.length < 5) {
-        continuePass1 = false;
-        break;
-      }
-      
-      // STRICT CHECK: If not full coverage, defer to Pass 2
-      if (!checkCommonQualificationCoverage(selectedGroup, commonQualifications)) {
-        console.log(`⚠️  Topic ${topic.topicCode} lacks full coverage - deferring to Pass 2`);
-        skippedTopics.push(topic);
-        continue;
-      }
-      
-      // Create board
-      scheduled.push({
-        boardData: {
-          presidentId: selectedGroup[0].id,
-          secretaryId: selectedGroup[1].id,
-          memberIds: selectedGroup.slice(2).map(l => l.id),
-          defenseDayId: defenseDay.id,
-        },
-        topics: [topic],
-      });
-      
-      scheduledTopicIds.add(topic.id);
-      selectedGroup.forEach(l => usedLecturers.add(l.id));
-    }
-    
-    // PASS 2: BEST-EFFORT for skipped topics
-    if (skippedTopics.length > 0) {
-      console.log(`\n=== PASS 2 (Best-Effort) for ${skippedTopics.length} skipped topics ===`);
-      
-      for (const topic of [...skippedTopics]) {
-        if (scheduledTopicIds.has(topic.id)) continue;
-        
-        const candidates = getAvailableCandidates(defenseDay.id);
-        
-        if (candidates.length < 5) {
-          console.warn(`❌ Not enough lecturers for topic ${topic.topicCode}`);
-          continue;
-        }
-        
-        // Get topic type qualifications
-        const topicTypeQualifications = topic.topicType?.qualifications || [];
-        
-        // Select with topic type preference (best-effort, no strict requirement)
-        const { selected: selectedGroup, matchedCount } = selectCandidatesWithTopicTypePreference(
-          candidates,
-          topicTypeQualifications,
-          commonQualificationIds,
-          5
-        );
-        
-        if (selectedGroup.length < 5) {
-          console.warn(`❌ Not enough lecturers for topic ${topic.topicCode}`);
-          continue;
-        }
-        
-        // Log topic type matching status
-        if (topicTypeQualifications.length > 0) {
-          console.log(`Pass 2: Topic ${topic.topicCode} (${topic.topicType?.name || 'Unknown'}): ${matchedCount}/5 members with matching quals`);
-        }
-        
-        // Log coverage status
-        const hasFullCoverage = checkCommonQualificationCoverage(selectedGroup, commonQualifications);
-        if (!hasFullCoverage) {
-          const covered = commonQualifications.filter(q =>
-            selectedGroup.some(l => l.lecturerQualifications.some(lq => lq.qualificationId === q.id))
-          );
-          console.warn(`⚠️  Board for ${topic.topicCode} has partial coverage: ${covered.length}/${commonQualifications.length} common qualifications`);
-        }
-        
-        // Create board (best-effort)
-        scheduled.push({
-          boardData: {
-            presidentId: selectedGroup[0].id,
-            secretaryId: selectedGroup[1].id,
-            memberIds: selectedGroup.slice(2).map(l => l.id),
-            defenseDayId: defenseDay.id,
-          },
-          topics: [topic],
-        });
-        
-        scheduledTopicIds.add(topic.id);
-        selectedGroup.forEach(l => usedLecturers.add(l.id));
-        
-        // Remove from skipped list
-        const index = skippedTopics.findIndex(t => t.id === topic.id);
-        if (index !== -1) skippedTopics.splice(index, 1);
-      }
-    }
-  }
-  
-  // Remaining unscheduled topics
-  const unscheduled = topics.filter(t => !scheduledTopicIds.has(t.id));
-  
-  return { scheduled, unscheduled };
-};
-
-const persistSchedule = async (defenseId: number, scheduled: ScheduledCouncilBoard[]) => {
+const persistSchedule = async (defenseId: number, boards: PlannedBoard[]): Promise<void> => {
   const defense = await prisma.defense.findUnique({ where: { id: defenseId } });
   if (!defense) throw new AppError(404, "Defense not found");
 
-  const timePerTopic = defense.timePerTopic || 45;
-  const startHourStr = defense.workStartTime || "07:30"; // Default start time
+  const timePerTopic = defense.timePerTopic ?? 45;
+  const [startH, startM] = (defense.workStartTime ?? "07:30").split(":").map(Number);
+  const startMinutes = startH * 60 + startM;
 
   await prisma.$transaction(async (tx) => {
-    // 1. Clear old data
-    const oldBoards = await tx.councilBoard.findMany({
-      where: { defenseDay: { defenseId } }
-    });
-    
-    // Delete defense councils (matches)
-    await tx.defenseCouncil.deleteMany({
-      where: { councilBoardId: { in: oldBoards.map(c => c.id) } }
-    });
+    // Clear old schedule
+    const oldBoards = await tx.councilBoard.findMany({ where: { defenseDay: { defenseId } } });
+    const oldBoardIds = oldBoards.map(b => b.id);
 
-    // Delete council members
-    await tx.councilBoardMember.deleteMany({
-      where: { councilBoardId: { in: oldBoards.map(c => c.id) } }
-    });
+    await tx.defenseCouncil.deleteMany({ where: { councilBoardId: { in: oldBoardIds } } });
+    await tx.councilBoardMember.deleteMany({ where: { councilBoardId: { in: oldBoardIds } } });
+    await tx.councilBoard.deleteMany({ where: { defenseDay: { defenseId } } });
 
-    // Delete council boards
-    await tx.councilBoard.deleteMany({
-      where: { defenseDay: { defenseId } }
-    });
+    // Insert new schedule
+    const dayTimeCursors = new Map<number, number>();
 
-    // 2. Create new data
-    const dayTimeCursors = new Map<number, number>(); // defenseDayId -> minutes from midnight
+    for (const planned of boards) {
+      const cursor = dayTimeCursors.get(planned.defenseDayId) ?? startMinutes;
 
-    const [startH, startM] = startHourStr.split(":").map(Number);
-    const startMinutesFromMidnight = startH * 60 + startM;
-
-    for (const item of scheduled) {
-      // Initialize cursor for this day if new
-      if (!dayTimeCursors.has(item.boardData.defenseDayId)) {
-        dayTimeCursors.set(item.boardData.defenseDayId, startMinutesFromMidnight);
-      }
-      let currentCursor = dayTimeCursors.get(item.boardData.defenseDayId)!;
-
-      // Create Council Board
       const board = await tx.councilBoard.create({
         data: {
-          boardCode: `CB-${defenseId}-${item.boardData.defenseDayId}-${Math.floor(Math.random() * 10000)}`,
-          defenseDayId: item.boardData.defenseDayId,
-          semesterId: item.topics[0]?.semesterId || defense.semesterId,
+          boardCode: `CB-${defenseId}-${planned.defenseDayId}-${Math.floor(Math.random() * 10000)}`,
+          defenseDayId: planned.defenseDayId,
+          semesterId: planned.topics[0]?.semesterId ?? defense.semesterId,
           name: "Defense Council Board",
           councilBoardMembers: {
             create: [
-              { lecturerId: item.boardData.presidentId, role: CouncilRole.President },
-              { lecturerId: item.boardData.secretaryId, role: CouncilRole.Secretary },
-              ...item.boardData.memberIds.map((id) => ({
-                lecturerId: id,
-                role: CouncilRole.Member,
-              })),
+              { lecturerId: planned.presidentId, role: CouncilRole.President },
+              { lecturerId: planned.secretaryId, role: CouncilRole.Secretary },
+              ...planned.memberIds.map(id => ({ lecturerId: id, role: CouncilRole.Member })),
             ],
           },
         },
       });
 
-      // Create Matches with Time
-      for (const topic of item.topics) {
-        const reg = (topic as any).topicDefenses?.[0];
-        if (!reg) continue;
-
-        // Calculate Time
-        const startTotalMins = currentCursor;
-        const endTotalMins = currentCursor + timePerTopic;
-
-        // Convert back to Date/Time objects
-        const startTime = new Date();
-        startTime.setHours(Math.floor(startTotalMins / 60), startTotalMins % 60, 0, 0);
-        
-        const endTime = new Date();
-        endTime.setHours(Math.floor(endTotalMins / 60), endTotalMins % 60, 0, 0);
+      let topicCursor = cursor;
+      for (const topic of planned.topics) {
+        const registration = topic.topicDefenses?.[0];
+        if (!registration) continue;
 
         await tx.defenseCouncil.create({
           data: {
             defenseCouncilCode: `DC-${topic.topicCode}`,
-            registrationId: reg.id,
+            registrationId: registration.id,
             councilBoardId: board.id,
-            startTime: startTime,
-            endTime: endTime,
+            startTime: minutesToDate(topicCursor),
+            endTime: minutesToDate(topicCursor + timePerTopic),
           },
         });
 
-        // Advance cursor
-        currentCursor += timePerTopic;
+        topicCursor += timePerTopic;
       }
 
-      // Update cursor for this day
-      dayTimeCursors.set(item.boardData.defenseDayId, currentCursor);
+      dayTimeCursors.set(planned.defenseDayId, topicCursor);
     }
   });
 };
 
-/**
- * Update a defense council match (Manual Scheduling)
- */
+// =============================================================================
+// PUBLIC API
+// =============================================================================
+
+export const generateSchedule = async (defenseId: number) => {
+  const ctx = await fetchSchedulingContext(defenseId);
+  validateDefenseReadiness(ctx);
+  validateCapacity(ctx);
+
+  const { boards, unscheduled } = runScheduler(ctx);
+  await persistSchedule(defenseId, boards);
+
+  return {
+    status: "success",
+    metrics: {
+      totalTopics: ctx.topics.length,
+      scheduled: ctx.topics.length - unscheduled.length,
+      unscheduled: unscheduled.length,
+    },
+    unscheduledTopics: unscheduled.map(t => t.topicCode),
+  };
+};
+
+export const getSchedule = async (defenseId: number) => {
+  const defense = await prisma.defense.findUnique({ where: { id: defenseId } });
+  if (!defense) throw new AppError(404, "Defense not found");
+  return councilBoardRepository.findCouncilBoardsByDefense(defenseId);
+};
+
+export const publishSchedule = async (defenseId: number) =>
+  prisma.defense.update({
+    where: { id: defenseId },
+    data: { isSchedulePublished: true },
+  });
+
 export const updateDefenseCouncil = async (
   defenseCouncilId: number,
-  data: {
-    startTime?: Date;
-    endTime?: Date;
-    councilBoardId?: number;
-  },
+  data: { startTime?: Date; endTime?: Date; councilBoardId?: number }
 ) => {
-  const dc = await prisma.defenseCouncil.findUnique({
-    where: { id: defenseCouncilId },
-  });
+  const dc = await prisma.defenseCouncil.findUnique({ where: { id: defenseCouncilId } });
   if (!dc) throw new AppError(404, "Defense Council not found");
 
-  // Validate Board if changing
   if (data.councilBoardId && data.councilBoardId !== dc.councilBoardId) {
-    const board = await prisma.councilBoard.findUnique({
-      where: { id: data.councilBoardId },
-    });
+    const board = await prisma.councilBoard.findUnique({ where: { id: data.councilBoardId } });
     if (!board) throw new AppError(404, "Target council board not found");
   }
 
-  // Perform Update
-  return await prisma.defenseCouncil.update({
+  return prisma.defenseCouncil.update({
     where: { id: defenseCouncilId },
-    data: {
-      startTime: data.startTime,
-      endTime: data.endTime,
-      councilBoardId: data.councilBoardId,
-    },
+    data,
   });
 };
 
-/**
- * Update a council board (Manual Scheduling)
- */
 export const updateCouncilBoard = async (
   councilBoardId: number,
-  data: {
-    presidentId?: number;
-    secretaryId?: number;
-    memberIds?: number[];
-  },
+  data: { presidentId?: number; secretaryId?: number; memberIds?: number[] }
 ) => {
   const board = await prisma.councilBoard.findUnique({
     where: { id: councilBoardId },
@@ -602,40 +614,24 @@ export const updateCouncilBoard = async (
   });
   if (!board) throw new AppError(404, "Council Board not found");
 
-  return await prisma.$transaction(async (tx) => {
-    // 1. Determine new member set
-    const currentMembers = board.councilBoardMembers;
-    const currentPresidentId = currentMembers.find(m => m.role === CouncilRole.President)?.lecturerId;
-    const currentSecretaryId = currentMembers.find(m => m.role === CouncilRole.Secretary)?.lecturerId;
-    const currentMemberIds = currentMembers.filter(m => m.role === CouncilRole.Member).map(m => m.lecturerId!);
+  return prisma.$transaction(async (tx) => {
+    const current = board.councilBoardMembers;
+    const newPresidentId = data.presidentId ?? current.find(m => m.role === CouncilRole.President)?.lecturerId;
+    const newSecretaryId = data.secretaryId ?? current.find(m => m.role === CouncilRole.Secretary)?.lecturerId;
+    const newMemberIds = data.memberIds ?? current.filter(m => m.role === CouncilRole.Member).map(m => m.lecturerId!);
 
-    const newPresidentId = data.presidentId ?? currentPresidentId;
-    const newSecretaryId = data.secretaryId ?? currentSecretaryId;
-    const newMemberIds = data.memberIds ?? currentMemberIds;
-
-    // 2. Clear old members
-    await tx.councilBoardMember.deleteMany({
-      where: { councilBoardId },
-    });
-
-    // 3. Create new members
-    const membersToCreate = [
-      { lecturerId: newPresidentId!, role: CouncilRole.President },
-      { lecturerId: newSecretaryId!, role: CouncilRole.Secretary },
-      ...newMemberIds.map(id => ({ lecturerId: id, role: CouncilRole.Member }))
-    ];
-
+    await tx.councilBoardMember.deleteMany({ where: { councilBoardId } });
     await tx.councilBoardMember.createMany({
-      data: membersToCreate.map(m => ({
-        councilBoardId,
-        lecturerId: m.lecturerId,
-        role: m.role
-      }))
+      data: [
+        { councilBoardId, lecturerId: newPresidentId!, role: CouncilRole.President },
+        { councilBoardId, lecturerId: newSecretaryId!, role: CouncilRole.Secretary },
+        ...newMemberIds.map(id => ({ councilBoardId, lecturerId: id, role: CouncilRole.Member })),
+      ],
     });
 
     return tx.councilBoard.findUnique({
       where: { id: councilBoardId },
-      include: { councilBoardMembers: true }
+      include: { councilBoardMembers: true },
     });
   });
 };

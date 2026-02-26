@@ -32,32 +32,6 @@ const router: express.Router = express.Router();
  */
 router.post("/generate", scheduleController.generateSchedule);
 
-/**
- * @swagger
- * /api/schedule/{defenseId}:
- *   get:
- *     summary: Get generated schedule for a defense
- *     tags: [Schedule]
- *     parameters:
- *       - in: path
- *         name: defenseId
- *         schema:
- *           type: integer
- *         required: true
- *         description: ID of the defense
- *     responses:
- *       200:
- *         description: Schedule retrieved successfully
- *         content:
- *           application/json:
- *             schema:
- *               type: array
- *               items:
- *                 $ref: '#/components/schemas/CouncilBoard'
- *       404:
- *         description: Defense not found
- */
-router.get("/:defenseId", scheduleController.getSchedule);
 
 /**
  * @swagger
@@ -85,5 +59,32 @@ router.put("/defense-councils/:defenseCouncilId", scheduleController.updateDefen
  *     tags: [Schedule]
  */
 router.put("/council-boards/:councilBoardId", scheduleController.updateCouncilBoard);
+
+/**
+ * @swagger
+ * /api/schedule/{defenseId}:
+ *   get:
+ *     summary: Get generated schedule for a defense
+ *     tags: [Schedule]
+ *     parameters:
+ *       - in: path
+ *         name: defenseId
+ *         schema:
+ *           type: integer
+ *         required: true
+ *         description: ID of the defense
+ *     responses:
+ *       200:
+ *         description: Schedule retrieved successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: array
+ *               items:
+ *                 $ref: '#/components/schemas/CouncilBoard'
+ *       404:
+ *         description: Defense not found
+ */
+router.get("/:defenseId", scheduleController.getSchedule);
 
 export default router;

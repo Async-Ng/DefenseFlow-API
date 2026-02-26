@@ -1,9 +1,30 @@
 import * as topicRepository from "../repositories/topicRepository.js";
+import { prisma } from "../config/prisma.js";
 import {
   UpdateTopicResultInput,
   TopicFilters,
   UpdateTopicInput,
+  CreateTopicInput,
 } from "../types/index.js";
+
+/**
+ * Create a new topic
+ */
+export const createTopic = async (data: CreateTopicInput) => {
+  // Validate semesterId exists
+  const semester = await prisma.semester.findUnique({ where: { id: data.semesterId } });
+  if (!semester) {
+    throw new Error(`Semester with id ${data.semesterId} not found`);
+  }
+
+  // Validate unique topicCode
+  const existing = await topicRepository.findByCode(data.topicCode);
+  if (existing) {
+    throw new Error(`Topic with code ${data.topicCode} already exists`);
+  }
+
+  return await topicRepository.create(data);
+};
 
 /**
  * Get all topics

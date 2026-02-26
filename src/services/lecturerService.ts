@@ -10,6 +10,8 @@ import type {
   UpdateLecturerQualificationsInput,
   PaginatedResult,
   LecturerFilters,
+  CreateLecturerInput,
+  UpdateLecturerInput,
 } from "../types/index.js";
 
 /**
@@ -40,6 +42,50 @@ export const getAllLecturers = async (
     ...result,
     data: result.data,
   };
+};
+
+/**
+ * Create a new lecturer
+ */
+export const createLecturer = async (data: CreateLecturerInput): Promise<Lecturer> => {
+  const existing = await lecturerRepository.findByCode(data.lecturerCode);
+  if (existing) {
+    throw new Error(`Lecturer with code ${data.lecturerCode} already exists`);
+  }
+  return await lecturerRepository.create(data);
+};
+
+/**
+ * Update a lecturer's details
+ */
+export const updateLecturer = async (id: number, data: UpdateLecturerInput): Promise<Lecturer> => {
+  const lecturer = await lecturerRepository.findById(id);
+  if (!lecturer) {
+    throw new Error(`Lecturer with ID ${id} not found`);
+  }
+  
+  if (data.lecturerCode && data.lecturerCode !== lecturer.lecturerCode) {
+    const existing = await lecturerRepository.findByCode(data.lecturerCode);
+    if (existing) {
+      throw new Error(`Lecturer with code ${data.lecturerCode} already exists`);
+    }
+  }
+  
+  return await lecturerRepository.update(id, data);
+};
+
+/**
+ * Delete a lecturer
+ */
+export const deleteLecturer = async (id: number): Promise<void> => {
+  const lecturer = await lecturerRepository.findById(id);
+  if (!lecturer) {
+    throw new Error(`Lecturer with ID ${id} not found`);
+  }
+
+  // Optional: Add dependency checks here (e.g. if lecturer is currently in a council board)
+  
+  await lecturerRepository.deleteLecturer(id);
 };
 
 /**

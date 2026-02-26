@@ -9,6 +9,7 @@ import {
   PaginatedResult,
   TopicFilters,
   UpdateTopicInput,
+  CreateTopicInput,
 } from "../types/index.js";
 
 /**
@@ -59,6 +60,25 @@ export const findAll = async (
   ]);
 
   return { data, total, page, limit };
+};
+
+/**
+ * Create a new topic
+ */
+export const create = async (data: CreateTopicInput): Promise<Topic> => {
+  const { supervisorIds, ...topicData } = data;
+  return await prisma.topic.create({
+    data: {
+      ...topicData,
+      topicSupervisors: supervisorIds?.length
+        ? { createMany: { data: supervisorIds.map((lecturerId) => ({ lecturerId })) } }
+        : undefined,
+    },
+    include: {
+      semester: true,
+      topicSupervisors: { include: { lecturer: true } },
+    },
+  });
 };
 
 /**

@@ -3,6 +3,7 @@ import * as topicController from "../controllers/topicController.js";
 
 const router: express.Router = express.Router();
 
+router.post("/", topicController.createTopic);
 router.get("/", topicController.getAllTopics);
 router.get("/:id", topicController.getTopicById);
 router.patch("/:id", topicController.updateTopic);
