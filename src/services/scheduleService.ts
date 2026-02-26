@@ -512,22 +512,30 @@ const persistSchedule = async (defenseId: number, boards: PlannedBoard[]): Promi
     for (const planned of boards) {
       const cursor = dayTimeCursors.get(planned.defenseDayId) ?? startMinutes;
 
+      // 1. Create the board
       const board = await tx.councilBoard.create({
         data: {
           boardCode: `CB-${defenseId}-${planned.defenseDayId}-${Math.floor(Math.random() * 10000)}`,
           defenseDayId: planned.defenseDayId,
           semesterId: planned.topics[0]?.semesterId ?? defense.semesterId,
           name: "Defense Council Board",
-          councilBoardMembers: {
-            create: [
-              { lecturerId: planned.presidentId, role: CouncilRole.President },
-              { lecturerId: planned.secretaryId, role: CouncilRole.Secretary },
-              ...planned.memberIds.map(id => ({ lecturerId: id, role: CouncilRole.Member })),
-            ],
-          },
         },
       });
 
+      // 2. Create board members
+      const membersToCreate = [
+        { councilBoardId: board.id, lecturerId: planned.presidentId, role: CouncilRole.President },
+        { councilBoardId: board.id, lecturerId: planned.secretaryId, role: CouncilRole.Secretary },
+        ...planned.memberIds
+          .filter(id => id != null)
+          .map(id => ({ councilBoardId: board.id, lecturerId: id, role: CouncilRole.Member })),
+      ];
+
+      await tx.councilBoardMember.createMany({
+        data: membersToCreate,
+      });
+
+      // 3. Create defense councils (slots)
       let topicCursor = cursor;
       for (const topic of planned.topics) {
         const registration = topic.topicDefenses?.[0];
