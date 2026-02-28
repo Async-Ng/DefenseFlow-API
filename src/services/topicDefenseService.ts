@@ -6,10 +6,6 @@ import { CreateTopicDefenseInput, TopicDefenseFilters } from "../types/index.js"
  * Register a topic into a defense
  */
 export const createTopicDefense = async (data: CreateTopicDefenseInput) => {
-  // Validate topic exists
-  const topic = await prisma.topic.findUnique({ where: { id: data.topicId } });
-  if (!topic) throw new Error(`Topic with id ${data.topicId} not found`);
-
   // Validate defense exists
   const defense = await prisma.defense.findUnique({ where: { id: data.defenseId } });
   if (!defense) throw new Error(`Defense with id ${data.defenseId} not found`);
@@ -19,14 +15,29 @@ export const createTopicDefense = async (data: CreateTopicDefenseInput) => {
     throw new Error(`Defense is not open for registration (status: ${defense.status})`);
   }
 
-  // Validate topic is not already registered in this defense
-  const existing = await topicDefenseRepository.findByTopicAndDefense(
-    data.topicId,
-    data.defenseId,
-  );
-  if (existing) {
+  // Validate topics exist
+  const topics = await prisma.topic.findMany({
+    where: { id: { in: data.topicIds } }
+  });
+  
+  if (topics.length !== data.topicIds.length) {
+    const foundIds = topics.map(t => t.id);
+    const missingIds = data.topicIds.filter(id => !foundIds.includes(id));
+    throw new Error(`The following topic IDs were not found: ${missingIds.join(", ")}`);
+  }
+
+  // Validate topics are not already registered in this defense
+  const existingRegistrations = await prisma.topicDefense.findMany({
+    where: {
+      defenseId: data.defenseId,
+      topicId: { in: data.topicIds }
+    }
+  });
+
+  if (existingRegistrations.length > 0) {
+    const alreadyRegisteredIds = existingRegistrations.map(r => r.topicId);
     throw new Error(
-      `Topic ${data.topicId} is already registered in defense ${data.defenseId}`,
+      `The following topics are already registered in defense ${data.defenseId}: ${alreadyRegisteredIds.join(", ")}`
     );
   }
 
@@ -34,10 +45,22 @@ export const createTopicDefense = async (data: CreateTopicDefenseInput) => {
 };
 
 /**
- * Get all topic defenses with optional filters
+ * Get all topic defenses with optional filters and pagination
  */
-export const getTopicDefenses = async (filters: TopicDefenseFilters) => {
-  return await topicDefenseRepository.findAll(filters);
+export const getTopicDefenses = async (
+  filters: TopicDefenseFilters,
+  page: number = 1,
+  limit: number = 10
+) => {
+  const { data, total } = await topicDefenseRepository.findAndCountAll(filters, page, limit);
+
+  return {
+    data,
+    total,
+    page,
+    limit,
+    totalPages: Math.ceil(total / limit),
+  };
 };
 
 /**

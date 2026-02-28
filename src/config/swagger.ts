@@ -437,6 +437,23 @@ const options: swaggerJsdoc.Options = {
             topic: { $ref: "#/components/schemas/Topic" },
           },
         },
+        CreateTopicDefenseInput: {
+          type: "object",
+          required: ["topicIds", "defenseId"],
+          properties: {
+            topicIds: {
+              type: "array",
+              items: { type: "integer" },
+              example: [5, 6, 7],
+              description: "Array of topic IDs being registered",
+            },
+            defenseId: {
+              type: "integer",
+              example: 2,
+              description: "ID of the defense registering into",
+            },
+          },
+        },
         UpdateTopicResultInput: {
           type: "object",
           required: ["result"],
