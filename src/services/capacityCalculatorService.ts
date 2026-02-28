@@ -76,6 +76,7 @@ export async function calculateCapacity(
   const timePerTopic = defense?.timePerTopic || DEFAULT_TIME_PER_TOPIC;
   const workHoursPerDay = DEFAULT_WORK_HOURS_PER_DAY;
   const councilBoardSize = DEFAULT_COUNCIL_BOARD_SIZE;
+  const maxCouncilsPerDay = defense?.maxCouncilsPerDay || 1; // Default to 1 if not set
 
   // Count topics in semester
   const totalTopics = await prisma.topic.count({
@@ -87,7 +88,8 @@ export async function calculateCapacity(
     totalTopics,
     timePerTopic,
     workHoursPerDay,
-    councilBoardSize, 
+    councilBoardSize,
+    maxCouncilsPerDay,
   };
 
   // Calculate recommendations
@@ -117,7 +119,13 @@ function calculateRecommendations(
   analysis: CapacityAnalysis,
   currentDefenseDays: number | null
 ): CapacityRecommendations {
-  const { totalTopics, timePerTopic, workHoursPerDay, councilBoardSize } = analysis;
+  const { 
+    totalTopics, 
+    timePerTopic, 
+    workHoursPerDay, 
+    councilBoardSize,
+    maxCouncilsPerDay 
+  } = analysis;
 
   // Calculate topics per board per day
   const maxTopicsPerBoardPerDay = Math.floor(workHoursPerDay / timePerTopic);
@@ -129,14 +137,11 @@ function calculateRecommendations(
     (minTopicsPerBoardPerDay + maxTopicsPerBoardPerDay) / 2
   );
 
-  // Calculate minimum days required
-  // Assume we can run multiple boards per day
-  const estimatedBoardsPerDay = Math.max(1, Math.floor(totalTopics / 50)); // Rough estimate
-  const minimumDaysRequired = Math.ceil(
-    totalTopics / (maxTopicsPerBoardPerDay * estimatedBoardsPerDay)
-  );
+  // Calculate minimum days required based on MAX parallel boards
+  const maxCapacityPerDay = maxTopicsPerBoardPerDay * maxCouncilsPerDay;
+  const minimumDaysRequired = Math.ceil(totalTopics / maxCapacityPerDay);
 
-  // Calculate recommended days (add buffer)
+  // Calculate recommended days (add buffer 20%)
   const recommendedDays = Math.max(
     minimumDaysRequired,
     Math.ceil(minimumDaysRequired * 1.2)
@@ -258,22 +263,26 @@ function generateWarnings(
 
   // Warning if defense days insufficient
   if (currentDefenseDays !== null && currentDefenseDays < minimumDaysRequired) {
+    // Actually limit = days * maxCouncilsPerDay * maxTopicsPerBoardPerDay
+    const maxTopicsPerBoardPerDay = Math.floor(analysis.workHoursPerDay / analysis.timePerTopic);
+    const totalCapacity = currentDefenseDays * analysis.maxCouncilsPerDay * maxTopicsPerBoardPerDay;
+    
     warnings.push(
-      `Defense hiện tại chỉ có ${currentDefenseDays} ngày, không đủ để chấm ${totalTopics} đề tài (cần tối thiểu ${minimumDaysRequired} ngày).`
+      `Đợt bảo vệ hiện tại (${currentDefenseDays} ngày, tối đa ${analysis.maxCouncilsPerDay} hội đồng) chỉ có thể chấm tối đa ${totalCapacity} đề tài, trong khi có ${totalTopics} đề tài thực tế.`
     );
   }
 
   // Warning if too many topics
   if (totalTopics > 200) {
     warnings.push(
-      `Số lượng đề tài rất lớn (${totalTopics}). Cần lập kế hoạch kỹ lưỡng và đảm bảo đủ giảng viên tham gia.`
+      `Số lượng đề tài rất lớn (${totalTopics}). Cần lập kế hoạch cực kỳ kỹ lưỡng.`
     );
   }
 
-  // Warning if too many boards per day
-  if (councilBoardsPerDay > 5) {
+  // Warning if suggested boards per day is near/at limit
+  if (councilBoardsPerDay >= analysis.maxCouncilsPerDay && totalTopics > 0) {
     warnings.push(
-      `Cần chạy ${councilBoardsPerDay} hội đồng mỗi ngày, có thể gây khó khăn về logistics và phòng học.`
+      `Số lượng hội đồng cần thiết (${councilBoardsPerDay}) đã chạm/vượt giới hạn cấu hình (${analysis.maxCouncilsPerDay} hội đồng/ngày).`
     );
   }
 
@@ -314,13 +323,20 @@ function generateSuggestions(
     const change = defenseDayAdjustment.suggestedChange;
     if (change > 0) {
       suggestions.push(
-        `Đề xuất tăng số ngày từ ${currentDefenseDays} lên ${recommendedDays} ngày để giảm áp lực cho giảng viên và hội đồng.`
+        `Đề xuất tăng thêm ${change} ngày bảo vệ (tổng ${recommendedDays} ngày) hoặc tăng số hội đồng song song lên ${Math.ceil(totalTopics / (topicsPerCouncilBoardPerDay.average * currentDefenseDays!))} để giảm áp lực.`
       );
     } else {
       suggestions.push(
         `Có thể giảm số ngày từ ${currentDefenseDays} xuống ${recommendedDays} ngày để tối ưu hóa thời gian.`
       );
     }
+  }
+
+  // Suggest increasing parallel boards if days are limited
+  if (currentDefenseDays !== null && currentDefenseDays < recommendedDays && analysis.maxCouncilsPerDay < 8) {
+    suggestions.push(
+      `Nếu không thể thêm ngày bảo vệ, hãy cân nhắc tăng 'Giới hạn hội đồng song song' (maxCouncilsPerDay) để giải quyết ${totalTopics} đề tài.`
+    );
   }
 
   // Suggest buffer days for large defenses

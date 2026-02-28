@@ -502,6 +502,7 @@ export type CapacityAnalysis = {
   timePerTopic: number;
   workHoursPerDay: number;
   councilBoardSize: number;
+  maxCouncilsPerDay: number;
 };
 
 /**
