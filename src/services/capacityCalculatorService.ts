@@ -28,7 +28,7 @@ const DEFAULT_MAX_TOPICS_PER_LECTURER = 20;
 export async function calculateCapacity(
   request: CapacityCalculationRequest
 ): Promise<CapacityCalculationResponse> {
-  const { semesterId, defenseId, plannedDays } = request;
+  const { semesterId, defenseId } = request;
 
   // Validate semester exists and fetch with defenses
   const semester = await prisma.semester.findUnique({
@@ -71,16 +71,11 @@ export async function calculateCapacity(
   }
 
   // Auto-derive configuration values with priority:
-  // 1. Explicit request parameter
-  // 2. Defense data (if defense exists)
-  // 3. Default constant
-  const timePerTopic =
-    request.timePerTopic || defense?.timePerTopic || DEFAULT_TIME_PER_TOPIC;
-
-  const workHoursPerDay =
-    request.workHoursPerDay || DEFAULT_WORK_HOURS_PER_DAY;
-
-  const councilBoardSize = request.councilBoardSize || DEFAULT_COUNCIL_BOARD_SIZE;
+  // 1. Defense data (if defense exists)
+  // 2. Default constant
+  const timePerTopic = defense?.timePerTopic || DEFAULT_TIME_PER_TOPIC;
+  const workHoursPerDay = DEFAULT_WORK_HOURS_PER_DAY;
+  const councilBoardSize = DEFAULT_COUNCIL_BOARD_SIZE;
 
   // Count topics in semester
   const totalTopics = await prisma.topic.count({
@@ -98,8 +93,7 @@ export async function calculateCapacity(
   // Calculate recommendations
   const recommendations = calculateRecommendations(
     analysis,
-    currentDefenseDays,
-    plannedDays
+    currentDefenseDays
   );
 
   // Generate warnings and suggestions
@@ -121,8 +115,7 @@ export async function calculateCapacity(
  */
 function calculateRecommendations(
   analysis: CapacityAnalysis,
-  currentDefenseDays: number | null,
-  plannedDays?: number
+  currentDefenseDays: number | null
 ): CapacityRecommendations {
   const { totalTopics, timePerTopic, workHoursPerDay, councilBoardSize } = analysis;
 
@@ -149,9 +142,9 @@ function calculateRecommendations(
     Math.ceil(minimumDaysRequired * 1.2)
   );
 
-  // Use planned days or current defense days or recommended days
+  // Use current defense days or recommended days
   const effectiveDays =
-    currentDefenseDays || plannedDays || recommendedDays;
+    currentDefenseDays || recommendedDays;
 
   // Calculate boards per day needed
   const boardsPerDay = Math.ceil(

@@ -14,16 +14,15 @@ import type { CapacityCalculationRequest } from "../types/index.js";
  *     summary: Calculate defense capacity and provide planning recommendations
  *     tags: [Capacity]
  *     description: |
- *       **Only semesterId is required** - other parameters are auto-derived from:
- *       - Defense data (if semester has defenses)
- *       - Default values (if no defense exists)
+ *       Calculates capacity and provides recommendations based on the specified semester and defense.
+ *       Configurable parameters like time per topic or council size are auto-derived from the Defense data and default system values.
  *       
  *       Analyzes and provides recommendations for:
  *       - Required defense days
  *       - Lecturer count (min/recommended/max)
  *       - Workload distribution
  *       - Topics per council board per day
- *       - Defense day adjustments (if defenseId provided)
+ *       - Defense day adjustments
  *     parameters:
  *       - in: query
  *         name: semesterId
@@ -34,39 +33,11 @@ import type { CapacityCalculationRequest } from "../types/index.js";
  *         example: 1
  *       - in: query
  *         name: defenseId
- *         required: false
+ *         required: true
  *         schema:
  *           type: integer
- *         description: Optional defense ID to analyze current days and suggest adjustments
+ *         description: ID of the defense round to calculate capacity for
  *         example: 1
- *       - in: query
- *         name: timePerTopic
- *         required: false
- *         schema:
- *           type: integer
- *         description: Optional time per topic in minutes (default from defense or 90)
- *         example: 90
- *       - in: query
- *         name: workHoursPerDay
- *         required: false
- *         schema:
- *           type: integer
- *         description: Optional work hours per day in minutes (default 480 = 8 hours)
- *         example: 480
- *       - in: query
- *         name: councilBoardSize
- *         required: false
- *         schema:
- *           type: integer
- *         description: Optional number of members in a council board (default 5)
- *         example: 5
- *       - in: query
- *         name: plannedDays
- *         required: false
- *         schema:
- *           type: integer
- *         description: Optional planned number of days if no defense exists
- *         example: 5
  *     responses:
  *       200:
  *         description: Capacity calculation successful
@@ -196,19 +167,7 @@ export async function calculateCapacity(
   try {
     const requestData: CapacityCalculationRequest = {
       semesterId: Number(req.query.semesterId),
-      defenseId: req.query.defenseId ? Number(req.query.defenseId) : undefined,
-      timePerTopic: req.query.timePerTopic
-        ? Number(req.query.timePerTopic)
-        : undefined,
-      workHoursPerDay: req.query.workHoursPerDay
-        ? Number(req.query.workHoursPerDay)
-        : undefined,
-      councilBoardSize: req.query.councilBoardSize
-        ? Number(req.query.councilBoardSize)
-        : undefined,
-      plannedDays: req.query.plannedDays
-        ? Number(req.query.plannedDays)
-        : undefined,
+      defenseId: Number(req.query.defenseId),
     };
 
     // Validate required fields
@@ -220,58 +179,10 @@ export async function calculateCapacity(
       return;
     }
 
-    // Validate optional numeric fields
-    if (
-      requestData.defenseId !== undefined &&
-      isNaN(requestData.defenseId)
-    ) {
+    if (!requestData.defenseId || isNaN(requestData.defenseId)) {
       res.status(400).json({
         success: false,
-        error: "defenseId must be a valid number",
-      });
-      return;
-    }
-
-    if (
-      requestData.timePerTopic !== undefined &&
-      (isNaN(requestData.timePerTopic) || requestData.timePerTopic <= 0)
-    ) {
-      res.status(400).json({
-        success: false,
-        error: "timePerTopic must be a positive number",
-      });
-      return;
-    }
-
-    if (
-      requestData.workHoursPerDay !== undefined &&
-      (isNaN(requestData.workHoursPerDay) || requestData.workHoursPerDay <= 0)
-    ) {
-      res.status(400).json({
-        success: false,
-        error: "workHoursPerDay must be a positive number",
-      });
-      return;
-    }
-
-    if (
-      requestData.councilBoardSize !== undefined &&
-      (isNaN(requestData.councilBoardSize) || requestData.councilBoardSize <= 0)
-    ) {
-      res.status(400).json({
-        success: false,
-        error: "councilBoardSize must be a positive number",
-      });
-      return;
-    }
-
-    if (
-      requestData.plannedDays !== undefined &&
-      (isNaN(requestData.plannedDays) || requestData.plannedDays <= 0)
-    ) {
-      res.status(400).json({
-        success: false,
-        error: "plannedDays must be a positive number",
+        error: "defenseId is required and must be a valid number",
       });
       return;
     }

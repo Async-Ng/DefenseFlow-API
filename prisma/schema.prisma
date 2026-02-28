@@ -82,17 +82,19 @@ model QualificationTopicType {
 }
 
 model Defense {
-  id                     Int                     @id @default(autoincrement())
-  defenseCode            String                  @unique @map("defense_code") @db.VarChar(50)
-  semesterId             Int                     @map("semester_id")
-  name                   String?                 @db.VarChar(100)
-  type                   DefenseType?            @default(Main)
-  status                 DefenseStatus?          @default(Open)
-  timePerTopic           Int?                    @map("time_per_topic")
-  workStartTime          String?                 @map("work_start_time") @db.VarChar(10)
-  isSchedulePublished    Boolean                 @default(false) @map("is_schedule_published")
-  availabilityStartDate  DateTime?               @map("availability_start_date") @db.Date
-  availabilityEndDate    DateTime?               @map("availability_end_date") @db.Date
+  id                    Int            @id @default(autoincrement())
+  defenseCode           String         @unique @map("defense_code") @db.VarChar(50)
+  semesterId            Int            @map("semester_id")
+  name                  String?        @db.VarChar(100)
+  type                  DefenseType?   @default(Main)
+  status                DefenseStatus? @default(Open)
+  timePerTopic          Int?           @map("time_per_topic")
+  workStartTime         String?        @map("work_start_time") @db.VarChar(10)
+  isSchedulePublished   Boolean        @default(false) @map("is_schedule_published")
+  availabilityStartDate DateTime?      @map("availability_start_date") @db.Date
+  availabilityEndDate   DateTime?      @map("availability_end_date") @db.Date
+  maxCouncilsPerDay     Int?           @default(1) @map("max_councils_per_day")
+
   defenseDays            DefenseDay[]
   semester               Semester                @relation(fields: [semesterId], references: [id])
   lecturerDefenseConfigs LecturerDefenseConfig[]
