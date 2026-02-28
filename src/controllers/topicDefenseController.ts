@@ -26,8 +26,41 @@ import { CreateTopicDefenseInput, TopicDefenseFilters } from "../types/index.js"
  *     responses:
  *       201:
  *         description: Topic registered successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 message:
+ *                   type: string
+ *                   example: "Topic registered successfully"
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     id:
+ *                       type: integer
+ *                       example: 1
+ *                     topicDefenseCode:
+ *                       type: string
+ *                       example: "REG_12345"
+ *                     topicId:
+ *                       type: integer
+ *                       example: 5
+ *                     defenseId:
+ *                       type: integer
+ *                       example: 2
+ *                     finalResult:
+ *                       type: string
+ *                       example: "Pending"
  *       400:
  *         description: Validation error
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
  *       500:
  *         description: Server Error
  */
@@ -75,6 +108,52 @@ export const createTopicDefense = async (
  *     responses:
  *       200:
  *         description: List of topic defenses
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 message:
+ *                   type: string
+ *                   example: "Topic defenses retrieved successfully"
+ *                 data:
+ *                   type: array
+ *                   items:
+ *                     type: object
+ *                     properties:
+ *                       id:
+ *                         type: integer
+ *                         example: 1
+ *                       topicDefenseCode:
+ *                         type: string
+ *                         example: "REG_12345"
+ *                       topic:
+ *                         type: object
+ *                         properties:
+ *                           id:
+ *                             type: integer
+ *                             example: 5
+ *                           topicCode:
+ *                             type: string
+ *                             example: "SWD_01"
+ *                           title:
+ *                             type: string
+ *                             example: "Defense Flow System"
+ *                       defense:
+ *                         type: object
+ *                         properties:
+ *                           id:
+ *                             type: integer
+ *                             example: 2
+ *                           defenseCode:
+ *                             type: string
+ *                             example: "DEF_SP24"
+ *                       finalResult:
+ *                         type: string
+ *                         example: "Pending"
  *       500:
  *         description: Server Error
  */
@@ -110,8 +189,55 @@ export const getTopicDefenses = async (
  *     responses:
  *       200:
  *         description: Topic defense details
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 message:
+ *                   type: string
+ *                   example: "Topic defense retrieved successfully"
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     id:
+ *                       type: integer
+ *                       example: 1
+ *                     topicDefenseCode:
+ *                       type: string
+ *                       example: "REG_12345"
+ *                     finalResult:
+ *                       type: string
+ *                       example: "Pending"
+ *                     topic:
+ *                       type: object
+ *                       properties:
+ *                         id:
+ *                           type: integer
+ *                         topicCode:
+ *                           type: string
+ *                         title:
+ *                           type: string
+ *                     defense:
+ *                       type: object
+ *                       properties:
+ *                         id:
+ *                           type: integer
+ *                         defenseCode:
+ *                           type: string
+ *                     defenseCouncils:
+ *                       type: array
+ *                       items:
+ *                         type: object
  *       404:
  *         description: Not found
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
  *       500:
  *         description: Server Error
  */
@@ -145,10 +271,31 @@ export const getTopicDefenseById = async (
  *     responses:
  *       200:
  *         description: Registration removed
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 message:
+ *                   type: string
+ *                   example: "Topic registration removed successfully"
+ *                 data:
+ *                   type: object
  *       404:
  *         description: Not found
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
  *       400:
  *         description: Cannot remove
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
  *       500:
  *         description: Server Error
  */
