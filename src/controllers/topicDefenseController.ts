@@ -9,7 +9,7 @@ import {
 } from "../utils/apiResponse.js";
 import { getErrorMessage } from "../utils/typeGuards.js";
 import { getIdParam } from "../utils/requestHelpers.js";
-import { CreateTopicDefenseInput, TopicDefenseFilters, DefenseResult } from "../types/index.js";
+import { CreateTopicDefenseInput, TopicDefenseFilters } from "../types/index.js";
 
 /**
  * @swagger
