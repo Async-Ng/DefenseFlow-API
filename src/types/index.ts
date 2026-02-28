@@ -420,11 +420,7 @@ export type DefenseDependencies = {
  */
 export type CapacityCalculationRequest = {
   semesterId: number;
-  defenseId?: number; // If provided, will analyze current defense days
-  timePerTopic?: number; // minutes, default from defense or 30
-  workHoursPerDay?: number; // minutes, default 480 (8 hours)
-  councilBoardSize?: number; // default 5 (1 President + 1 Secretary + 3 Members)
-  plannedDays?: number; // optional: planned days if no defense exists
+  defenseId: number; 
 };
 
 /**
