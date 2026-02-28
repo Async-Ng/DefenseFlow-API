@@ -521,5 +521,25 @@ export type CapacityCalculationResponse = {
 // Utility Types
 // ============================================================================
 
+// ============================================================================
+// Dashboard Types
+// ============================================================================
+
+export type DashboardStats = {
+  totalSemesters: number;
+  totalLecturers: number;
+  totalTopics: number;
+  totalDefenses: number;
+  totalCouncilBoards: number;
+  topicsByResult: {
+    pending: number;
+    passed: number;
+    failed: number;
+  };
+  upcomingDefenses: (Defense & {
+    semester: { name: string };
+  })[];
+};
+
 export type Nullable<T> = T | null;
 export type Optional<T> = T | undefined;

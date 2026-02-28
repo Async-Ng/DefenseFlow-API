@@ -913,6 +913,43 @@ const options: swaggerJsdoc.Options = {
             },
           },
         },
+        DashboardStats: {
+          type: "object",
+          properties: {
+            totalSemesters: { type: "integer", example: 5 },
+            totalLecturers: { type: "integer", example: 50 },
+            totalTopics: { type: "integer", example: 100 },
+            totalDefenses: { type: "integer", example: 10 },
+            totalCouncilBoards: { type: "integer", example: 20 },
+            topicsByResult: {
+              type: "object",
+              properties: {
+                pending: { type: "integer", example: 70 },
+                passed: { type: "integer", example: 25 },
+                failed: { type: "integer", example: 5 },
+              },
+            },
+            upcomingDefenses: {
+              type: "array",
+              items: {
+                allOf: [
+                  { $ref: "#/components/schemas/Defense" },
+                  {
+                    type: "object",
+                    properties: {
+                      semester: {
+                        type: "object",
+                        properties: {
+                          name: { type: "string", example: "Spring 2025" },
+                        },
+                      },
+                    },
+                  },
+                ],
+              },
+            },
+          },
+        },
       },
     },
   },
