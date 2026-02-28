@@ -173,6 +173,11 @@ const options: swaggerJsdoc.Options = {
               nullable: true,
               example: "08:00:00",
             },
+            maxCouncilsPerDay: {
+              type: "integer",
+              nullable: true,
+              example: 1,
+            },
             defenseDays: {
               type: "array",
               items: {
@@ -199,6 +204,7 @@ const options: swaggerJsdoc.Options = {
               format: "time",
               example: "08:00:00",
             },
+            maxCouncilsPerDay: { type: "integer", example: 1 },
             defenseDays: {
               type: "array",
               items: {
@@ -219,6 +225,7 @@ const options: swaggerJsdoc.Options = {
               format: "time",
               example: "08:00:00",
             },
+            maxCouncilsPerDay: { type: "integer", example: 1 },
             defenseDays: {
               type: "array",
               items: {

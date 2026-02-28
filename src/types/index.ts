@@ -98,6 +98,18 @@ export type DefenseFilterQuery = {
   semesterId?: string | string[];
   defenseCode?: string | string[];
   type?: string | string[];
+  maxCouncilsPerDay?: string | string[];
+};
+
+/**
+ * Council board filter query parameters
+ */
+export type CouncilBoardFilterQuery = {
+  defenseDayId?: string | string[];
+  semesterId?: string | string[];
+  defenseId?: string | string[];
+  boardCode?: string | string[];
+  name?: string | string[];
 };
 
 // ============================================================================
@@ -119,6 +131,7 @@ export type CreateDefenseInput = {
   name: string;
   type?: DefenseType;
   timePerTopic?: number;
+  maxCouncilsPerDay?: number;
   workStartTime?: string;
   defenseDays?: CreateDefenseDayInput[];
   availabilityStartDate?: string;
@@ -136,6 +149,7 @@ export type UpdateDefenseInput = {
   name?: string;
   type?: DefenseType;
   timePerTopic?: number;
+  maxCouncilsPerDay?: number;
   workStartTime?: string;
   defenseDays?: CreateDefenseDayInput[];
   availabilityStartDate?: string;
@@ -348,6 +362,20 @@ export type DefenseFilters = {
   defenseCode?: string;
   semesterId?: number;
   type?: DefenseType;
+  maxCouncilsPerDay?: number;
+};
+
+export type CouncilBoardFilters = {
+  defenseDayId?: number;
+  semesterId?: number;
+  defenseId?: number;
+  boardCode?: string;
+  name?: string;
+};
+
+export type CouncilBoardSort = {
+  field: string;
+  order: "asc" | "desc";
 };
 
 export type LecturerFilters = {
@@ -474,6 +502,7 @@ export type CapacityAnalysis = {
   timePerTopic: number;
   workHoursPerDay: number;
   councilBoardSize: number;
+  maxCouncilsPerDay: number;
 };
 
 /**

@@ -110,6 +110,10 @@ export const createDefense = async (
  *         schema:
  *           type: string
  *           enum: [Main, Resit]
+ *       - in: query
+ *         name: maxCouncilsPerDay
+ *         schema:
+ *           type: integer
  *     responses:
  *       200:
  *         description: List of defenses

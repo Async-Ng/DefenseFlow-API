@@ -2,6 +2,10 @@ import { Request, Response, NextFunction } from "express";
 import * as scheduleService from "../services/scheduleService.js";
 import { successResponse } from "../utils/apiResponse.js";
 import { AppError } from "../middleware/errorHandler.js";
+import {
+  getCouncilBoardFilters,
+  getPaginationParams,
+} from "../utils/requestHelpers.js";
 import { z } from "zod";
 
 /**
@@ -112,6 +116,41 @@ export const generateSchedule = async (
  *         schema:
  *           type: integer
  *         description: Defense ID to get schedule for
+ *       - in: query
+ *         name: page
+ *         schema:
+ *           type: integer
+ *           default: 1
+ *         description: Page number
+ *       - in: query
+ *         name: limit
+ *         schema:
+ *           type: integer
+ *           default: 10
+ *         description: Number of items per page
+ *       - in: query
+ *         name: boardCode
+ *         schema:
+ *           type: string
+ *         description: Filter by board code (partial match)
+ *       - in: query
+ *         name: name
+ *         schema:
+ *           type: string
+ *         description: Filter by board name (partial match)
+ *       - in: query
+ *         name: sortField
+ *         schema:
+ *           type: string
+ *           default: id
+ *         description: Field to sort by
+ *       - in: query
+ *         name: sortOrder
+ *         schema:
+ *           type: string
+ *           enum: [asc, desc]
+ *           default: asc
+ *         description: Sort order
  *     responses:
  *       200:
  *         description: Schedule retrieved successfully
@@ -150,7 +189,19 @@ export const getSchedule = async (
       throw new AppError(400, "Invalid defense ID");
     }
 
-    const result = await scheduleService.getSchedule(defenseId);
+    const filters = getCouncilBoardFilters(req);
+    filters.defenseId = defenseId; // Path param takes precedence or adds to filters
+
+    const pagination = getPaginationParams(req);
+    
+    const sortField = req.query.sortField as string || "id";
+    const sortOrder = (req.query.sortOrder as string || "asc") as "asc" | "desc";
+
+    const result = await scheduleService.getSchedule(
+      filters,
+      pagination,
+      { field: sortField, order: sortOrder }
+    );
 
     return successResponse(res, result, "Schedule retrieved successfully");
   } catch (error) {
