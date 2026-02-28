@@ -10,6 +10,7 @@ import type {
   SemesterFilters,
   DefenseFilters,
   DefenseType,
+  CouncilBoardFilters,
 } from "../types/index.js";
 
 /**
@@ -115,5 +116,26 @@ export const getDefenseFilters = (req: Request): DefenseFilters => {
     maxCouncilsPerDay: isString(maxCouncilsParam)
       ? parseInt(maxCouncilsParam, 10)
       : undefined,
+  };
+};
+
+/**
+ * Extract council board filters from query
+ * @param req - Express request object
+ * @returns Council board filter object
+ */
+export const getCouncilBoardFilters = (req: Request): CouncilBoardFilters => {
+  const defenseDayIdParam = req.query.defenseDayId;
+  const semesterIdParam = req.query.semesterId;
+  const defenseIdParam = req.query.defenseId;
+  const boardCodeParam = req.query.boardCode;
+  const nameParam = req.query.name;
+
+  return {
+    defenseDayId: isString(defenseDayIdParam) ? parseInt(defenseDayIdParam, 10) : undefined,
+    semesterId: isString(semesterIdParam) ? parseInt(semesterIdParam, 10) : undefined,
+    defenseId: isString(defenseIdParam) ? parseInt(defenseIdParam, 10) : undefined,
+    boardCode: isString(boardCodeParam) ? boardCodeParam : undefined,
+    name: isString(nameParam) ? nameParam : undefined,
   };
 };

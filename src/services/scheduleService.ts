@@ -13,7 +13,13 @@ import {
   TopicSupervisor,
   LecturerQualification,
   Qualification,
+  CouncilBoard,
 } from "../../generated/prisma/client.js";
+import {
+  CouncilBoardFilters,
+  CouncilBoardSort,
+  PaginatedResult,
+} from "../types/index.js";
 
 // =============================================================================
 // TYPES
@@ -572,51 +578,64 @@ const persistSchedule = async (defenseId: number, boards: PlannedBoard[]): Promi
     await tx.councilBoardMember.deleteMany({ where: { councilBoardId: { in: oldBoardIds } } });
     await tx.councilBoard.deleteMany({ where: { defenseDay: { defenseId } } });
 
-    // Insert new schedule
-    for (const planned of boards) {
-      // 1. Create the board
-      const board = await tx.councilBoard.create({
-        data: {
-          boardCode: `CB-${defenseId}-${planned.defenseDayId}-${Math.floor(Math.random() * 10000)}`,
-          defenseDayId: planned.defenseDayId,
-          semesterId: planned.topics[0]?.semesterId ?? defense.semesterId,
-          name: "Defense Council Board",
-        },
-      });
-
-      // 2. Create board members
-      const membersToCreate = [
-        { councilBoardId: board.id, lecturerId: planned.presidentId, role: CouncilRole.President },
-        { councilBoardId: board.id, lecturerId: planned.secretaryId, role: CouncilRole.Secretary },
-        ...planned.memberIds
-          .filter(id => id != null)
-          .map(id => ({ councilBoardId: board.id, lecturerId: id, role: CouncilRole.Member })),
-      ];
-
-      await tx.councilBoardMember.createMany({
-        data: membersToCreate,
-      });
-
-      // 3. Create defense councils (slots)
-      // reset global day-timer, each board starts from morning again
-      let topicCursor = startMinutes;
-      for (const topic of planned.topics) {
-        const registration = topic.topicDefenses?.[0];
-        if (!registration) continue;
-
-        await tx.defenseCouncil.create({
+    try {
+      // Insert new schedule
+      for (const planned of boards) {
+        // 1. Create the board
+        const board = await tx.councilBoard.create({
           data: {
-            defenseCouncilCode: `DC-${topic.topicCode}`,
+            boardCode: `CB-${defenseId}-${planned.defenseDayId}-${Math.floor(Math.random() * 10000)}`,
+            defenseDayId: planned.defenseDayId,
+            semesterId: planned.topics[0]?.semesterId ?? defense.semesterId,
+            name: "Defense Council Board",
+          },
+        });
+
+        // 2. Create board members
+        const membersToCreate = [
+          { councilBoardId: board.id, lecturerId: planned.presidentId, role: CouncilRole.President },
+          { councilBoardId: board.id, lecturerId: planned.secretaryId, role: CouncilRole.Secretary },
+          ...planned.memberIds
+            .filter(id => id != null)
+            .map(id => ({ councilBoardId: board.id, lecturerId: id, role: CouncilRole.Member })),
+        ];
+
+        await tx.councilBoardMember.createMany({
+          data: membersToCreate,
+        });
+
+        // 3. Create defense councils (slots)
+        // reset global day-timer, each board starts from morning again
+        let topicCursor = startMinutes;
+        const councilsToCreate = [];
+        for (const topic of planned.topics) {
+          const registration = topic.topicDefenses?.[0];
+          if (!registration) {
+            continue;
+          }
+
+          councilsToCreate.push({
+            defenseCouncilCode: `DC-${topic.topicCode}-${Math.floor(Math.random() * 1000)}`,
             registrationId: registration.id,
             councilBoardId: board.id,
             startTime: minutesToDate(topicCursor),
             endTime: minutesToDate(topicCursor + timePerTopic),
-          },
-        });
+          });
 
-        topicCursor += timePerTopic;
+          topicCursor += timePerTopic;
+        }
+
+        if (councilsToCreate.length > 0) {
+          await tx.defenseCouncil.createMany({
+            data: councilsToCreate,
+          });
+        }
       }
+    } catch (err: any) {
+      throw err;
     }
+  }, {
+    timeout: 60000, // 60 seconds
   });
 };
 
@@ -643,10 +662,24 @@ export const generateSchedule = async (defenseId: number) => {
   };
 };
 
-export const getSchedule = async (defenseId: number) => {
-  const defense = await prisma.defense.findUnique({ where: { id: defenseId } });
-  if (!defense) throw new AppError(404, "Defense not found");
-  return councilBoardRepository.findCouncilBoardsByDefense(defenseId);
+export const getSchedule = async (
+  filters: CouncilBoardFilters,
+  pagination: { page: number; limit: number },
+  sort?: CouncilBoardSort,
+): Promise<PaginatedResult<CouncilBoard>> => {
+  const skip = (pagination.page - 1) * pagination.limit;
+  const { data, total } = await councilBoardRepository.findAll(
+    filters,
+    { skip, take: pagination.limit },
+    sort,
+  );
+
+  return {
+    data,
+    total,
+    page: pagination.page,
+    limit: pagination.limit,
+  };
 };
 
 export const publishSchedule = async (defenseId: number) =>
@@ -704,3 +737,4 @@ export const updateCouncilBoard = async (
     });
   });
 };
+

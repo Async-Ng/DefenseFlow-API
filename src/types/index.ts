@@ -101,6 +101,17 @@ export type DefenseFilterQuery = {
   maxCouncilsPerDay?: string | string[];
 };
 
+/**
+ * Council board filter query parameters
+ */
+export type CouncilBoardFilterQuery = {
+  defenseDayId?: string | string[];
+  semesterId?: string | string[];
+  defenseId?: string | string[];
+  boardCode?: string | string[];
+  name?: string | string[];
+};
+
 // ============================================================================
 // Input Types
 // ============================================================================
@@ -352,6 +363,19 @@ export type DefenseFilters = {
   semesterId?: number;
   type?: DefenseType;
   maxCouncilsPerDay?: number;
+};
+
+export type CouncilBoardFilters = {
+  defenseDayId?: number;
+  semesterId?: number;
+  defenseId?: number;
+  boardCode?: string;
+  name?: string;
+};
+
+export type CouncilBoardSort = {
+  field: string;
+  order: "asc" | "desc";
 };
 
 export type LecturerFilters = {

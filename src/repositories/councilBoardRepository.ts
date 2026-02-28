@@ -1,5 +1,6 @@
 import { prisma } from "../config/prisma.js";
 import { Prisma, CouncilBoard } from "../../generated/prisma/client.js";
+import { CouncilBoardFilters, CouncilBoardSort } from "../types/index.js";
 
 /**
  * Create a new council board with members
@@ -148,3 +149,85 @@ export const findCouncilBoardsByDefense = async (
     ],
   });
 };
+
+/**
+ * Find all council boards with filters, pagination, and sorting
+ */
+export const findAll = async (
+  filters: CouncilBoardFilters,
+  pagination: { skip?: number; take?: number },
+  sort?: CouncilBoardSort,
+): Promise<{ data: CouncilBoard[]; total: number }> => {
+  const where: Prisma.CouncilBoardWhereInput = {};
+
+  if (filters.defenseDayId) {
+    where.defenseDayId = filters.defenseDayId;
+  }
+
+  if (filters.semesterId) {
+    where.semesterId = filters.semesterId;
+  }
+
+  if (filters.defenseId) {
+    where.defenseDay = {
+      defenseId: filters.defenseId,
+    };
+  }
+
+  if (filters.boardCode) {
+    where.boardCode = { contains: filters.boardCode, mode: "insensitive" };
+  }
+
+  if (filters.name) {
+    where.name = { contains: filters.name, mode: "insensitive" };
+  }
+
+  const orderBy: Prisma.CouncilBoardOrderByWithRelationInput = sort
+    ? { [sort.field]: sort.order }
+    : { id: "asc" };
+
+  const [data, total] = await Promise.all([
+    prisma.councilBoard.findMany({
+      where,
+      skip: pagination.skip,
+      take: pagination.take,
+      orderBy,
+      include: {
+        councilBoardMembers: {
+          include: {
+            lecturer: {
+              include: {
+                lecturerQualifications: {
+                  include: {
+                    qualification: true,
+                  },
+                },
+              },
+            },
+          },
+        },
+        defenseCouncils: {
+          include: {
+            topicDefense: {
+              include: {
+                topic: {
+                  include: {
+                    topicSupervisors: {
+                      include: {
+                        lecturer: true,
+                      },
+                    },
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
+    }),
+    prisma.councilBoard.count({ where }),
+  ]);
+
+  return { data, total };
+};
+
