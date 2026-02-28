@@ -9,7 +9,7 @@ import {
 } from "../utils/apiResponse.js";
 import { getErrorMessage } from "../utils/typeGuards.js";
 import { getIdParam } from "../utils/requestHelpers.js";
-import { CreateTopicDefenseInput, TopicDefenseFilters } from "../types/index.js";
+import { CreateTopicDefenseInput, TopicDefenseFilters, DefenseResult } from "../types/index.js";
 
 /**
  * @swagger
@@ -105,9 +105,28 @@ export const createTopicDefense = async (
  *         name: topicId
  *         schema:
  *           type: integer
+ *       - in: query
+ *         name: topicCode
+ *         schema:
+ *           type: string
+ *       - in: query
+ *         name: finalResult
+ *         schema:
+ *           type: string
+ *           enum: [Pending, Passed, Failed]
+ *       - in: query
+ *         name: page
+ *         schema:
+ *           type: integer
+ *           default: 1
+ *       - in: query
+ *         name: limit
+ *         schema:
+ *           type: integer
+ *           default: 10
  *     responses:
  *       200:
- *         description: List of topic defenses
+ *         description: List of topic defenses (paginated)
  *         content:
  *           application/json:
  *             schema:
@@ -120,40 +139,55 @@ export const createTopicDefense = async (
  *                   type: string
  *                   example: "Topic defenses retrieved successfully"
  *                 data:
- *                   type: array
- *                   items:
- *                     type: object
- *                     properties:
- *                       id:
- *                         type: integer
- *                         example: 1
- *                       topicDefenseCode:
- *                         type: string
- *                         example: "REG_12345"
- *                       topic:
+ *                   type: object
+ *                   properties:
+ *                     data:
+ *                       type: array
+ *                       items:
  *                         type: object
  *                         properties:
  *                           id:
  *                             type: integer
- *                             example: 5
- *                           topicCode:
+ *                             example: 1
+ *                           topicDefenseCode:
  *                             type: string
- *                             example: "SWD_01"
- *                           title:
+ *                             example: "REG_12345"
+ *                           topic:
+ *                             type: object
+ *                             properties:
+ *                               id:
+ *                                 type: integer
+ *                                 example: 5
+ *                               topicCode:
+ *                                 type: string
+ *                                 example: "SWD_01"
+ *                               title:
+ *                                 type: string
+ *                                 example: "Defense Flow System"
+ *                           defense:
+ *                             type: object
+ *                             properties:
+ *                               id:
+ *                                 type: integer
+ *                                 example: 2
+ *                               defenseCode:
+ *                                 type: string
+ *                                 example: "DEF_SP24"
+ *                           finalResult:
  *                             type: string
- *                             example: "Defense Flow System"
- *                       defense:
- *                         type: object
- *                         properties:
- *                           id:
- *                             type: integer
- *                             example: 2
- *                           defenseCode:
- *                             type: string
- *                             example: "DEF_SP24"
- *                       finalResult:
- *                         type: string
- *                         example: "Pending"
+ *                             example: "Pending"
+ *                     total:
+ *                       type: integer
+ *                       example: 50
+ *                     page:
+ *                       type: integer
+ *                       example: 1
+ *                     limit:
+ *                       type: integer
+ *                       example: 10
+ *                     totalPages:
+ *                       type: integer
+ *                       example: 5
  *       500:
  *         description: Server Error
  */
@@ -165,10 +199,15 @@ export const getTopicDefenses = async (
     const filters: TopicDefenseFilters = {
       defenseId: req.query.defenseId ? Number(req.query.defenseId) : undefined,
       topicId: req.query.topicId ? Number(req.query.topicId) : undefined,
+      topicCode: req.query.topicCode ? String(req.query.topicCode) : undefined,
+      finalResult: req.query.finalResult as any,
     };
+    
+    const page = req.query.page ? Number(req.query.page) : 1;
+    const limit = req.query.limit ? Number(req.query.limit) : 10;
 
-    const records = await topicDefenseService.getTopicDefenses(filters);
-    return successResponse(res, records, "Topic defenses retrieved successfully");
+    const result = await topicDefenseService.getTopicDefenses(filters, page, limit);
+    return successResponse(res, result, "Topic defenses retrieved successfully");
   } catch (error: unknown) {
     return errorResponse(res, getErrorMessage(error), 500);
   }

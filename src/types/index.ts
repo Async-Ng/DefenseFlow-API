@@ -240,9 +240,18 @@ export type CreateTopicDefenseInput = {
   defenseId: number;
 };
 
+export type TopicDefenseFilterQuery = {
+  defenseId?: string | string[];
+  topicId?: string | string[];
+  topicCode?: string | string[];
+  finalResult?: string | string[];
+};
+
 export type TopicDefenseFilters = {
   defenseId?: number;
   topicId?: number;
+  topicCode?: string;
+  finalResult?: DefenseResult;
 };
 
 export type LecturerWithQualifications = Lecturer & {

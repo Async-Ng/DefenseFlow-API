@@ -45,10 +45,22 @@ export const createTopicDefense = async (data: CreateTopicDefenseInput) => {
 };
 
 /**
- * Get all topic defenses with optional filters
+ * Get all topic defenses with optional filters and pagination
  */
-export const getTopicDefenses = async (filters: TopicDefenseFilters) => {
-  return await topicDefenseRepository.findAll(filters);
+export const getTopicDefenses = async (
+  filters: TopicDefenseFilters,
+  page: number = 1,
+  limit: number = 10
+) => {
+  const { data, total } = await topicDefenseRepository.findAndCountAll(filters, page, limit);
+
+  return {
+    data,
+    total,
+    page,
+    limit,
+    totalPages: Math.ceil(total / limit),
+  };
 };
 
 /**

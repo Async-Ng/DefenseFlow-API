@@ -36,20 +36,50 @@ export const create = async (data: CreateTopicDefenseInput) => {
 };
 
 /**
- * Find all TopicDefense records with optional filters
+ * Find all TopicDefense records with optional filters and pagination
  */
-export const findAll = async (filters: TopicDefenseFilters = {}) => {
-  return await prisma.topicDefense.findMany({
-    where: {
-      ...(filters.defenseId !== undefined && { defenseId: filters.defenseId }),
-      ...(filters.topicId !== undefined && { topicId: filters.topicId }),
-    },
-    include: {
-      topic: { include: { topicSupervisors: { include: { lecturer: true } } } },
-      defense: true,
-    },
-    orderBy: { id: "asc" },
-  });
+export const findAndCountAll = async (
+  filters: TopicDefenseFilters = {},
+  page: number = 1,
+  limit: number = 10
+) => {
+  const skip = (page - 1) * limit;
+
+  const whereClause: any = {
+    ...(filters.defenseId !== undefined && { defenseId: filters.defenseId }),
+    ...(filters.topicId !== undefined && { topicId: filters.topicId }),
+    ...(filters.finalResult && { finalResult: filters.finalResult }),
+  };
+
+  // If topicCode search is provided, map it through the relation
+  if (filters.topicCode) {
+    whereClause.topic = {
+      is: {
+        topicCode: {
+          contains: filters.topicCode,
+        }
+      }
+    };
+  }
+
+  const [data, total] = await Promise.all([
+    prisma.topicDefense.findMany({
+      where: whereClause,
+      include: {
+        topic: { include: { topicSupervisors: { include: { lecturer: true } } } },
+        defense: true,
+      },
+      skip,
+      take: limit,
+      orderBy: [
+        { defenseId: "desc" },
+        { topicId: "asc" }
+      ],
+    }),
+    prisma.topicDefense.count({ where: whereClause }),
+  ]);
+
+  return { data, total };
 };
 
 /**
