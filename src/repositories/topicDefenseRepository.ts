@@ -7,19 +7,31 @@ const generateCode = (topicId: number, defenseId: number): string => {
 };
 
 /**
- * Create a TopicDefense registration
+ * Create a TopicDefense registration (supports bulk)
  */
 export const create = async (data: CreateTopicDefenseInput) => {
-  return await prisma.topicDefense.create({
-    data: {
-      topicDefenseCode: generateCode(data.topicId, data.defenseId),
-      topicId: data.topicId,
+  const topicDefenseData = data.topicIds.map(topicId => ({
+    topicDefenseCode: generateCode(topicId, data.defenseId),
+    topicId,
+    defenseId: data.defenseId,
+  }));
+
+  // Perform bulk insert
+  await prisma.topicDefense.createMany({
+    data: topicDefenseData,
+    skipDuplicates: true, // Optional: skip if already exists based on unique constraints (if any)
+  });
+  
+  // Return the newly created records
+  return await prisma.topicDefense.findMany({
+    where: {
       defenseId: data.defenseId,
+      topicId: { in: data.topicIds }
     },
     include: {
       topic: true,
       defense: true,
-    },
+    }
   });
 };
 

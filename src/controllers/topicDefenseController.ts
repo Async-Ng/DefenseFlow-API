@@ -70,9 +70,9 @@ export const createTopicDefense = async (
 ): Promise<Response> => {
   try {
     const data: CreateTopicDefenseInput = req.body;
-    if (!data.topicId || !data.defenseId) {
+    if (!data.topicIds || !Array.isArray(data.topicIds) || data.topicIds.length === 0 || !data.defenseId) {
       return validationErrorResponse(res, {
-        message: "topicId and defenseId are required",
+        message: "topicIds (array) and defenseId are required",
       });
     }
 

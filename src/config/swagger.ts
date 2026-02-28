@@ -439,12 +439,13 @@ const options: swaggerJsdoc.Options = {
         },
         CreateTopicDefenseInput: {
           type: "object",
-          required: ["topicId", "defenseId"],
+          required: ["topicIds", "defenseId"],
           properties: {
-            topicId: {
-              type: "integer",
-              example: 5,
-              description: "ID of the topic being registered",
+            topicIds: {
+              type: "array",
+              items: { type: "integer" },
+              example: [5, 6, 7],
+              description: "Array of topic IDs being registered",
             },
             defenseId: {
               type: "integer",

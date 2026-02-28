@@ -236,7 +236,7 @@ export type CreateLecturerInput = {
 export type UpdateLecturerInput = Partial<CreateLecturerInput>;
 
 export type CreateTopicDefenseInput = {
-  topicId: number;
+  topicIds: number[];
   defenseId: number;
 };
 
