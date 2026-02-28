@@ -29,7 +29,37 @@ import { z } from "zod";
  *         content:
  *           application/json:
  *             schema:
- *               $ref: '#/components/schemas/ScheduleGenerationResponse'
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 message:
+ *                   type: string
+ *                   example: "Schedule generated successfully"
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     status:
+ *                       type: string
+ *                       example: "success"
+ *                     metrics:
+ *                       type: object
+ *                       properties:
+ *                         totalTopics:
+ *                           type: integer
+ *                           example: 10
+ *                         scheduled:
+ *                           type: integer
+ *                           example: 8
+ *                         unscheduled:
+ *                           type: integer
+ *                           example: 2
+ *                     unscheduledTopics:
+ *                       type: array
+ *                       items:
+ *                         type: string
+ *                       example: ["TOPIC_001", "TOPIC_002"]
  *       400:
  *         description: Validation error
  *         content:
