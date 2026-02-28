@@ -14,16 +14,15 @@ import type { CapacityCalculationRequest } from "../types/index.js";
  *     summary: Calculate defense capacity and provide planning recommendations
  *     tags: [Capacity]
  *     description: |
- *       **Only semesterId is required** - other parameters are auto-derived from:
- *       - Defense data (if semester has defenses)
- *       - Default values (if no defense exists)
+ *       Calculates capacity and provides recommendations based on the specified semester and defense.
+ *       Configurable parameters like time per topic or council size are auto-derived from the Defense data and default system values.
  *       
  *       Analyzes and provides recommendations for:
  *       - Required defense days
  *       - Lecturer count (min/recommended/max)
  *       - Workload distribution
  *       - Topics per council board per day
- *       - Defense day adjustments (if defenseId provided)
+ *       - Defense day adjustments
  *     parameters:
  *       - in: query
  *         name: semesterId

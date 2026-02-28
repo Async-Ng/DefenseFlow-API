@@ -41,6 +41,7 @@ interface SchedulingContext {
   defenseDays: DefenseDay[];
   commonQualifications: Qualification[];
   lecturerDefenseConfigs: LecturerDefenseConfig[];
+  topicsPerBoard: number;
 }
 
 interface SchedulingState {
@@ -300,31 +301,46 @@ const minutesToDate = (totalMinutes: number): Date => {
 type Pass1Result = PlannedBoard | "deferred" | "insufficient_candidates";
 
 const tryScheduleStrict = (
-  topic: FullTopic,
+  topicChunk: FullTopic[],
   candidates: FullLecturer[],
   commonQualifications: Qualification[],
   commonQualificationIds: number[],
   defenseDayId: number
 ): Pass1Result => {
   if (candidates.length < 5) return "insufficient_candidates";
+  if (topicChunk.length === 0) return "insufficient_candidates";
 
-  const topicTypeQuals = topic.topicType?.qualificationTopicTypes?.map(q => q.qualification) ?? [];
+  // Gather all required qualifications from the chunk of topics
+  const allTopicQuals = new Set<number>();
+  const topicTypeQuals: Qualification[] = [];
+  
+  topicChunk.forEach(topic => {
+      topic.topicType?.qualificationTopicTypes?.forEach(q => {
+          if (!allTopicQuals.has(q.qualification.id)) {
+              allTopicQuals.add(q.qualification.id);
+              topicTypeQuals.push(q.qualification);
+          }
+      });
+  });
+
   const { selected, matchedCount } = selectWithTopicTypePreference(candidates, topicTypeQuals, commonQualificationIds);
 
   if (selected.length < 5) return "insufficient_candidates";
 
-  logTopicTypeMatch("Pass1", topic, topicTypeQuals, matchedCount);
+  logTopicTypeMatch("Pass1", topicChunk[0], topicTypeQuals, matchedCount);
 
   const members = buildCouncilGroup(selected, commonQualifications, commonQualificationIds);
   if (members.length < 5) return "insufficient_candidates";
 
   if (!coversAllCommonQualifications(members, commonQualifications)) {
-    console.log(`⚠️  [Pass1] ${topic.topicCode}: incomplete coverage → deferred`);
+    console.log(`⚠️  [Pass1] Group of ${topicChunk.length} topics: incomplete coverage → deferred`);
     return "deferred";
   }
 
-  return buildPlannedBoard(members, defenseDayId, [topic]);
+  return buildPlannedBoard(members, defenseDayId, topicChunk);
 };
+
+
 
 // =============================================================================
 // PASS 2: BEST-EFFORT SCHEDULER
@@ -332,33 +348,47 @@ const tryScheduleStrict = (
 // =============================================================================
 
 const tryScheduleBestEffort = (
-  topic: FullTopic,
+  topicChunk: FullTopic[],
   candidates: FullLecturer[],
   commonQualifications: Qualification[],
   commonQualificationIds: number[],
   defenseDayId: number
 ): PlannedBoard | null => {
   if (candidates.length < 5) {
-    console.warn(`❌ [Pass2] ${topic.topicCode}: not enough candidates (${candidates.length})`);
+    console.warn(`❌ [Pass2] Group of ${topicChunk.length} topics: not enough candidates (${candidates.length})`);
     return null;
   }
+  if (topicChunk.length === 0) return null;
 
-  const topicTypeQuals = topic.topicType?.qualificationTopicTypes?.map(q => q.qualification) ?? [];
+  // Gather all required qualifications from the chunk of topics
+  const allTopicQuals = new Set<number>();
+  const topicTypeQuals: Qualification[] = [];
+  
+  topicChunk.forEach(topic => {
+      topic.topicType?.qualificationTopicTypes?.forEach(q => {
+          if (!allTopicQuals.has(q.qualification.id)) {
+              allTopicQuals.add(q.qualification.id);
+              topicTypeQuals.push(q.qualification);
+          }
+      });
+  });
+
   const { selected, matchedCount } = selectWithTopicTypePreference(candidates, topicTypeQuals, commonQualificationIds);
 
   if (selected.length < 5) {
-    console.warn(`❌ [Pass2] ${topic.topicCode}: not enough candidates after filtering`);
+    console.warn(`❌ [Pass2] Group of ${topicChunk.length} topics: not enough candidates after filtering`);
     return null;
   }
 
-  logTopicTypeMatch("Pass2", topic, topicTypeQuals, matchedCount);
+  logTopicTypeMatch("Pass2", topicChunk[0], topicTypeQuals, matchedCount);
 
   if (!coversAllCommonQualifications(selected, commonQualifications)) {
-    logPartialCoverage(topic, selected, commonQualifications);
+    logPartialCoverage(topicChunk[0], selected, commonQualifications);
   }
 
-  return buildPlannedBoard(selected, defenseDayId, [topic]);
+  return buildPlannedBoard(selected, defenseDayId, topicChunk);
 };
+
 
 // =============================================================================
 // MAIN SCHEDULER ORCHESTRATOR
@@ -366,8 +396,9 @@ const tryScheduleBestEffort = (
 // =============================================================================
 
 const runScheduler = (ctx: SchedulingContext): { boards: PlannedBoard[]; unscheduled: FullTopic[] } => {
-  const { defenseDays, lecturers, commonQualifications, topics, lecturerDefenseConfigs } = ctx;
+  const { defenseDays, lecturers, commonQualifications, topics, lecturerDefenseConfigs, defense, topicsPerBoard } = ctx;
   const commonQualificationIds = commonQualifications.map(q => q.id);
+  const maxCouncilsPerDay = defense.maxCouncilsPerDay || 1;
 
   const state: SchedulingState = {
     usedLecturersPerDay: new Map(),
@@ -385,36 +416,67 @@ const runScheduler = (ctx: SchedulingContext): { boards: PlannedBoard[]; unsched
 
   for (const day of defenseDays) {
     console.log(`\n=== Defense Day ${day.id} ===`);
+    let boardsCreatedToday = 0;
 
     // ── Pass 1: Strict ──────────────────────────────────────────────────────
     console.log("--- Pass 1 (Strict) ---");
     let pass1Running = true;
-    while (pass1Running) {
+    while (pass1Running && boardsCreatedToday < maxCouncilsPerDay) {
       const pending = getPendingTopics(topics, state.scheduledTopicIds, deferredTopics);
       if (pending.length === 0) break;
 
-      const [topic] = pending;
+      // Group topics by type to maximize board expertise
+      // For simplicity, we just take the first N topics of the same type (or null type)
+      const firstTopicType = pending[0].topicTypeId;
+      const similarTopics = pending.filter(t => t.topicTypeId === firstTopicType);
+      
+      const topicChunk = similarTopics.slice(0, topicsPerBoard);
+      
       const candidates = getEligibleCandidates(lecturers, day.id, state);
-      const result = tryScheduleStrict(topic, candidates, commonQualifications, commonQualificationIds, day.id);
+      const result = tryScheduleStrict(topicChunk, candidates, commonQualifications, commonQualificationIds, day.id);
 
       if (result === "insufficient_candidates") { pass1Running = false; }
-      else if (result === "deferred") { deferredTopics.push(topic); }
-      else { boards.push(result); commitBoardToState(result, state); }
+      else if (result === "deferred") { 
+          // Defer the whole chunk
+          deferredTopics.push(...topicChunk); 
+      }
+      else { 
+          boards.push(result); 
+          commitBoardToState(result, state); 
+          boardsCreatedToday++;
+      }
     }
 
     // ── Pass 2: Best-Effort ─────────────────────────────────────────────────
-    if (deferredTopics.length > 0) {
+    if (deferredTopics.length > 0 && boardsCreatedToday < maxCouncilsPerDay) {
       console.log(`--- Pass 2 (Best-Effort): ${deferredTopics.length} deferred ---`);
-      for (const topic of [...deferredTopics]) {
-        if (state.scheduledTopicIds.has(topic.id)) continue;
+      
+      const remainingSlots = maxCouncilsPerDay - boardsCreatedToday;
+      let boardsCreatedPass2 = 0;
+      
+      while(deferredTopics.length > 0 && boardsCreatedPass2 < remainingSlots) {
+        // Group deferred topics
+        const pendingDeferred = deferredTopics.filter(t => !state.scheduledTopicIds.has(t.id));
+        if (pendingDeferred.length === 0) break;
+        
+        const firstTopicType = pendingDeferred[0].topicTypeId;
+        const similarTopics = pendingDeferred.filter(t => t.topicTypeId === firstTopicType);
+        const topicChunk = similarTopics.slice(0, topicsPerBoard);
 
         const candidates = getEligibleCandidates(lecturers, day.id, state);
-        const board = tryScheduleBestEffort(topic, candidates, commonQualifications, commonQualificationIds, day.id);
-        if (!board) continue;
+        const board = tryScheduleBestEffort(topicChunk, candidates, commonQualifications, commonQualificationIds, day.id);
+        
+        if (!board) break; // If we can't form a board even with best effort, give up for this day.
 
         boards.push(board);
         commitBoardToState(board, state);
-        deferredTopics.splice(deferredTopics.findIndex(t => t.id === topic.id), 1);
+        boardsCreatedPass2++;
+        
+        // Remove scheduled chunk from deferred
+        topicChunk.forEach(scheduledTopic => {
+            const idx = deferredTopics.findIndex(t => t.id === scheduledTopic.id);
+            if (idx !== -1) deferredTopics.splice(idx, 1);
+        });
       }
     }
   }
@@ -459,7 +521,10 @@ const fetchSchedulingContext = async (defenseId: number): Promise<SchedulingCont
     prisma.lecturerDefenseConfig.findMany({ where: { defenseId } }),
   ]);
 
-  return { defense, topics, lecturers, defenseDays, commonQualifications, lecturerDefenseConfigs };
+  const timePerTopic = defense.timePerTopic ?? 45;
+  const topicsPerBoard = Math.floor((8 * 60) / timePerTopic);
+
+  return { defense, topics, lecturers, defenseDays, commonQualifications, lecturerDefenseConfigs, topicsPerBoard };
 };
 
 // =============================================================================
@@ -475,12 +540,13 @@ const validateDefenseReadiness = (ctx: SchedulingContext): void => {
 const validateCapacity = (ctx: SchedulingContext): void => {
   const timePerTopic = ctx.defense.timePerTopic ?? 45;
   const totalMinutesNeeded = ctx.topics.length * timePerTopic;
-  const totalMinutesAvailable = ctx.defenseDays.length * 8 * 60;
+  const maxCouncilsPerDay = ctx.defense.maxCouncilsPerDay || 1;
+  const totalMinutesAvailable = ctx.defenseDays.length * maxCouncilsPerDay * (8 * 60);
 
   if (totalMinutesNeeded > totalMinutesAvailable) {
     throw new AppError(
       400,
-      `Insufficient capacity: need ${totalMinutesNeeded} min, have ${totalMinutesAvailable} min across ${ctx.defenseDays.length} day(s).`
+      `Insufficient capacity: need ${totalMinutesNeeded} min, have ${totalMinutesAvailable} min across ${ctx.defenseDays.length} day(s) with ${maxCouncilsPerDay} councils/day.`
     );
   }
 };
@@ -507,11 +573,7 @@ const persistSchedule = async (defenseId: number, boards: PlannedBoard[]): Promi
     await tx.councilBoard.deleteMany({ where: { defenseDay: { defenseId } } });
 
     // Insert new schedule
-    const dayTimeCursors = new Map<number, number>();
-
     for (const planned of boards) {
-      const cursor = dayTimeCursors.get(planned.defenseDayId) ?? startMinutes;
-
       // 1. Create the board
       const board = await tx.councilBoard.create({
         data: {
@@ -536,7 +598,8 @@ const persistSchedule = async (defenseId: number, boards: PlannedBoard[]): Promi
       });
 
       // 3. Create defense councils (slots)
-      let topicCursor = cursor;
+      // reset global day-timer, each board starts from morning again
+      let topicCursor = startMinutes;
       for (const topic of planned.topics) {
         const registration = topic.topicDefenses?.[0];
         if (!registration) continue;
@@ -553,8 +616,6 @@ const persistSchedule = async (defenseId: number, boards: PlannedBoard[]): Promi
 
         topicCursor += timePerTopic;
       }
-
-      dayTimeCursors.set(planned.defenseDayId, topicCursor);
     }
   });
 };
