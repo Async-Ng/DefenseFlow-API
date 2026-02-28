@@ -304,6 +304,31 @@ const options: swaggerJsdoc.Options = {
             },
           },
         },
+        CreateLecturerInput: {
+          type: "object",
+          required: ["lecturerCode"],
+          properties: {
+            lecturerCode: { type: "string", maxLength: 50, example: "LEC001" },
+            fullName: { type: "string", maxLength: 100, example: "Nguyen Van A" },
+            email: {
+              type: "string",
+              maxLength: 100,
+              example: "nguyenvana@fpt.edu.vn",
+            },
+          },
+        },
+        UpdateLecturerInput: {
+          type: "object",
+          properties: {
+            lecturerCode: { type: "string", maxLength: 50, example: "LEC001" },
+            fullName: { type: "string", maxLength: 100, example: "Nguyen Van A" },
+            email: {
+              type: "string",
+              maxLength: 100,
+              example: "nguyenvana@fpt.edu.vn",
+            },
+          },
+        },
         Qualification: {
           type: "object",
           required: ["id", "qualificationCode"],

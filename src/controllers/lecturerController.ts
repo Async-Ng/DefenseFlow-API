@@ -87,10 +87,22 @@ export const getLecturerById = async (
  *     responses:
  *       201:
  *         description: Lecturer created successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/LecturerResponse'
  *       400:
  *         description: Validation error
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ValidationErrorResponse'
  *       500:
  *         description: Server Error
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
  */
 export const createLecturer = async (req: Request, res: Response): Promise<Response> => {
   try {
@@ -130,11 +142,29 @@ export const createLecturer = async (req: Request, res: Response): Promise<Respo
  *             $ref: '#/components/schemas/UpdateLecturerInput'
  *     responses:
  *       200:
- *         description: Lecturer updated
+ *         description: Lecturer updated successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/LecturerResponse'
  *       404:
- *         description: Not found
+ *         description: Lecturer not found
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ *       400:
+ *         description: Validation error
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ValidationErrorResponse'
  *       500:
  *         description: Server Error
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
  */
 export const updateLecturer = async (req: Request, res: Response): Promise<Response> => {
   try {
@@ -165,11 +195,23 @@ export const updateLecturer = async (req: Request, res: Response): Promise<Respo
  *           type: integer
  *     responses:
  *       200:
- *         description: Lecturer deleted
+ *         description: Lecturer deleted successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ApiResponse'
  *       404:
- *         description: Not found
+ *         description: Lecturer not found
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
  *       500:
  *         description: Server Error
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
  */
 export const deleteLecturer = async (req: Request, res: Response): Promise<Response> => {
   try {
