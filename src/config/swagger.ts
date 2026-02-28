@@ -304,6 +304,31 @@ const options: swaggerJsdoc.Options = {
             },
           },
         },
+        CreateLecturerInput: {
+          type: "object",
+          required: ["lecturerCode"],
+          properties: {
+            lecturerCode: { type: "string", maxLength: 50, example: "LEC001" },
+            fullName: { type: "string", maxLength: 100, example: "Nguyen Van A" },
+            email: {
+              type: "string",
+              maxLength: 100,
+              example: "nguyenvana@fpt.edu.vn",
+            },
+          },
+        },
+        UpdateLecturerInput: {
+          type: "object",
+          properties: {
+            lecturerCode: { type: "string", maxLength: 50, example: "LEC001" },
+            fullName: { type: "string", maxLength: 100, example: "Nguyen Van A" },
+            email: {
+              type: "string",
+              maxLength: 100,
+              example: "nguyenvana@fpt.edu.vn",
+            },
+          },
+        },
         Qualification: {
           type: "object",
           required: ["id", "qualificationCode"],
@@ -909,6 +934,43 @@ const options: swaggerJsdoc.Options = {
                 total: { type: "integer", example: 10 },
                 page: { type: "integer", example: 1 },
                 limit: { type: "integer", example: 10 },
+              },
+            },
+          },
+        },
+        DashboardStats: {
+          type: "object",
+          properties: {
+            totalSemesters: { type: "integer", example: 5 },
+            totalLecturers: { type: "integer", example: 50 },
+            totalTopics: { type: "integer", example: 100 },
+            totalDefenses: { type: "integer", example: 10 },
+            totalCouncilBoards: { type: "integer", example: 20 },
+            topicsByResult: {
+              type: "object",
+              properties: {
+                pending: { type: "integer", example: 70 },
+                passed: { type: "integer", example: 25 },
+                failed: { type: "integer", example: 5 },
+              },
+            },
+            upcomingDefenses: {
+              type: "array",
+              items: {
+                allOf: [
+                  { $ref: "#/components/schemas/Defense" },
+                  {
+                    type: "object",
+                    properties: {
+                      semester: {
+                        type: "object",
+                        properties: {
+                          name: { type: "string", example: "Spring 2025" },
+                        },
+                      },
+                    },
+                  },
+                ],
               },
             },
           },
