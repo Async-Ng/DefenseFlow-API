@@ -98,6 +98,7 @@ export type DefenseFilterQuery = {
   semesterId?: string | string[];
   defenseCode?: string | string[];
   type?: string | string[];
+  maxCouncilsPerDay?: string | string[];
 };
 
 // ============================================================================
@@ -119,6 +120,7 @@ export type CreateDefenseInput = {
   name: string;
   type?: DefenseType;
   timePerTopic?: number;
+  maxCouncilsPerDay?: number;
   workStartTime?: string;
   defenseDays?: CreateDefenseDayInput[];
   availabilityStartDate?: string;
@@ -136,6 +138,7 @@ export type UpdateDefenseInput = {
   name?: string;
   type?: DefenseType;
   timePerTopic?: number;
+  maxCouncilsPerDay?: number;
   workStartTime?: string;
   defenseDays?: CreateDefenseDayInput[];
   availabilityStartDate?: string;
@@ -348,6 +351,7 @@ export type DefenseFilters = {
   defenseCode?: string;
   semesterId?: number;
   type?: DefenseType;
+  maxCouncilsPerDay?: number;
 };
 
 export type LecturerFilters = {

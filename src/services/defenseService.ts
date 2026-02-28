@@ -137,6 +137,13 @@ export const updateDefense = async (
     }
   }
 
+  // Validate maxCouncilsPerDay if provided
+  if (data.maxCouncilsPerDay !== undefined && data.maxCouncilsPerDay !== null) {
+    if (typeof data.maxCouncilsPerDay !== "number" || data.maxCouncilsPerDay <= 0) {
+      throw new Error("Max councils per day must be a positive number");
+    }
+  }
+
   // Validate defense days if provided
   if (data.defenseDays && data.defenseDays.length > 0) {
     // Validate each defense day has required fields
