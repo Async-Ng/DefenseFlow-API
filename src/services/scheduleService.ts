@@ -716,17 +716,55 @@ export const updateCouncilBoard = async (
   });
   if (!board) throw new AppError(404, "Council Board not found");
 
-  return prisma.$transaction(async (tx) => {
-    const current = board.councilBoardMembers;
-    const newPresidentId = data.presidentId ?? current.find(m => m.role === CouncilRole.President)?.lecturerId;
-    const newSecretaryId = data.secretaryId ?? current.find(m => m.role === CouncilRole.Secretary)?.lecturerId;
-    const newMemberIds = data.memberIds ?? current.filter(m => m.role === CouncilRole.Member).map(m => m.lecturerId!);
+  // 1. Validate intra-board uniqueness (President != Secretary != Member)
+  const current = board.councilBoardMembers;
+  const newPresidentId = data.presidentId ?? current.find(m => m.role === CouncilRole.President)?.lecturerId;
+  const newSecretaryId = data.secretaryId ?? current.find(m => m.role === CouncilRole.Secretary)?.lecturerId;
+  const newMemberIds = data.memberIds ?? current.filter(m => m.role === CouncilRole.Member).map(m => m.lecturerId!);
 
+  if (!newPresidentId || !newSecretaryId) {
+    throw new AppError(400, "President and Secretary are required");
+  }
+
+  const allIds = [newPresidentId, newSecretaryId, ...newMemberIds];
+  const uniqueIds = new Set(allIds);
+  if (allIds.length !== uniqueIds.size) {
+    throw new AppError(400, "Lecturers must be unique within a council board");
+  }
+
+  // 2. Validate cross-board schedule conflicts on the same day
+  const conflictingAssignments = await prisma.councilBoardMember.findMany({
+    where: {
+      lecturerId: { in: allIds },
+      councilBoard: {
+        defenseDayId: board.defenseDayId,
+        id: { not: councilBoardId }, // Exclude current board
+      }
+    },
+    include: {
+      lecturer: true,
+      councilBoard: true
+    }
+  });
+
+  if (conflictingAssignments.length > 0) {
+    const conflict = conflictingAssignments[0];
+    const lecturerName = conflict.lecturer?.fullName || "Lecturer";
+    const lecturerCode = conflict.lecturer?.lecturerCode || "N/A";
+    const boardCode = conflict.councilBoard?.boardCode || "another board";
+    
+    throw new AppError(
+      400,
+      `Lecturer ${lecturerName} (${lecturerCode}) is already assigned to board ${boardCode} on this day.`
+    );
+  }
+
+  return prisma.$transaction(async (tx) => {
     await tx.councilBoardMember.deleteMany({ where: { councilBoardId } });
     await tx.councilBoardMember.createMany({
       data: [
-        { councilBoardId, lecturerId: newPresidentId!, role: CouncilRole.President },
-        { councilBoardId, lecturerId: newSecretaryId!, role: CouncilRole.Secretary },
+        { councilBoardId, lecturerId: newPresidentId, role: CouncilRole.President },
+        { councilBoardId, lecturerId: newSecretaryId, role: CouncilRole.Secretary },
         ...newMemberIds.map(id => ({ councilBoardId, lecturerId: id, role: CouncilRole.Member })),
       ],
     });
