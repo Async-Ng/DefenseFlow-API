@@ -7,7 +7,7 @@ import { CreateTopicTypeInput, UpdateTopicTypeInput } from "../types/index.js";
  * @swagger
  * /api/topic-types:
  *   post:
- *     summary: Create a new topic type
+ *     summary: "[ADMIN] Create a new topic type"
  *     tags: [TopicTypes]
  *     requestBody:
  *       required: true
@@ -72,7 +72,7 @@ export const createTopicType = async (req: Request, res: Response) => {
  * @swagger
  * /api/topic-types:
  *   get:
- *     summary: Get all topic types
+ *     summary: "[ADMIN, LECTURER] Get all topic types"
  *     tags: [TopicTypes]
  *     parameters:
  *       - in: query
@@ -120,7 +120,7 @@ export const getTopicTypes = async (req: Request, res: Response) => {
  * @swagger
  * /api/topic-types/{id}:
  *   get:
- *     summary: Get topic type by ID
+ *     summary: "[ADMIN, LECTURER] Get topic type by ID"
  *     tags: [TopicTypes]
  *     parameters:
  *       - in: path
@@ -170,7 +170,7 @@ export const getTopicType = async (req: Request, res: Response) => {
  * @swagger
  * /api/topic-types/{id}:
  *   put:
- *     summary: Update topic type (name and/or qualifications)
+ *     summary: "[ADMIN] Update topic type (name and/or qualifications)"
  *     tags: [TopicTypes]
  *     parameters:
  *       - in: path
@@ -243,7 +243,7 @@ export const updateTopicType = async (req: Request, res: Response) => {
  * @swagger
  * /api/topic-types/{id}:
  *   delete:
- *     summary: Delete topic type
+ *     summary: "[ADMIN] Delete topic type"
  *     tags: [TopicTypes]
  *     parameters:
  *       - in: path

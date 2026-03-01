@@ -16,7 +16,7 @@ import type {
  * @swagger
  * /api/availability/defenses/{defenseId}/days:
  *   get:
- *     summary: Get all defense days for a specific defense
+ *     summary: "[ADMIN, LECTURER] Get all defense days for a specific defense"
  *     tags: [Availability]
  *     parameters:
  *       - in: path
@@ -73,7 +73,7 @@ export const getDefenseDays = async (
  * @swagger
  * /api/availability/defenses/{defenseId}/days/with-availability:
  *   get:
- *     summary: Get defense days with lecturer's availability status
+ *     summary: "[ADMIN, LECTURER] Get defense days with lecturer's availability status"
  *     tags: [Availability]
  *     parameters:
  *       - in: path
@@ -157,7 +157,7 @@ export const getDefenseDaysWithAvailability = async (
  * @swagger
  * /api/availability/lecturers/{lecturerId}/status:
  *   get:
- *     summary: Get lecturer's registered status for a defense
+ *     summary: "[ADMIN, LECTURER] Get lecturer's registered status for a defense"
  *     tags: [Availability]
  *     parameters:
  *       - in: path
@@ -237,7 +237,7 @@ export const getLecturerStatus = async (
  * @swagger
  * /api/availability/lecturers/{lecturerId}/availability:
  *   put:
- *     summary: Update lecturer availability for a specific defense day
+ *     summary: "[LECTURER] Update lecturer availability for a specific defense day"
  *     tags: [Availability]
  *     parameters:
  *       - in: path
@@ -334,7 +334,7 @@ export const updateAvailability = async (
  * @swagger
  * /api/availability/lecturers/{lecturerId}/availability/batch:
  *   put:
- *     summary: Batch update lecturer availability for multiple defense days
+ *     summary: "[LECTURER] Batch update lecturer availability for multiple defense days"
  *     tags: [Availability]
  *     parameters:
  *       - in: path
@@ -455,7 +455,7 @@ export const batchUpdateAvailability = async (
  * @swagger
  * /api/availability/lecturers/{lecturerId}/availability/{defenseDayId}:
  *   delete:
- *     summary: Remove availability record (revert to Available)
+ *     summary: "[LECTURER] Remove availability record (revert to Available)"
  *     tags: [Availability]
  *     parameters:
  *       - in: path

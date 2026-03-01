@@ -7,7 +7,7 @@ import { getErrorMessage } from "../utils/typeGuards.js";
  * @swagger
  * /api/import/topics:
  *   post:
- *     summary: Import topics from Excel file
+ *     summary: "[ADMIN] Import topics from Excel file"
  *     tags: [Import]
  *     requestBody:
  *       required: true
@@ -71,7 +71,7 @@ export const importTopics = async (
  * @swagger
  * /api/import/lecturers:
  *   post:
- *     summary: Import lecturers from Excel file
+ *     summary: "[ADMIN] Import lecturers from Excel file"
  *     tags: [Import]
  *     requestBody:
  *       required: true
@@ -126,7 +126,7 @@ export const importLecturers = async (
  * @swagger
  * /api/import/topics/template:
  *   get:
- *     summary: Download topic import template
+ *     summary: "[ADMIN] Download topic import template"
  *     tags: [Import]
  *     responses:
  *       200:
@@ -168,7 +168,7 @@ export const downloadTopicTemplate = async (
  * @swagger
  * /api/import/lecturers/template:
  *   get:
- *     summary: Download lecturer import template
+ *     summary: "[ADMIN] Download lecturer import template"
  *     tags: [Import]
  *     responses:
  *       200:

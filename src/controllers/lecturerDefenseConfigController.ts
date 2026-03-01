@@ -12,7 +12,7 @@ import { LecturerDefenseConfigInput } from "../types/index.js";
  * @swagger
  * /api/lecturer-defense-configs:
  *   post:
- *     summary: Create lecturer defense configuration
+ *     summary: "[ADMIN] Create lecturer defense configuration"
  *     tags: [Lecturer Defense Configs]
  *     requestBody:
  *       required: true
@@ -99,7 +99,7 @@ export const createConfig = async (req: Request, res: Response) => {
  * @swagger
  * /api/lecturer-defense-configs/{id}:
  *   put:
- *     summary: Update lecturer defense configuration
+ *     summary: "[ADMIN] Update lecturer defense configuration"
  *     tags: [Lecturer Defense Configs]
  *     parameters:
  *       - in: path
@@ -175,7 +175,7 @@ export const updateConfig = async (req: Request, res: Response) => {
  * @swagger
  * /api/lecturer-defense-configs:
  *   get:
- *     summary: Get all lecturer defense configurations
+ *     summary: "[ADMIN, LECTURER] Get all lecturer defense configurations"
  *     tags: [Lecturer Defense Configs]
  *     parameters:
  *       - in: query
@@ -245,7 +245,7 @@ export const getConfigs = async (req: Request, res: Response) => {
  * @swagger
  * /api/lecturer-defense-configs/{id}:
  *   get:
- *     summary: Get lecturer defense configuration by ID
+ *     summary: "[ADMIN, LECTURER] Get lecturer defense configuration by ID"
  *     tags: [Lecturer Defense Configs]
  *     parameters:
  *       - in: path
@@ -278,7 +278,7 @@ export const getConfigById = async (req: Request, res: Response) => {
  * @swagger
  * /api/lecturer-defense-configs/{id}:
  *   delete:
- *     summary: Delete lecturer defense configuration
+ *     summary: "[ADMIN] Delete lecturer defense configuration"
  *     tags: [Lecturer Defense Configs]
  *     parameters:
  *       - in: path

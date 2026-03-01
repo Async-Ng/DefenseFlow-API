@@ -7,7 +7,7 @@ import { CreateQualificationInput, UpdateQualificationInput } from "../types/ind
  * @swagger
  * /api/qualifications:
  *   post:
- *     summary: Create a new qualification
+ *     summary: "[ADMIN] Create a new qualification"
  *     tags: [Qualifications]
  *     requestBody:
  *       required: true
@@ -68,7 +68,7 @@ export const createQualification = async (req: Request, res: Response) => {
  * @swagger
  * /api/qualifications:
  *   get:
- *     summary: Get all qualifications
+ *     summary: "[ADMIN, LECTURER] Get all qualifications"
  *     tags: [Qualifications]
  *     parameters:
  *       - in: query
@@ -130,7 +130,7 @@ export const getQualifications = async (req: Request, res: Response) => {
  * @swagger
  * /api/qualifications/{id}:
  *   get:
- *     summary: Get qualification by ID
+ *     summary: "[ADMIN, LECTURER] Get qualification by ID"
  *     tags: [Qualifications]
  *     parameters:
  *       - in: path
@@ -180,7 +180,7 @@ export const getQualification = async (req: Request, res: Response) => {
  * @swagger
  * /api/qualifications/{id}:
  *   put:
- *     summary: Update qualification
+ *     summary: "[ADMIN] Update qualification"
  *     tags: [Qualifications]
  *     parameters:
  *       - in: path
@@ -245,7 +245,7 @@ export const updateQualification = async (req: Request, res: Response) => {
  * @swagger
  * /api/qualifications/{id}:
  *   delete:
- *     summary: Delete qualification
+ *     summary: "[ADMIN] Delete qualification"
  *     tags: [Qualifications]
  *     parameters:
  *       - in: path

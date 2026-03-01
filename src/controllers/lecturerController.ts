@@ -22,7 +22,7 @@ type LecturerFilterQuery = {
  * @swagger
  * /api/lecturers/{id}:
  *   get:
- *     summary: Get lecturer by ID
+ *     summary: "[ADMIN, LECTURER] Get lecturer by ID"
  *     tags: [Lecturers]
  *     parameters:
  *       - in: path
@@ -76,7 +76,7 @@ export const getLecturerById = async (
  * @swagger
  * /api/lecturers:
  *   post:
- *     summary: Create a new lecturer
+ *     summary: "[ADMIN] Create a new lecturer"
  *     tags: [Lecturers]
  *     requestBody:
  *       required: true
@@ -126,7 +126,7 @@ export const createLecturer = async (req: Request, res: Response): Promise<Respo
  * @swagger
  * /api/lecturers/{id}:
  *   patch:
- *     summary: Update basic lecturer information
+ *     summary: "[ADMIN, LECTURER] Update basic lecturer information"
  *     tags: [Lecturers]
  *     parameters:
  *       - in: path
@@ -185,7 +185,7 @@ export const updateLecturer = async (req: Request, res: Response): Promise<Respo
  * @swagger
  * /api/lecturers/{id}:
  *   delete:
- *     summary: Delete a lecturer
+ *     summary: "[ADMIN] Delete a lecturer"
  *     tags: [Lecturers]
  *     parameters:
  *       - in: path
@@ -230,7 +230,7 @@ export const deleteLecturer = async (req: Request, res: Response): Promise<Respo
  * @swagger
  * /api/lecturers:
  *   get:
- *     summary: Get all lecturers with pagination
+ *     summary: "[ADMIN, LECTURER] Get all lecturers with pagination"
  *     tags: [Lecturers]
  *     parameters:
  *       - in: query
@@ -318,7 +318,7 @@ export const getAllLecturers = async (
  * @swagger
  * /api/lecturers/{id}/qualifications:
  *   patch:
- *     summary: Update lecturer qualification scores
+ *     summary: "[ADMIN] Update lecturer qualification scores"
  *     tags: [Lecturers]
  *     parameters:
  *       - in: path
@@ -406,7 +406,7 @@ export const updateLecturerQualifications = async (
  * @swagger
  * /api/lecturers/{id}/qualifications:
  *   post:
- *     summary: Add qualifications to lecturer
+ *     summary: "[ADMIN] Add qualifications to lecturer"
  *     description: Add one or more qualifications to a lecturer with scores. If a qualification already exists, its score will be updated.
  *     tags: [Lecturers]
  *     parameters:
@@ -483,7 +483,7 @@ export const addLecturerQualifications = async (
  * @swagger
  * /api/lecturers/{id}/qualifications/{qualificationId}:
  *   delete:
- *     summary: Remove qualification from lecturer
+ *     summary: "[ADMIN] Remove qualification from lecturer"
  *     description: Remove the association between a lecturer and a qualification.
  *     tags: [Lecturers]
  *     parameters:

@@ -24,7 +24,7 @@ import type {
  * @swagger
  * /api/semesters:
  *   post:
- *     summary: Create a new semester
+ *     summary: "[ADMIN] Create a new semester"
  *     tags: [Semesters]
  *     requestBody:
  *       required: true
@@ -76,7 +76,7 @@ export const createSemester = async (
  * @swagger
  * /api/semesters:
  *   get:
- *     summary: Get all semesters
+ *     summary: "[ADMIN, LECTURER] Get all semesters"
  *     tags: [Semesters]
  *     parameters:
  *       - in: query
@@ -139,7 +139,7 @@ export const getAllSemesters = async (
  * @swagger
  * /api/semesters/{id}:
  *   get:
- *     summary: Get semester by ID
+ *     summary: "[ADMIN, LECTURER] Get semester by ID"
  *     tags: [Semesters]
  *     parameters:
  *       - in: path
@@ -192,7 +192,7 @@ export const getSemesterById = async (
  * @swagger
  * /api/semesters/{id}:
  *   patch:
- *     summary: Update semester
+ *     summary: "[ADMIN] Update semester"
  *     tags: [Semesters]
  *     parameters:
  *       - in: path
@@ -260,7 +260,7 @@ export const updateSemester = async (
  * @swagger
  * /api/semesters/{id}:
  *   delete:
- *     summary: Delete semester
+ *     summary: "[ADMIN] Delete semester"
  *     tags: [Semesters]
  *     parameters:
  *       - in: path

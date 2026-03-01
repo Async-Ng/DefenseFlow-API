@@ -8,7 +8,7 @@ import { getIdParam } from "../utils/requestHelpers.js";
  * @swagger
  * /api/lecturers/{id}/dashboard:
  *   get:
- *     summary: Get lecturer dashboard stats
+ *     summary: "[LECTURER] Get lecturer dashboard stats"
  *     tags: [Lecturers]
  *     parameters:
  *       - in: path
@@ -35,7 +35,7 @@ export const getLecturerDashboard = async (req: Request, res: Response): Promise
  * @swagger
  * /api/lecturers/{id}/supervised-topics:
  *   get:
- *     summary: Get topics supervised by lecturer
+ *     summary: "[LECTURER] Get topics supervised by lecturer"
  *     tags: [Lecturers]
  *     parameters:
  *       - in: path
@@ -59,7 +59,7 @@ export const getSupervisedTopics = async (req: Request, res: Response): Promise<
  * @swagger
  * /api/lecturers/{id}/council-boards:
  *   get:
- *     summary: Get council boards assigned to lecturer
+ *     summary: "[LECTURER] Get council boards assigned to lecturer"
  *     tags: [Lecturers]
  *     parameters:
  *       - in: path

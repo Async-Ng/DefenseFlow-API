@@ -7,7 +7,7 @@ import { getErrorMessage } from "../utils/typeGuards.js";
  * @swagger
  * /api/dashboard:
  *   get:
- *     summary: Get overall dashboard statistics
+ *     summary: "[ADMIN] Get overall dashboard statistics"
  *     tags: [Dashboard]
  *     responses:
  *       200:
