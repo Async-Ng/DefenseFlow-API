@@ -132,7 +132,7 @@ export const getDefenseFilters = (req: Request): DefenseFilters => {
  * @returns Council board filter object
  */
 export const getCouncilBoardFilters = (req: Request): CouncilBoardFilters => {
-  const defenseDayIdParam = req.query.defenseDayId;
+  const defenseDayIdParam = req.query.defenseDayId || req.query.defenseDay;
   const semesterIdParam = req.query.semesterId;
   const defenseIdParam = req.query.defenseId;
   const boardCodeParam = req.query.boardCode;
