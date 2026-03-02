@@ -7,6 +7,7 @@ import {
   getCouncilBoardFilters,
   getPaginationParams,
   getSortParams,
+  getIdParam,
 } from "../utils/requestHelpers.js";
 import { z } from "zod";
 
@@ -557,6 +558,41 @@ export const exportSchedule = async (
     );
 
     return res.send(buffer);
+  } catch (error) {
+    return next(error);
+  }
+};
+
+export const createDefenseCouncil = async (
+  req: Request,
+  res: Response,
+  next: NextFunction,
+): Promise<Response | void> => {
+  try {
+    const schema = z.object({
+      registrationId: z.number(),
+      councilBoardId: z.number(),
+      startTime: z.string().transform((v) => new Date(v)),
+      endTime: z.string().transform((v) => new Date(v)),
+    });
+
+    const validated = schema.parse(req.body);
+    const result = await scheduleService.createDefenseCouncil(validated);
+    return successResponse(res, result, "Defense council created successfully");
+  } catch (error) {
+    return next(error);
+  }
+};
+
+export const deleteDefenseCouncil = async (
+  req: Request,
+  res: Response,
+  next: NextFunction,
+): Promise<Response | void> => {
+  try {
+    const id = getIdParam(req);
+    await scheduleService.deleteDefenseCouncil(id);
+    return successResponse(res, {}, "Topic removed from council successfully");
   } catch (error) {
     return next(error);
   }

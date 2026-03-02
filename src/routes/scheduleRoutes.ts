@@ -53,6 +53,101 @@ router.put("/defense-councils/:defenseCouncilId", scheduleController.updateDefen
 
 /**
  * @swagger
+ * /api/schedule/defense-councils:
+ *   post:
+ *     summary: "[ADMIN] Manually assign a topic to a council board"
+ *     description: Creates a new defense council slot for a specific topic registration. Useful for manually handling leftover topics.
+ *     tags: [Schedule]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - registrationId
+ *               - councilBoardId
+ *               - startTime
+ *               - endTime
+ *             properties:
+ *               registrationId:
+ *                 type: integer
+ *                 description: ID of the topic registration (TopicDefense)
+ *                 example: 10
+ *               councilBoardId:
+ *                 type: integer
+ *                 description: ID of the council board to assign to
+ *                 example: 5
+ *               startTime:
+ *                 type: string
+ *                 format: date-time
+ *                 description: Start time of the defense slot
+ *                 example: "2024-05-20T08:00:00.000Z"
+ *               endTime:
+ *                 type: string
+ *                 format: date-time
+ *                 description: End time of the defense slot
+ *                 example: "2024-05-20T08:45:00.000Z"
+ *     responses:
+ *       201:
+ *         description: Topic assigned to council successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 message:
+ *                   type: string
+ *                   example: "Defense council created successfully"
+ *                 data:
+ *                   $ref: '#/components/schemas/DefenseCouncil'
+ *       400:
+ *         description: Invalid input or missing required fields
+ *       500:
+ *         description: Server error
+ */
+router.post("/defense-councils", scheduleController.createDefenseCouncil);
+
+/**
+ * @swagger
+ * /api/schedule/defense-councils/{id}:
+ *   delete:
+ *     summary: "[ADMIN] Remove a topic from a council board"
+ *     description: Deletes a specific defense council slot, making the topic unscheduled again.
+ *     tags: [Schedule]
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: integer
+ *         description: ID of the defense council slot to delete
+ *     responses:
+ *       200:
+ *         description: Topic removed from council successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 message:
+ *                   type: string
+ *                   example: "Topic removed from council successfully"
+ *       404:
+ *         description: Defense council slot not found
+ *       500:
+ *         description: Server error
+ */
+router.delete("/defense-councils/:id", scheduleController.deleteDefenseCouncil);
+
+/**
+ * @swagger
  * /api/schedule/council-boards/{councilBoardId}:
  *   put:
  *     summary: Update council board members

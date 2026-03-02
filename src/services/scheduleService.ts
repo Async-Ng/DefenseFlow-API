@@ -835,3 +835,28 @@ export const updateCouncilBoard = async (
     });
   });
 };
+
+export const deleteDefenseCouncil = async (id: number) => {
+  return prisma.defenseCouncil.delete({
+    where: { id },
+  });
+};
+
+export const createDefenseCouncil = async (data: {
+  registrationId: number;
+  councilBoardId: number;
+  startTime: Date;
+  endTime: Date;
+}) => {
+  const code = `DC-${data.registrationId}-${data.councilBoardId}-${Date.now().toString(36).toUpperCase()}`;
+
+  return prisma.defenseCouncil.create({
+    data: {
+      defenseCouncilCode: code,
+      registrationId: data.registrationId,
+      councilBoardId: data.councilBoardId,
+      startTime: data.startTime,
+      endTime: data.endTime,
+    },
+  });
+};
