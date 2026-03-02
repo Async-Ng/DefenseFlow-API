@@ -22,6 +22,15 @@ router.get(
 );
 
 /**
+ * GET /api/availability/defense-days/:defenseDayId/available-lecturers
+ * Get available lecturers for a specific defense day
+ */
+router.get(
+  "/defense-days/:defenseDayId/available-lecturers",
+  availabilityController.getAvailableLecturers,
+);
+
+/**
  * GET /api/availability/defenses/:defenseId/days/with-availability
  * Get defense days with lecturer's availability status
  */

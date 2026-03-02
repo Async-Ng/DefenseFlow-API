@@ -682,6 +682,14 @@ export const getSchedule = async (
   };
 };
 
+export const getCouncilBoardById = async (id: number): Promise<CouncilBoard> => {
+  const board = await councilBoardRepository.findById(id);
+  if (!board) {
+    throw new AppError(404, "Council Board not found");
+  }
+  return board;
+};
+
 export const publishSchedule = async (defenseId: number) =>
   prisma.defense.update({
     where: { id: defenseId },
@@ -722,11 +730,7 @@ export const updateCouncilBoard = async (
   const newSecretaryId = data.secretaryId ?? current.find(m => m.role === CouncilRole.Secretary)?.lecturerId;
   const newMemberIds = data.memberIds ?? current.filter(m => m.role === CouncilRole.Member).map(m => m.lecturerId!);
 
-  if (!newPresidentId || !newSecretaryId) {
-    throw new AppError(400, "President and Secretary are required");
-  }
-
-  const allIds = [newPresidentId, newSecretaryId, ...newMemberIds];
+  const allIds = [newPresidentId, newSecretaryId, ...newMemberIds].filter((id): id is number => id != null);
   const uniqueIds = new Set(allIds);
   if (allIds.length !== uniqueIds.size) {
     throw new AppError(400, "Lecturers must be unique within a council board");

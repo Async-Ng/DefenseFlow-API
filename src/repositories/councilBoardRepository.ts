@@ -126,6 +126,7 @@ export const findCouncilBoardsByDefense = async (
         },
       },
       defenseCouncils: {
+        orderBy: { startTime: "asc" },
         include: {
           topicDefense: {
             include: {
@@ -192,9 +193,19 @@ export const findAll = async (
     where.name = { contains: filters.name, mode: "insensitive" };
   }
 
-  const orderBy: Prisma.CouncilBoardOrderByWithRelationInput = sort
-    ? { [sort.field]: sort.order }
-    : { id: "asc" };
+  let orderBy: Prisma.CouncilBoardOrderByWithRelationInput = { id: "asc" };
+  
+  if (sort) {
+    if (sort.field === "dayDate") {
+      orderBy = {
+        defenseDay: {
+          dayDate: sort.order,
+        },
+      };
+    } else {
+      orderBy = { [sort.field]: sort.order };
+    }
+  }
 
   const [data, total] = await Promise.all([
     prisma.councilBoard.findMany({
@@ -217,6 +228,7 @@ export const findAll = async (
           },
         },
         defenseCouncils: {
+          orderBy: { startTime: "asc" },
           include: {
             topicDefense: {
               include: {
@@ -239,5 +251,53 @@ export const findAll = async (
   ]);
 
   return { data, total };
+};
+
+/**
+ * Find a council board by ID with all related data
+ */
+export const findById = async (id: number): Promise<CouncilBoard | null> => {
+  return await prisma.councilBoard.findUnique({
+    where: { id },
+    include: {
+      defenseDay: {
+        include: {
+          defense: true,
+        },
+      },
+      semester: true,
+      councilBoardMembers: {
+        include: {
+          lecturer: {
+            include: {
+              lecturerQualifications: {
+                include: {
+                  qualification: true,
+                },
+              },
+            },
+          },
+        },
+      },
+      defenseCouncils: {
+        orderBy: { startTime: "asc" },
+        include: {
+          topicDefense: {
+            include: {
+              topic: {
+                include: {
+                  topicSupervisors: {
+                    include: {
+                      lecturer: true,
+                    },
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
+    },
+  });
 };
 

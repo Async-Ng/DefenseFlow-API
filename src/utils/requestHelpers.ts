@@ -132,7 +132,7 @@ export const getDefenseFilters = (req: Request): DefenseFilters => {
  * @returns Council board filter object
  */
 export const getCouncilBoardFilters = (req: Request): CouncilBoardFilters => {
-  const defenseDayIdParam = req.query.defenseDayId;
+  const defenseDayIdParam = req.query.defenseDayId || req.query.defenseDay;
   const semesterIdParam = req.query.semesterId;
   const defenseIdParam = req.query.defenseId;
   const boardCodeParam = req.query.boardCode;
@@ -220,6 +220,25 @@ export const getTopicDefenseFilters = (req: Request): TopicDefenseFilters => {
     topicId: isString(req.query.topicId) ? parseInt(req.query.topicId, 10) : undefined,
     topicCode: isString(req.query.topicCode) ? req.query.topicCode : undefined,
     finalResult: req.query.finalResult as any,
+    isScheduled: req.query.isScheduled === "true" ? true : req.query.isScheduled === "false" ? false : undefined,
     search: isString(req.query.search) ? req.query.search : undefined,
   };
+};
+/**
+ * Extract sort params from query
+ * @param req - Express request object
+ * @param defaultField - Default sort field
+ * @returns Sort object with field and order
+ */
+export const getSortParams = (
+  req: Request,
+  defaultField: string = "id"
+): { field: string; order: "asc" | "desc" } => {
+  const sortField = isString(req.query.sortField) ? req.query.sortField : defaultField;
+  const sortOrder =
+    isString(req.query.sortOrder) && req.query.sortOrder.toLowerCase() === "desc"
+      ? ("desc" as const)
+      : ("asc" as const);
+
+  return { field: sortField, order: sortOrder };
 };

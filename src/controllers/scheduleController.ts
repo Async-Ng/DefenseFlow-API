@@ -1,10 +1,12 @@
 import { Request, Response, NextFunction } from "express";
 import * as scheduleService from "../services/scheduleService.js";
+import { prisma } from "../config/prisma.js";
 import { successResponse } from "../utils/apiResponse.js";
 import { AppError } from "../middleware/errorHandler.js";
 import {
   getCouncilBoardFilters,
   getPaginationParams,
+  getSortParams,
 } from "../utils/requestHelpers.js";
 import { z } from "zod";
 
@@ -117,6 +119,11 @@ export const generateSchedule = async (
  *           type: integer
  *         description: Defense ID to get schedule for
  *       - in: query
+ *         name: defenseDay
+ *         schema:
+ *           type: integer
+ *         description: Filter by defense day ID
+ *       - in: query
  *         name: page
  *         schema:
  *           type: integer
@@ -193,17 +200,68 @@ export const getSchedule = async (
     filters.defenseId = defenseId; // Path param takes precedence or adds to filters
 
     const pagination = getPaginationParams(req);
-    
-    const sortField = req.query.sortField as string || "id";
-    const sortOrder = (req.query.sortOrder as string || "asc") as "asc" | "desc";
+    const sort = getSortParams(req, "id");
 
     const result = await scheduleService.getSchedule(
       filters,
       pagination,
-      { field: sortField, order: sortOrder }
+      sort
     );
 
     return successResponse(res, result, "Schedule retrieved successfully");
+  } catch (error) {
+    return next(error);
+  }
+};
+
+/**
+ * @swagger
+ * /api/schedule/council-boards/{id}:
+ *   get:
+ *     summary: "[ADMIN, LECTURER] Get council board details by ID"
+ *     tags: [Schedule]
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: integer
+ *         description: Council Board ID
+ *     responses:
+ *       200:
+ *         description: Council board details retrieved successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/CouncilBoardResponse'
+ *       404:
+ *         description: Council board not found
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ *       500:
+ *         description: Server error
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ */
+export const getCouncilBoardById = async (
+  req: Request,
+  res: Response,
+  next: NextFunction,
+) => {
+  try {
+    const id = parseInt(req.params.id as string);
+
+    if (isNaN(id)) {
+      throw new AppError(400, "Invalid council board ID");
+    }
+
+    const result = await scheduleService.getCouncilBoardById(id);
+
+    return successResponse(res, result, "Council board details retrieved successfully");
   } catch (error) {
     return next(error);
   }
@@ -439,6 +497,66 @@ export const updateCouncilBoard = async (
 
     const result = await scheduleService.updateCouncilBoard(councilBoardId, validation.data);
     return successResponse(res, result, "Council Board updated successfully");
+  } catch (error) {
+    return next(error);
+  }
+};
+
+/**
+ * @swagger
+ * /api/schedule/{defenseId}/export:
+ *   get:
+ *     summary: "[ADMIN] Export defense schedule to Excel"
+ *     tags: [Schedule]
+ *     parameters:
+ *       - in: path
+ *         name: defenseId
+ *         required: true
+ *         schema:
+ *           type: integer
+ *         description: ID of the defense to export
+ *     responses:
+ *       200:
+ *         description: Excel file containing the schedule
+ *         content:
+ *           application/vnd.openxmlformats-officedocument.spreadsheetml.sheet:
+ *             schema:
+ *               type: string
+ *               format: binary
+ *       404:
+ *         description: Defense not found
+ *       500:
+ *         description: Server error
+ */
+export const exportSchedule = async (
+  req: Request,
+  res: Response,
+  next: NextFunction,
+) => {
+  try {
+    const defenseId = parseInt(req.params.defenseId as string);
+
+    if (isNaN(defenseId)) {
+      throw new AppError(400, "Invalid defense ID");
+    }
+
+    // We'll import it dynamically or at the top. Let's add it to imports.
+    const exportService = (await import("../services/exportService.js")).default;
+    const buffer = await exportService.exportScheduleToExcel(defenseId);
+
+    const defense = await prisma.defense.findUnique({ where: { id: defenseId } });
+    const fileName = `Schedule_${defense?.defenseCode || defenseId}.xlsx`;
+
+    res.setHeader(
+      "Content-Type",
+      "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+    );
+    res.setHeader(
+      "Content-Disposition",
+      `attachment; filename=${fileName}`,
+    );
+
+    return res.send(buffer);
   } catch (error) {
     return next(error);
   }

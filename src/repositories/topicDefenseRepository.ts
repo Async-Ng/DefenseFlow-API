@@ -49,6 +49,9 @@ export const findAndCountAll = async (
     ...(filters.defenseId !== undefined && { defenseId: filters.defenseId }),
     ...(filters.topicId !== undefined && { topicId: filters.topicId }),
     ...(filters.finalResult && { finalResult: filters.finalResult }),
+    ...(filters.isScheduled !== undefined && {
+      defenseCouncils: filters.isScheduled ? { some: {} } : { none: {} },
+    }),
   };
 
   // Apply search
@@ -77,6 +80,7 @@ export const findAndCountAll = async (
       include: {
         topic: { include: { topicSupervisors: { include: { lecturer: true } } } },
         defense: true,
+        defenseCouncils: true,
       },
       skip,
       take: limit,

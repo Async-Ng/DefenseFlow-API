@@ -128,8 +128,8 @@ export const findAll = async (
       skip,
       take: limit,
       orderBy: [
-        { semesterId: "desc" },
-        { id: "desc" },
+        { type: "asc" },
+        { availabilityStartDate: "desc" },
       ],
       include: includeOptions,
     }),
