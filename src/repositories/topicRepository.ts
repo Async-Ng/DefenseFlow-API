@@ -23,6 +23,14 @@ export const findAll = async (
   const skip = (page - 1) * limit;
   const where: Prisma.TopicWhereInput = {};
 
+  // Apply search
+  if (filters.search) {
+    where.OR = [
+      { topicCode: { contains: filters.search, mode: "insensitive" } },
+      { title: { contains: filters.search, mode: "insensitive" } },
+    ];
+  }
+
   // Apply filters
   if (filters.topicCode) {
     where.topicCode = { contains: filters.topicCode };

@@ -9,36 +9,14 @@ import {
   createdResponse,
 } from "../utils/apiResponse.js";
 import { getErrorMessage } from "../utils/typeGuards.js";
-import { getIdParam, getPaginationParams } from "../utils/requestHelpers.js";
+import { getIdParam, getPaginationParams, getTopicFilters } from "../utils/requestHelpers.js";
 import {
   UpdateTopicResultInput,
   UpdateTopicInput,
-  TopicFilterQuery,
-  TopicFilters,
   CreateTopicInput,
 } from "../types/index.js";
 
-/**
- * Helper to parse topic filters
- */
-const getTopicFilters = (req: Request): TopicFilters => {
-  const query = req.query as TopicFilterQuery;
-
-  let supervisorIds: number[] | undefined;
-  if (query.supervisorIds) {
-    const idsArray = Array.isArray(query.supervisorIds)
-      ? query.supervisorIds
-      : [query.supervisorIds];
-    supervisorIds = idsArray.map((id) => Number(id)).filter((id) => !isNaN(id));
-  }
-
-  return {
-    topicCode: query.topicCode as string,
-    title: query.title as string,
-    semesterId: query.semesterId ? Number(query.semesterId) : undefined,
-    supervisorIds,
-  };
-};
+// Helper to parse topic filters removed in favor of requestHelpers
 
 /**
  * @swagger
