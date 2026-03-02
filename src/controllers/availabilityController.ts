@@ -556,3 +556,66 @@ export const removeAvailability = async (
     }
   }
 };
+/**
+ * @swagger
+ * /api/availability/defense-days/{defenseDayId}/available-lecturers:
+ *   get:
+ *     summary: "[ADMIN] Get available lecturers for a specific defense day"
+ *     description: Returns lecturers who are not 'Busy' and have not been assigned to any board on the given defense day.
+ *     tags: [Availability]
+ *     parameters:
+ *       - in: path
+ *         name: defenseDayId
+ *         required: true
+ *         schema:
+ *           type: integer
+ *         description: The unique ID of the defense day
+ *         example: 1
+ *     responses:
+ *       200:
+ *         description: Successfully retrieved available lecturers
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 message:
+ *                   type: string
+ *                   example: "Available lecturers retrieved successfully"
+ *                 data:
+ *                   type: array
+ *                   items:
+ *                     $ref: '#/components/schemas/LecturerResponse'
+ *       400:
+ *         description: Invalid parameters
+ *       404:
+ *         description: Defense day not found
+ *       500:
+ *         description: Internal server error
+ */
+export const getAvailableLecturers = async (
+  req: Request<{ defenseDayId: string }>,
+  res: Response,
+): Promise<void> => {
+  try {
+    const defenseDayId = parseInt(req.params.defenseDayId, 10);
+
+    if (isNaN(defenseDayId)) {
+      errorResponse(res, "Invalid defense day ID", 400);
+      return;
+    }
+
+    const lecturers = await availabilityService.getAvailableLecturers(defenseDayId);
+    successResponse(res, lecturers, "Available lecturers retrieved successfully");
+  } catch (error) {
+    const message = getErrorMessage(error);
+    if (message.includes("not found")) {
+      errorResponse(res, message, 404);
+    } else {
+      errorResponse(res, message, 500);
+    }
+  }
+};

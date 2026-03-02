@@ -249,3 +249,15 @@ const validateAvailabilityWindow = (defense: any) => {
     }
   }
 };
+/**
+ * Get available lecturers for a specific day
+ */
+export const getAvailableLecturers = async (defenseDayId: number) => {
+  // Verify defense day exists
+  const defenseDay = await availabilityRepository.getDefenseDayById(defenseDayId);
+  if (!defenseDay) {
+    throw new Error(`Defense day with ID ${defenseDayId} not found`);
+  }
+
+  return await availabilityRepository.getAvailableLecturersForDay(defenseDayId);
+};

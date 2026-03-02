@@ -254,3 +254,56 @@ export const getLecturerById = async (lecturerId: number) => {
     },
   });
 };
+/**
+ * Get available lecturers for a specific defense day
+ * Excludes lecturers who are busy or already assigned to a board on that day
+ */
+export const getAvailableLecturersForDay = async (defenseDayId: number) => {
+  const defenseDay = await prisma.defenseDay.findUnique({
+    where: { id: defenseDayId },
+    select: { dayDate: true },
+  });
+
+  if (!defenseDay) return [];
+
+  // 1. Get IDs of lecturers assigned to any board on this day
+  const assignedLecturerIds = await prisma.councilBoardMember.findMany({
+    where: {
+      councilBoard: {
+        defenseDayId: defenseDayId,
+      },
+    },
+    select: { lecturerId: true },
+  });
+
+  const excludedIds = assignedLecturerIds
+    .map((m) => m.lecturerId)
+    .filter((id): id is number => id !== null);
+
+  // 2. Find lecturers who:
+  // - Are NOT in excludedIds
+  // - Do NOT have a 'Busy' status for this day in lecturerDayAvailability
+  return await prisma.lecturer.findMany({
+    where: {
+      id: {
+        notIn: excludedIds,
+      },
+      lecturerDayAvailability: {
+        none: {
+          defenseDayId: defenseDayId,
+          status: "Busy",
+        },
+      },
+    },
+    include: {
+      lecturerQualifications: {
+        include: {
+          qualification: true,
+        },
+      },
+    },
+    orderBy: {
+      fullName: "asc",
+    },
+  });
+};
