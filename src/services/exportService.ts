@@ -55,99 +55,116 @@ export class ExportService {
     });
 
     const workbook = new ExcelJS.Workbook();
-    const worksheet = workbook.addWorksheet("Security Schedule");
 
-    // 1. Header Information
-    worksheet.mergeCells("A1:H1");
-    const titleCell = worksheet.getCell("A1");
-    titleCell.value = `DEFENSE SCHEDULE: ${defense.name?.toUpperCase()} - ${defense.semester.name}`;
-    titleCell.font = { bold: true, size: 14 };
-    titleCell.alignment = { horizontal: "center" };
-
-    // 2. Column Headers
-    const headers = [
-      "STT",
-      "Ngày",
-      "Hội đồng",
-      "Thời gian",
-      "Mã đề tài",
-      "Tên đề tài",
-      "Thành viên hội đồng",
-      "GVHD",
-    ];
-    worksheet.addRow(headers);
-
-    // Style headers
-    const headerRow = worksheet.getRow(2);
-    headerRow.font = { bold: true };
-    headerRow.alignment = { horizontal: "center", vertical: "middle" };
-    headerRow.fill = {
-      type: "pattern",
-      pattern: "solid",
-      fgColor: { argb: "FFD9D9D9" },
-    };
-
-    // 3. Data Rows
-    let stt = 1;
+    // Group council boards by day
+    const boardsByDay = new Map<string, typeof councilBoards>();
     for (const board of councilBoards) {
-      const dayStr = board.defenseDay.dayDate.toLocaleDateString("vi-VN");
-      const boardName = board.boardCode || board.name || "N/A";
-      
-      // Member summary
-      const membersStr = board.councilBoardMembers
-        .map(m => `${m.role}: ${m.lecturer?.fullName || "N/A"}`)
-        .join("\n");
-
-      if (board.defenseCouncils.length === 0) {
-        // Empty board
-        const rowData = [
-          stt++,
-          dayStr,
-          boardName,
-          "Chưa xếp lịch",
-          "-",
-          "-",
-          membersStr,
-          "-",
-        ];
-        const row = worksheet.addRow(rowData);
-        row.alignment = { wrapText: true, vertical: "middle" };
-        continue;
+      const dayStr = board.defenseDay.dayDate.toLocaleDateString("vi-VN").replace(/\//g, "-");
+      if (!boardsByDay.has(dayStr)) {
+        boardsByDay.set(dayStr, []);
       }
-
-      for (const dc of board.defenseCouncils) {
-        const startTime = dc.startTime ? dc.startTime.toLocaleTimeString("vi-VN", { hour: '2-digit', minute: '2-digit' }) : "N/A";
-        const endTime = dc.endTime ? dc.endTime.toLocaleTimeString("vi-VN", { hour: '2-digit', minute: '2-digit' }) : "N/A";
-        const topic = dc.topicDefense?.topic;
-        const supervisorsStr = topic?.topicSupervisors
-          .map(s => s.lecturer.fullName)
-          .join(", ") || "-";
-
-        const rowData = [
-          stt++,
-          dayStr,
-          boardName,
-          `${startTime} - ${endTime}`,
-          topic?.topicCode || "-",
-          topic?.title || "-",
-          membersStr,
-          supervisorsStr,
-        ];
-
-        const row = worksheet.addRow(rowData);
-        row.alignment = { wrapText: true, vertical: "middle" };
-      }
+      boardsByDay.get(dayStr)!.push(board);
     }
 
-    // Adjust column widths
-    worksheet.getColumn(1).width = 5;   // STT
-    worksheet.getColumn(2).width = 12;  // Ngày
-    worksheet.getColumn(3).width = 15;  // Hội đồng
-    worksheet.getColumn(4).width = 15;  // Thời gian
-    worksheet.getColumn(5).width = 15;  // Mã đề tài
-    worksheet.getColumn(6).width = 40;  // Tên đề tài
-    worksheet.getColumn(7).width = 35;  // Thành viên
-    worksheet.getColumn(8).width = 25;  // GVHD
+    if (boardsByDay.size === 0) {
+      const worksheet = workbook.addWorksheet("Empty Schedule");
+      worksheet.addRow(["No schedule data available for this defense round"]);
+    }
+
+    for (const [dayStr, boards] of boardsByDay.entries()) {
+      const worksheet = workbook.addWorksheet(`Ngày ${dayStr}`);
+
+      // 1. Header Information
+      worksheet.mergeCells("A1:H1");
+      const titleCell = worksheet.getCell("A1");
+      titleCell.value = `LỊCH BẢO VỆ NGÀY ${dayStr}: ${defense.name?.toUpperCase()}`;
+      titleCell.font = { bold: true, size: 14 };
+      titleCell.alignment = { horizontal: "center" };
+
+      // 2. Column Headers
+      const headers = [
+        "STT",
+        "Ngày",
+        "Hội đồng",
+        "Thời gian",
+        "Mã đề tài",
+        "Tên đề tài",
+        "Thành viên hội đồng",
+        "GVHD",
+      ];
+      worksheet.addRow(headers);
+
+      // Style headers
+      const headerRow = worksheet.getRow(2);
+      headerRow.font = { bold: true };
+      headerRow.alignment = { horizontal: "center", vertical: "middle" };
+      headerRow.fill = {
+        type: "pattern",
+        pattern: "solid",
+        fgColor: { argb: "FFD9D9D9" },
+      };
+
+      // 3. Data Rows
+      let stt = 1;
+      for (const board of boards) {
+        const boardName = board.boardCode || board.name || "N/A";
+        
+        // Member summary
+        const membersStr = board.councilBoardMembers
+          .map(m => `${m.role}: ${m.lecturer?.fullName || "N/A"}`)
+          .join("\n");
+
+        if (board.defenseCouncils.length === 0) {
+          // Empty board
+          const rowData = [
+            stt++,
+            dayStr,
+            boardName,
+            "Chưa xếp lịch",
+            "-",
+            "-",
+            membersStr,
+            "-",
+          ];
+          const row = worksheet.addRow(rowData);
+          row.alignment = { wrapText: true, vertical: "middle" };
+          continue;
+        }
+
+        for (const dc of board.defenseCouncils) {
+          const startTime = dc.startTime ? dc.startTime.toLocaleTimeString("vi-VN", { hour: '2-digit', minute: '2-digit' }) : "N/A";
+          const endTime = dc.endTime ? dc.endTime.toLocaleTimeString("vi-VN", { hour: '2-digit', minute: '2-digit' }) : "N/A";
+          const topic = dc.topicDefense?.topic;
+          const supervisorsStr = topic?.topicSupervisors
+            .map(s => s.lecturer.fullName)
+            .join(", ") || "-";
+
+          const rowData = [
+            stt++,
+            dayStr,
+            boardName,
+            `${startTime} - ${endTime}`,
+            topic?.topicCode || "-",
+            topic?.title || "-",
+            membersStr,
+            supervisorsStr,
+          ];
+
+          const row = worksheet.addRow(rowData);
+          row.alignment = { wrapText: true, vertical: "middle" };
+        }
+      }
+
+      // Adjust column widths
+      worksheet.getColumn(1).width = 5;   // STT
+      worksheet.getColumn(2).width = 12;  // Ngày
+      worksheet.getColumn(3).width = 15;  // Hội đồng
+      worksheet.getColumn(4).width = 15;  // Thời gian
+      worksheet.getColumn(5).width = 15;  // Mã đề tài
+      worksheet.getColumn(6).width = 40;  // Tên đề tài
+      worksheet.getColumn(7).width = 35;  // Thành viên
+      worksheet.getColumn(8).width = 25;  // GVHD
+    }
 
     return (await workbook.xlsx.writeBuffer()) as unknown as Buffer;
   }

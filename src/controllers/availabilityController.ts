@@ -577,18 +577,7 @@ export const removeAvailability = async (
  *         content:
  *           application/json:
  *             schema:
- *               type: object
- *               properties:
- *                 success:
- *                   type: boolean
- *                   example: true
- *                 message:
- *                   type: string
- *                   example: "Available lecturers retrieved successfully"
- *                 data:
- *                   type: array
- *                   items:
- *                     $ref: '#/components/schemas/LecturerResponse'
+ *               $ref: '#/components/schemas/LecturerSimpleListResponse'
  *       400:
  *         description: Invalid parameters
  *       404:
