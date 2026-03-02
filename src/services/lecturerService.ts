@@ -190,11 +190,42 @@ export const deleteLecturerQualification = async (
   try {
     await lecturerRepository.deleteLecturerQualification(lecturerId, qualificationId);
   } catch (error: any) {
-    // Prisma throws error if record not found to delete? Depends on Prisma version/method.
-    // delete throws if not found.
     if (error.code === "P2025") {
        throw new Error(`Qualification with ID ${qualificationId} not assigned to lecturer ${lecturerId}`);
     }
     throw error;
   }
+};
+
+/**
+ * Get all topics supervised by a lecturer
+ */
+export const getSupervisedTopics = async (lecturerId: number) => {
+  const lecturer = await lecturerRepository.findById(lecturerId);
+  if (!lecturer) {
+    throw new Error(`Lecturer with ID ${lecturerId} not found`);
+  }
+  return await lecturerRepository.findSupervisedTopics(lecturerId);
+};
+
+/**
+ * Get all council boards assigned to a lecturer
+ */
+export const getAssignedCouncilBoards = async (lecturerId: number) => {
+  const lecturer = await lecturerRepository.findById(lecturerId);
+  if (!lecturer) {
+    throw new Error(`Lecturer with ID ${lecturerId} not found`);
+  }
+  return await lecturerRepository.findAssignedCouncilBoards(lecturerId);
+};
+
+/**
+ * Get dashboard stats for a lecturer
+ */
+export const getLecturerDashboard = async (lecturerId: number) => {
+  const lecturer = await lecturerRepository.findById(lecturerId);
+  if (!lecturer) {
+    throw new Error(`Lecturer with ID ${lecturerId} not found`);
+  }
+  return await lecturerRepository.getLecturerDashboardStats(lecturerId);
 };

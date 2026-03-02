@@ -15,7 +15,7 @@ import { CreateTopicDefenseInput, TopicDefenseFilters } from "../types/index.js"
  * @swagger
  * /api/topic-defenses:
  *   post:
- *     summary: Register a topic into a defense
+ *     summary: "[ADMIN] Register a topic into a defense"
  *     tags: [TopicDefense]
  *     requestBody:
  *       required: true
@@ -94,7 +94,7 @@ export const createTopicDefense = async (
  * @swagger
  * /api/topic-defenses:
  *   get:
- *     summary: Get topic defense registrations
+ *     summary: "[ADMIN, LECTURER] Get topic defense registrations"
  *     tags: [TopicDefense]
  *     parameters:
  *       - in: query
@@ -217,7 +217,7 @@ export const getTopicDefenses = async (
  * @swagger
  * /api/topic-defenses/{id}:
  *   get:
- *     summary: Get topic defense details by ID
+ *     summary: "[ADMIN, LECTURER] Get topic defense details by ID"
  *     tags: [TopicDefense]
  *     parameters:
  *       - in: path
@@ -299,7 +299,7 @@ export const getTopicDefenseById = async (
  * @swagger
  * /api/topic-defenses/{id}:
  *   delete:
- *     summary: Remove a topic registration from a defense
+ *     summary: "[ADMIN] Remove a topic registration from a defense"
  *     tags: [TopicDefense]
  *     parameters:
  *       - in: path

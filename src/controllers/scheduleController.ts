@@ -12,7 +12,7 @@ import { z } from "zod";
  * @swagger
  * /api/schedule/generate:
  *   post:
- *     summary: Generate schedule for a defense
+ *     summary: "[ADMIN] Generate schedule for a defense"
  *     tags: [Schedule]
  *     requestBody:
  *       required: true
@@ -107,7 +107,7 @@ export const generateSchedule = async (
  * @swagger
  * /api/schedule/{defenseId}:
  *   get:
- *     summary: Get schedule for a defense
+ *     summary: "[ADMIN, LECTURER] Get schedule for a defense"
  *     tags: [Schedule]
  *     parameters:
  *       - in: path
@@ -213,7 +213,7 @@ export const getSchedule = async (
  * @swagger
  * /api/schedule/publish:
  *   post:
- *     summary: Publish the schedule for a defense (making it visible to lecturers)
+ *     summary: "[ADMIN] Publish the schedule for a defense (making it visible to lecturers)"
  *     tags: [Schedule]
  *     requestBody:
  *       required: true
@@ -282,7 +282,7 @@ export const publishSchedule = async (
  * @swagger
  * /api/schedule/defense-councils/{defenseCouncilId}:
  *   put:
- *     summary: Update a defense council (Manual Scheduling)
+ *     summary: "[ADMIN] Update a defense council (Manual Scheduling)"
  *     tags: [Schedule]
  *     parameters:
  *       - in: path
@@ -368,7 +368,7 @@ export const updateDefenseCouncil = async (
  * @swagger
  * /api/schedule/council-boards/{councilBoardId}:
  *   put:
- *     summary: Update a council board (Manual Scheduling)
+ *     summary: "[ADMIN] Update a council board (Manual Scheduling)"
  *     tags: [Schedule]
  *     parameters:
  *       - in: path

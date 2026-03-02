@@ -44,7 +44,7 @@ const getTopicFilters = (req: Request): TopicFilters => {
  * @swagger
  * /api/topics:
  *   post:
- *     summary: Create a new topic
+ *     summary: "[ADMIN] Create a new topic"
  *     tags: [Topics]
  *     requestBody:
  *       required: true
@@ -87,7 +87,7 @@ export const createTopic = async (
  * @swagger
  * /api/topics:
  *   get:
- *     summary: Get all topics
+ *     summary: "[ADMIN, LECTURER] Get all topics"
  *     tags: [Topics]
  *     parameters:
  *       - in: query
@@ -159,7 +159,7 @@ export const getAllTopics = async (
  * @swagger
  * /api/topics/{id}:
  *   get:
- *     summary: Get topic by ID
+ *     summary: "[ADMIN, LECTURER] Get topic by ID"
  *     tags: [Topics]
  *     parameters:
  *       - in: path
@@ -208,7 +208,7 @@ export const getTopicById = async (
  * @swagger
  * /api/topics/{id}:
  *   patch:
- *     summary: Update topic
+ *     summary: "[ADMIN] Update topic"
  *     tags: [Topics]
  *     parameters:
  *       - in: path
@@ -274,7 +274,7 @@ export const updateTopic = async (
  * @swagger
  * /api/topics/{id}:
  *   delete:
- *     summary: Delete topic
+ *     summary: "[ADMIN] Delete topic"
  *     tags: [Topics]
  *     parameters:
  *       - in: path
@@ -323,7 +323,7 @@ export const deleteTopic = async (
  * @swagger
  * /api/topics/{id}/result:
  *   patch:
- *     summary: Update the result of a topic registration
+ *     summary: "[ADMIN] Update the result of a topic registration"
  *     tags: [Topics]
  *     parameters:
  *       - in: path

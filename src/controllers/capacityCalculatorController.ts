@@ -11,7 +11,7 @@ import type { CapacityCalculationRequest } from "../types/index.js";
  * @swagger
  * /api/capacity/calculate:
  *   get:
- *     summary: Calculate defense capacity and provide planning recommendations
+ *     summary: "[ADMIN] Calculate defense capacity and provide planning recommendations"
  *     tags: [Capacity]
  *     description: |
  *       Calculates capacity and provides recommendations based on the specified semester and defense.

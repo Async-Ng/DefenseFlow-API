@@ -174,6 +174,114 @@ export const findLecturerQualifications = async (
 };
 
 /**
+ * Find all topics supervised by a lecturer
+ */
+export const findSupervisedTopics = async (lecturerId: number): Promise<any[]> => {
+  return await prisma.topic.findMany({
+    where: {
+      topicSupervisors: {
+        some: { lecturerId },
+      },
+    },
+    include: {
+      semester: {
+        select: { name: true },
+      },
+      topicType: {
+        select: { name: true },
+      },
+      topicSupervisors: {
+        include: {
+          lecturer: true,
+        },
+      },
+    },
+    orderBy: { topicCode: "asc" },
+  });
+};
+
+/**
+ * Find all council boards assigned to a lecturer
+ */
+export const findAssignedCouncilBoards = async (lecturerId: number): Promise<any[]> => {
+  return await prisma.councilBoard.findMany({
+    where: {
+      councilBoardMembers: {
+        some: { lecturerId },
+      },
+    },
+    include: {
+      defenseDay: {
+        include: {
+          defense: {
+            select: { name: true },
+          },
+        },
+      },
+      semester: {
+        select: { name: true },
+      },
+      councilBoardMembers: {
+        include: {
+          lecturer: true,
+        },
+      },
+    },
+    orderBy: {
+      defenseDay: {
+        dayDate: "asc",
+      },
+    },
+  });
+};
+
+/**
+ * Get dashboard stats for a lecturer
+ */
+export const getLecturerDashboardStats = async (lecturerId: number): Promise<any> => {
+  const [totalTopics, totalBoards, upcomingCouncils, supervisedTopics] = await Promise.all([
+    prisma.topicSupervisor.count({ where: { lecturerId } }),
+    prisma.councilBoardMember.count({ where: { lecturerId } }),
+    prisma.councilBoard.findMany({
+      where: {
+        councilBoardMembers: { some: { lecturerId } },
+        defenseDay: { dayDate: { gte: new Date() } },
+      },
+      include: {
+        defenseDay: {
+          include: {
+            defense: { select: { name: true } },
+          },
+        },
+        councilBoardMembers: {
+          include: { lecturer: true },
+        },
+      },
+      take: 5,
+      orderBy: { defenseDay: { dayDate: "asc" } },
+    }),
+    prisma.topic.findMany({
+      where: {
+        topicSupervisors: { some: { lecturerId } },
+      },
+      include: {
+        semester: { select: { name: true } },
+        topicType: { select: { name: true } },
+      },
+      take: 5,
+      orderBy: { id: "desc" },
+    }),
+  ]);
+
+  return {
+    totalSupervisedTopics: totalTopics,
+    totalCouncilBoards: totalBoards,
+    upcomingCouncils,
+    supervisedTopics,
+  };
+};
+
+/**
  * Check if qualification exists
  */
 export const qualificationExists = async (qualificationId: number): Promise<boolean> => {

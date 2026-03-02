@@ -21,6 +21,9 @@ import type {
   DefenseResult,
   TopicType,
   TopicDefense,
+  CouncilBoardMember,
+  TopicSupervisor,
+  DefenseCouncil,
 } from "../../generated/prisma/client.js";
 
 export type {
@@ -38,6 +41,9 @@ export type {
   DefenseResult,
   TopicType,
   TopicDefense,
+  CouncilBoardMember,
+  TopicSupervisor,
+  DefenseCouncil,
 };
 
 // ============================================================================
@@ -526,20 +532,40 @@ export type CapacityCalculationResponse = {
 // ============================================================================
 
 export type DashboardStats = {
-  totalSemesters: number;
-  totalLecturers: number;
-  totalTopics: number;
-  totalDefenses: number;
-  totalCouncilBoards: number;
+  totalSemesters: number,
+  totalLecturers: number,
+  totalTopics: number,
+  totalDefenses: number,
+  totalCouncilBoards: number,
   topicsByResult: {
-    pending: number;
-    passed: number;
-    failed: number;
-  };
+    pending: number,
+    passed: number,
+    failed: number,
+  },
   upcomingDefenses: (Defense & {
-    semester: { name: string };
-  })[];
-};
+    semester: { name: string },
+  })[],
+}
+
+export type LecturerDashboardStats = {
+  totalSupervisedTopics: number,
+  totalCouncilBoards: number,
+  upcomingCouncils: (CouncilBoard & {
+    defenseDay: {
+      dayDate: Date,
+      defense: {
+        name: string | null,
+      },
+    },
+    councilBoardMembers: (CouncilBoardMember & {
+      lecturer: Lecturer | null,
+    })[],
+  })[],
+  supervisedTopics: (Topic & {
+    semester: { name: string },
+    topicType: { name: string } | null,
+  })[],
+}
 
 export type Nullable<T> = T | null;
 export type Optional<T> = T | undefined;

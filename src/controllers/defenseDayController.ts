@@ -12,7 +12,7 @@ import { getErrorMessage } from "../utils/typeGuards.js";
  * @swagger
  * /api/defenses/{defenseId}/days/{dayId}:
  *   patch:
- *     summary: Update a defense day
+ *     summary: "[ADMIN] Update a defense day"
  *     tags: [Defenses]
  *     parameters:
  *       - in: path
@@ -63,7 +63,7 @@ export const updateDefenseDay = async (
  * @swagger
  * /api/defenses/{defenseId}/days/{dayId}:
  *   delete:
- *     summary: Delete a defense day
+ *     summary: "[ADMIN] Delete a defense day"
  *     tags: [Defenses]
  *     parameters:
  *       - in: path

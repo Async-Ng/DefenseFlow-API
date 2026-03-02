@@ -22,7 +22,7 @@ import type { CreateDefenseInput, UpdateDefenseInput } from "../types/index.js";
  * @swagger
  * /api/defenses:
  *   post:
- *     summary: Create a new defense with defense days
+ *     summary: "[ADMIN] Create a new defense with defense days"
  *     tags: [Defenses]
  *     requestBody:
  *       required: true
@@ -84,7 +84,7 @@ export const createDefense = async (
  * @swagger
  * /api/defenses:
  *   get:
- *     summary: Get all defenses
+ *     summary: "[ADMIN, LECTURER] Get all defenses"
  *     tags: [Defenses]
  *     parameters:
  *       - in: query
@@ -163,7 +163,7 @@ export const getAllDefenses = async (
  * @swagger
  * /api/defenses/{id}:
  *   get:
- *     summary: Get defense by ID
+ *     summary: "[ADMIN, LECTURER] Get defense by ID"
  *     tags: [Defenses]
  *     parameters:
  *       - in: path
@@ -220,7 +220,7 @@ export const getDefenseById = async (
  * @swagger
  * /api/defenses/{id}:
  *   patch:
- *     summary: Update defense details and defense days
+ *     summary: "[ADMIN] Update defense details and defense days"
  *     tags: [Defenses]
  *     parameters:
  *       - in: path
@@ -292,7 +292,7 @@ export const updateDefense = async (
  * @swagger
  * /api/defenses/{id}:
  *   delete:
- *     summary: Delete defense
+ *     summary: "[ADMIN] Delete defense"
  *     tags: [Defenses]
  *     parameters:
  *       - in: path
