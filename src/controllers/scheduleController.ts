@@ -7,6 +7,7 @@ import {
   getCouncilBoardFilters,
   getPaginationParams,
   getSortParams,
+  getIdParam,
 } from "../utils/requestHelpers.js";
 import { z } from "zod";
 
@@ -401,7 +402,7 @@ export const updateDefenseCouncil = async (
     const schema = z.object({
       startTime: z.string().datetime().optional(),
       endTime: z.string().datetime().optional(),
-      councilBoardId: z.number().int().optional(),
+      councilBoardId: z.number().int().nullable().optional(),
     });
 
     const validation = schema.safeParse(req.body);
@@ -485,8 +486,8 @@ export const updateCouncilBoard = async (
     if (isNaN(councilBoardId)) throw new AppError(400, "Invalid council board ID");
 
     const schema = z.object({
-      presidentId: z.number().int().optional(),
-      secretaryId: z.number().int().optional(),
+      presidentId: z.number().int().nullable().optional(),
+      secretaryId: z.number().int().nullable().optional(),
       memberIds: z.array(z.number().int()).optional(),
     });
 
@@ -557,6 +558,41 @@ export const exportSchedule = async (
     );
 
     return res.send(buffer);
+  } catch (error) {
+    return next(error);
+  }
+};
+
+export const createDefenseCouncil = async (
+  req: Request,
+  res: Response,
+  next: NextFunction,
+): Promise<Response | void> => {
+  try {
+    const schema = z.object({
+      registrationId: z.number(),
+      councilBoardId: z.number(),
+      startTime: z.string().transform((v) => new Date(v)),
+      endTime: z.string().transform((v) => new Date(v)),
+    });
+
+    const validated = schema.parse(req.body);
+    const result = await scheduleService.createDefenseCouncil(validated);
+    return successResponse(res, result, "Defense council created successfully");
+  } catch (error) {
+    return next(error);
+  }
+};
+
+export const deleteDefenseCouncil = async (
+  req: Request,
+  res: Response,
+  next: NextFunction,
+): Promise<Response | void> => {
+  try {
+    const id = getIdParam(req);
+    await scheduleService.deleteDefenseCouncil(id);
+    return successResponse(res, {}, "Topic removed from council successfully");
   } catch (error) {
     return next(error);
   }

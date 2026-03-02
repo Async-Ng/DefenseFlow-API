@@ -690,15 +690,51 @@ export const getCouncilBoardById = async (id: number): Promise<CouncilBoard> => 
   return board;
 };
 
-export const publishSchedule = async (defenseId: number) =>
-  prisma.defense.update({
+export const publishSchedule = async (defenseId: number) => {
+  // 1. Validation: Ensure all topics for this defense are scheduled
+  const unscheduledTopics = await prisma.topicDefense.findMany({
+    where: {
+      defenseId,
+      defenseCouncils: { none: {} },
+    },
+    include: { topic: true },
+  });
+
+  if (unscheduledTopics.length > 0) {
+    const codes = unscheduledTopics.map((t) => t.topic?.topicCode || t.id).join(", ");
+    throw new AppError(400, `Cannot publish: The following topics are not scheduled: ${codes}`);
+  }
+
+  // 2. Validation: Ensure all council boards for this defense have exactly 5 members
+  const boardsWithInsufficientMembers = await prisma.councilBoard.findMany({
+    where: {
+      defenseDay: { defenseId },
+    },
+    include: {
+      _count: {
+        select: { councilBoardMembers: true },
+      },
+    },
+  });
+
+  const invalidBoards = boardsWithInsufficientMembers.filter(
+    (b) => b._count.councilBoardMembers !== 5
+  );
+
+  if (invalidBoards.length > 0) {
+    const codes = invalidBoards.map((b) => b.boardCode).join(", ");
+    throw new AppError(400, `Cannot publish: The following council boards do not have exactly 5 members: ${codes}`);
+  }
+
+  return prisma.defense.update({
     where: { id: defenseId },
     data: { isSchedulePublished: true },
   });
+};
 
 export const updateDefenseCouncil = async (
   defenseCouncilId: number,
-  data: { startTime?: Date; endTime?: Date; councilBoardId?: number }
+  data: { startTime?: Date; endTime?: Date; councilBoardId?: number | null }
 ) => {
   const dc = await prisma.defenseCouncil.findUnique({ where: { id: defenseCouncilId } });
   if (!dc) throw new AppError(404, "Defense Council not found");
@@ -716,7 +752,7 @@ export const updateDefenseCouncil = async (
 
 export const updateCouncilBoard = async (
   councilBoardId: number,
-  data: { presidentId?: number; secretaryId?: number; memberIds?: number[] }
+  data: { presidentId?: number | null; secretaryId?: number | null; memberIds?: number[] }
 ) => {
   const { presidentId, secretaryId, memberIds } = data;
 
@@ -797,5 +833,30 @@ export const updateCouncilBoard = async (
         councilBoardMembers: { include: { lecturer: true } },
       },
     });
+  });
+};
+
+export const deleteDefenseCouncil = async (id: number) => {
+  return prisma.defenseCouncil.delete({
+    where: { id },
+  });
+};
+
+export const createDefenseCouncil = async (data: {
+  registrationId: number;
+  councilBoardId: number;
+  startTime: Date;
+  endTime: Date;
+}) => {
+  const code = `DC-${data.registrationId}-${data.councilBoardId}-${Date.now().toString(36).toUpperCase()}`;
+
+  return prisma.defenseCouncil.create({
+    data: {
+      defenseCouncilCode: code,
+      registrationId: data.registrationId,
+      councilBoardId: data.councilBoardId,
+      startTime: data.startTime,
+      endTime: data.endTime,
+    },
   });
 };
