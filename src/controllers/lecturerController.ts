@@ -5,13 +5,10 @@ import { getErrorMessage } from "../utils/typeGuards.js";
 import { getIdParam, getPaginationParams, getLecturerFilters } from "../utils/requestHelpers.js";
 import type {
   IdParam,
-  PaginationQuery,
   UpdateLecturerQualificationsInput,
   CreateLecturerInput,
   UpdateLecturerInput,
 } from "../types/index.js";
-
-// Redundant LecturerFilterQuery removed
 
 /**
  * @swagger
