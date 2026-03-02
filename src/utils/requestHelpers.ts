@@ -11,6 +11,11 @@ import type {
   DefenseFilters,
   DefenseType,
   CouncilBoardFilters,
+  LecturerFilters,
+  TopicFilters,
+  QualificationFilters,
+  TopicTypeFilters,
+  TopicDefenseFilters,
 } from "../types/index.js";
 
 /**
@@ -87,6 +92,7 @@ export const getSemesterFilters = (req: Request): SemesterFilters => {
   return {
     semesterCode: isString(semesterCodeParam) ? semesterCodeParam : undefined,
     name: isString(nameParam) ? nameParam : undefined,
+    search: isString(req.query.search) ? req.query.search : undefined,
   };
 };
 
@@ -116,6 +122,7 @@ export const getDefenseFilters = (req: Request): DefenseFilters => {
     maxCouncilsPerDay: isString(maxCouncilsParam)
       ? parseInt(maxCouncilsParam, 10)
       : undefined,
+    search: isString(req.query.search) ? req.query.search : undefined,
   };
 };
 
@@ -137,5 +144,82 @@ export const getCouncilBoardFilters = (req: Request): CouncilBoardFilters => {
     defenseId: isString(defenseIdParam) ? parseInt(defenseIdParam, 10) : undefined,
     boardCode: isString(boardCodeParam) ? boardCodeParam : undefined,
     name: isString(nameParam) ? nameParam : undefined,
+    search: isString(req.query.search) ? req.query.search : undefined,
+  };
+};
+/**
+ * Extract lecturer filters from query
+ * @param req - Express request object
+ * @returns Lecturer filter object
+ */
+export const getLecturerFilters = (req: Request): LecturerFilters => {
+  return {
+    lecturerCode: isString(req.query.lecturerCode) ? req.query.lecturerCode : undefined,
+    fullName: isString(req.query.fullName) ? req.query.fullName : undefined,
+    email: isString(req.query.email) ? req.query.email : undefined,
+    search: isString(req.query.search) ? req.query.search : undefined,
+  };
+};
+
+/**
+ * Extract topic filters from query
+ * @param req - Express request object
+ * @returns Topic filter object
+ */
+export const getTopicFilters = (req: Request): TopicFilters => {
+  const supervisorIdsParam = req.query.supervisorIds;
+  let supervisorIds: number[] | undefined = undefined;
+
+  if (isString(supervisorIdsParam)) {
+    supervisorIds = supervisorIdsParam.split(",").map(id => parseInt(id, 10)).filter(id => !isNaN(id));
+  } else if (Array.isArray(supervisorIdsParam)) {
+    supervisorIds = supervisorIdsParam.map(id => parseInt(String(id), 10)).filter(id => !isNaN(id));
+  }
+
+  return {
+    topicCode: isString(req.query.topicCode) ? req.query.topicCode : undefined,
+    title: isString(req.query.title) ? req.query.title : undefined,
+    semesterId: isString(req.query.semesterId) ? parseInt(req.query.semesterId, 10) : undefined,
+    supervisorIds,
+    search: isString(req.query.search) ? req.query.search : undefined,
+  };
+};
+
+/**
+ * Extract qualification filters from query
+ * @param req - Express request object
+ * @returns Qualification filter object
+ */
+export const getQualificationFilters = (req: Request): QualificationFilters => {
+  return {
+    qualificationCode: isString(req.query.qualificationCode) ? req.query.qualificationCode : undefined,
+    name: isString(req.query.name) ? req.query.name : undefined,
+    search: isString(req.query.search) ? req.query.search : undefined,
+  };
+};
+
+/**
+ * Extract topic type filters from query
+ * @param req - Express request object
+ * @returns Topic type filter object
+ */
+export const getTopicTypeFilters = (req: Request): TopicTypeFilters => {
+  return {
+    name: isString(req.query.name) ? req.query.name : undefined,
+    search: isString(req.query.search) ? req.query.search : undefined,
+  };
+};
+/**
+ * Extract topic defense filters from query
+ * @param req - Express request object
+ * @returns Topic defense filter object
+ */
+export const getTopicDefenseFilters = (req: Request): TopicDefenseFilters => {
+  return {
+    defenseId: isString(req.query.defenseId) ? parseInt(req.query.defenseId, 10) : undefined,
+    topicId: isString(req.query.topicId) ? parseInt(req.query.topicId, 10) : undefined,
+    topicCode: isString(req.query.topicCode) ? req.query.topicCode : undefined,
+    finalResult: req.query.finalResult as any,
+    search: isString(req.query.search) ? req.query.search : undefined,
   };
 };
