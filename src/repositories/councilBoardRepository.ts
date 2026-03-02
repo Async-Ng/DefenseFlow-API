@@ -126,6 +126,7 @@ export const findCouncilBoardsByDefense = async (
         },
       },
       defenseCouncils: {
+        orderBy: { startTime: "asc" },
         include: {
           topicDefense: {
             include: {
@@ -192,9 +193,19 @@ export const findAll = async (
     where.name = { contains: filters.name, mode: "insensitive" };
   }
 
-  const orderBy: Prisma.CouncilBoardOrderByWithRelationInput = sort
-    ? { [sort.field]: sort.order }
-    : { id: "asc" };
+  let orderBy: Prisma.CouncilBoardOrderByWithRelationInput = { id: "asc" };
+  
+  if (sort) {
+    if (sort.field === "dayDate") {
+      orderBy = {
+        defenseDay: {
+          dayDate: sort.order,
+        },
+      };
+    } else {
+      orderBy = { [sort.field]: sort.order };
+    }
+  }
 
   const [data, total] = await Promise.all([
     prisma.councilBoard.findMany({
@@ -217,6 +228,7 @@ export const findAll = async (
           },
         },
         defenseCouncils: {
+          orderBy: { startTime: "asc" },
           include: {
             topicDefense: {
               include: {

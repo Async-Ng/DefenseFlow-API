@@ -5,6 +5,7 @@ import { AppError } from "../middleware/errorHandler.js";
 import {
   getCouncilBoardFilters,
   getPaginationParams,
+  getSortParams,
 } from "../utils/requestHelpers.js";
 import { z } from "zod";
 
@@ -193,14 +194,12 @@ export const getSchedule = async (
     filters.defenseId = defenseId; // Path param takes precedence or adds to filters
 
     const pagination = getPaginationParams(req);
-    
-    const sortField = req.query.sortField as string || "id";
-    const sortOrder = (req.query.sortOrder as string || "asc") as "asc" | "desc";
+    const sort = getSortParams(req, "id");
 
     const result = await scheduleService.getSchedule(
       filters,
       pagination,
-      { field: sortField, order: sortOrder }
+      sort
     );
 
     return successResponse(res, result, "Schedule retrieved successfully");

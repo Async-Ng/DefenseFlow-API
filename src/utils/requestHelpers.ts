@@ -223,3 +223,21 @@ export const getTopicDefenseFilters = (req: Request): TopicDefenseFilters => {
     search: isString(req.query.search) ? req.query.search : undefined,
   };
 };
+/**
+ * Extract sort params from query
+ * @param req - Express request object
+ * @param defaultField - Default sort field
+ * @returns Sort object with field and order
+ */
+export const getSortParams = (
+  req: Request,
+  defaultField: string = "id"
+): { field: string; order: "asc" | "desc" } => {
+  const sortField = isString(req.query.sortField) ? req.query.sortField : defaultField;
+  const sortOrder =
+    isString(req.query.sortOrder) && req.query.sortOrder.toLowerCase() === "desc"
+      ? ("desc" as const)
+      : ("asc" as const);
+
+  return { field: sortField, order: sortOrder };
+};
