@@ -17,6 +17,7 @@ import type {
  * /api/availability/defenses/{defenseId}/days:
  *   get:
  *     summary: "[ADMIN, LECTURER] Get all defense days for a specific defense"
+ *     description: Returns all scheduled days for a particular defense round. This is used by lecturers to see which days they need to provide availability for.
  *     tags: [Availability]
  *     parameters:
  *       - in: path
@@ -24,22 +25,29 @@ import type {
  *         required: true
  *         schema:
  *           type: integer
- *         description: Defense ID
+ *         description: The unique ID of the defense round
+ *         example: 1
  *     responses:
  *       200:
- *         description: Defense days retrieved successfully
+ *         description: Successfully retrieved defense days
  *         content:
  *           application/json:
  *             schema:
  *               $ref: '#/components/schemas/DefenseDaysResponse'
+ *       400:
+ *         description: Invalid defense ID format
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
  *       404:
- *         description: Defense not found
+ *         description: Defense round not found
  *         content:
  *           application/json:
  *             schema:
  *               $ref: '#/components/schemas/ErrorResponse'
  *       500:
- *         description: Server error
+ *         description: Internal server error
  *         content:
  *           application/json:
  *             schema:
@@ -74,6 +82,7 @@ export const getDefenseDays = async (
  * /api/availability/defenses/{defenseId}/days/with-availability:
  *   get:
  *     summary: "[ADMIN, LECTURER] Get defense days with lecturer's availability status"
+ *     description: Returns all defense days for a specific round, indicating for each day whether the specified lecturer is 'Available' or 'Busy'.
  *     tags: [Availability]
  *     parameters:
  *       - in: path
@@ -81,22 +90,24 @@ export const getDefenseDays = async (
  *         required: true
  *         schema:
  *           type: integer
- *         description: Defense ID
+ *         description: The unique ID of the defense round
+ *         example: 1
  *       - in: query
  *         name: lecturerId
  *         required: true
  *         schema:
  *           type: integer
- *         description: Lecturer ID
+ *         description: The unique ID of the lecturer
+ *         example: 5
  *     responses:
  *       200:
- *         description: Defense days with availability retrieved successfully
+ *         description: Successfully retrieved defense days with availability status
  *         content:
  *           application/json:
  *             schema:
  *               $ref: '#/components/schemas/DefenseDaysWithAvailabilityResponse'
  *       400:
- *         description: Invalid parameters
+ *         description: Invalid parameters or lecturerId missing
  *         content:
  *           application/json:
  *             schema:
@@ -108,7 +119,7 @@ export const getDefenseDays = async (
  *             schema:
  *               $ref: '#/components/schemas/ErrorResponse'
  *       500:
- *         description: Server error
+ *         description: Internal server error
  *         content:
  *           application/json:
  *             schema:
@@ -157,7 +168,8 @@ export const getDefenseDaysWithAvailability = async (
  * @swagger
  * /api/availability/lecturers/{lecturerId}/status:
  *   get:
- *     summary: "[ADMIN, LECTURER] Get lecturer's registered status for a defense"
+ *     summary: "[ADMIN, LECTURER] Get lecturer's registration status for a defense"
+ *     description: Checks if a lecturer has completed their registration (availability) for a specific defense round. Returns counts of available/busy days.
  *     tags: [Availability]
  *     parameters:
  *       - in: path
@@ -165,34 +177,36 @@ export const getDefenseDaysWithAvailability = async (
  *         required: true
  *         schema:
  *           type: integer
- *         description: Lecturer ID
+ *         description: The unique ID of the lecturer
+ *         example: 5
  *       - in: query
  *         name: defenseId
  *         required: true
  *         schema:
  *           type: integer
- *         description: Defense ID
+ *         description: The unique ID of the defense round
+ *         example: 1
  *     responses:
  *       200:
- *         description: Lecturer status retrieved successfully
+ *         description: Successfully retrieved registration status
  *         content:
  *           application/json:
  *             schema:
  *               $ref: '#/components/schemas/LecturerStatusResultResponse'
  *       400:
- *         description: Invalid parameters
+ *         description: Invalid parameters or defenseId missing
  *         content:
  *           application/json:
  *             schema:
  *               $ref: '#/components/schemas/ErrorResponse'
  *       404:
- *         description: Lecturer or defense not found
+ *         description: Lecturer or defense round not found
  *         content:
  *           application/json:
  *             schema:
  *               $ref: '#/components/schemas/ErrorResponse'
  *       500:
- *         description: Server error
+ *         description: Internal server error
  *         content:
  *           application/json:
  *             schema:
@@ -238,6 +252,7 @@ export const getLecturerStatus = async (
  * /api/availability/lecturers/{lecturerId}/availability:
  *   put:
  *     summary: "[LECTURER] Update lecturer availability for a specific defense day"
+ *     description: Creates or updates a single availability record for a lecturer on a specific defense day.
  *     tags: [Availability]
  *     parameters:
  *       - in: path
@@ -245,7 +260,8 @@ export const getLecturerStatus = async (
  *         required: true
  *         schema:
  *           type: integer
- *         description: Lecturer ID
+ *         description: The unique ID of the lecturer
+ *         example: 5
  *     requestBody:
  *       required: true
  *       content:
@@ -258,11 +274,10 @@ export const getLecturerStatus = async (
  *             properties:
  *               defenseDayId:
  *                 type: integer
+ *                 description: ID of the defense day
  *                 example: 1
  *               status:
- *                 type: string
- *                 enum: [Available, Busy]
- *                 example: "Busy"
+ *                 $ref: '#/components/schemas/AvailabilityStatus'
  *     responses:
  *       200:
  *         description: Availability updated successfully
@@ -271,7 +286,7 @@ export const getLecturerStatus = async (
  *             schema:
  *               $ref: '#/components/schemas/AvailabilityResponse'
  *       400:
- *         description: Invalid input or registration closed
+ *         description: Invalid input, invalid status, or registration period closed
  *         content:
  *           application/json:
  *             schema:
@@ -283,7 +298,7 @@ export const getLecturerStatus = async (
  *             schema:
  *               $ref: '#/components/schemas/ErrorResponse'
  *       500:
- *         description: Server error
+ *         description: Internal server error
  *         content:
  *           application/json:
  *             schema:
@@ -335,6 +350,7 @@ export const updateAvailability = async (
  * /api/availability/lecturers/{lecturerId}/availability/batch:
  *   put:
  *     summary: "[LECTURER] Batch update lecturer availability for multiple defense days"
+ *     description: Efficiently updates multiple availability records at once. All days must belong to the same defense round.
  *     tags: [Availability]
  *     parameters:
  *       - in: path
@@ -342,7 +358,8 @@ export const updateAvailability = async (
  *         required: true
  *         schema:
  *           type: integer
- *         description: Lecturer ID
+ *         description: The unique ID of the lecturer
+ *         example: 5
  *     requestBody:
  *       required: true
  *       content:
@@ -354,43 +371,40 @@ export const updateAvailability = async (
  *             properties:
  *               availabilities:
  *                 type: array
+ *                 description: List of availability updates
  *                 items:
  *                   type: object
+ *                   required:
+ *                     - defenseDayId
+ *                     - status
  *                   properties:
  *                     defenseDayId:
  *                       type: integer
+ *                       description: ID of the defense day
  *                       example: 1
  *                     status:
- *                       type: string
- *                       enum: [Available, Busy]
- *                       example: "Busy"
+ *                       $ref: '#/components/schemas/AvailabilityStatus'
  *     responses:
  *       200:
- *         description: Availability updated successfully
+ *         description: All availabilities updated successfully
  *         content:
  *           application/json:
  *             schema:
  *               $ref: '#/components/schemas/AvailabilityListResponse'
  *       400:
- *         description: Invalid input or registration closed
+ *         description: Invalid input, days from different defenses, or registration closed
  *         content:
  *           application/json:
  *             schema:
  *               $ref: '#/components/schemas/ErrorResponse'
  *       404:
- *         description: Lecturer or defense day not found
+ *         description: Lecturer or one of the defense days not found
  *         content:
  *           application/json:
  *             schema:
  *               $ref: '#/components/schemas/ErrorResponse'
  *       500:
- *         description: Server error
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/ErrorResponse'
- *       207:
- *         description: Multi-status (some successful, some failed)
+ *         description: Internal server error
  *         content:
  *           application/json:
  *             schema:
@@ -455,7 +469,8 @@ export const batchUpdateAvailability = async (
  * @swagger
  * /api/availability/lecturers/{lecturerId}/availability/{defenseDayId}:
  *   delete:
- *     summary: "[LECTURER] Remove availability record (revert to Available)"
+ *     summary: "[LECTURER] Remove availability record"
+ *     description: Deletes an availability record for a lecturer on a specific day. Effectively reverts the status to 'Available' (default).
  *     tags: [Availability]
  *     parameters:
  *       - in: path
@@ -463,34 +478,44 @@ export const batchUpdateAvailability = async (
  *         required: true
  *         schema:
  *           type: integer
- *         description: Lecturer ID
+ *         description: The unique ID of the lecturer
+ *         example: 5
  *       - in: path
  *         name: defenseDayId
  *         required: true
  *         schema:
  *           type: integer
- *         description: Defense Day ID
+ *         description: The unique ID of the defense day
+ *         example: 1
  *     responses:
  *       200:
- *         description: Availability removed successfully
+ *         description: Availability record removed successfully
  *         content:
  *           application/json:
  *             schema:
- *               $ref: '#/components/schemas/ApiResponse'
+ *               items:
+ *                 type: object
+ *                 properties:
+ *                   success:
+ *                     type: boolean
+ *                     example: true
+ *                   message:
+ *                     type: string
+ *                     example: "Availability removed successfully (reverted to Available)"
  *       400:
- *         description: Invalid input or registration closed
+ *         description: Invalid parameters or registration period closed
  *         content:
  *           application/json:
  *             schema:
  *               $ref: '#/components/schemas/ErrorResponse'
  *       404:
- *         description: Lecturer or defense day not found
+ *         description: Lecturer or availability record not found
  *         content:
  *           application/json:
  *             schema:
  *               $ref: '#/components/schemas/ErrorResponse'
  *       500:
- *         description: Server error
+ *         description: Internal server error
  *         content:
  *           application/json:
  *             schema:

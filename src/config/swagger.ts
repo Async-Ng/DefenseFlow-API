@@ -486,6 +486,29 @@ const options: swaggerJsdoc.Options = {
             },
           },
         },
+        AvailabilityStatus: {
+          type: "string",
+          enum: ["Available", "Busy"],
+          example: "Busy",
+        },
+        Availability: {
+          type: "object",
+          properties: {
+            id: { type: "integer", example: 1 },
+            lecturerId: { type: "integer", example: 5 },
+            defenseDayId: { type: "integer", example: 10 },
+            status: { $ref: "#/components/schemas/AvailabilityStatus" },
+          },
+        },
+        LecturerStatusResult: {
+          type: "object",
+          properties: {
+            isRegistered: { type: "boolean", example: true },
+            hasAvailability: { type: "boolean", example: true },
+            availabilityCount: { type: "integer", example: 3 },
+            defenseDaysCount: { type: "integer", example: 5 },
+          },
+        },
         UpdateTopicResultInput: {
           type: "object",
           required: ["result"],
@@ -797,6 +820,66 @@ const options: swaggerJsdoc.Options = {
               example: "Defense retrieved successfully",
             },
             data: { $ref: "#/components/schemas/Defense" },
+          },
+        },
+        DefenseDaysResponse: {
+          type: "object",
+          properties: {
+            success: { type: "boolean", example: true },
+            message: { type: "string", example: "Defense days retrieved successfully" },
+            data: {
+              type: "array",
+              items: { $ref: "#/components/schemas/DefenseDay" },
+            },
+          },
+        },
+        DefenseDaysWithAvailabilityResponse: {
+          type: "object",
+          properties: {
+            success: { type: "boolean", example: true },
+            message: { type: "string", example: "Defense days with availability retrieved successfully" },
+            data: {
+              type: "array",
+              items: {
+                allOf: [
+                  { $ref: "#/components/schemas/DefenseDay" },
+                  {
+                    type: "object",
+                    properties: {
+                      availabilityStatus: { $ref: "#/components/schemas/AvailabilityStatus" },
+                      isRegistered: { type: "boolean", example: true },
+                    },
+                  },
+                ],
+              },
+            },
+          },
+        },
+        LecturerStatusResultResponse: {
+          type: "object",
+          properties: {
+            success: { type: "boolean", example: true },
+            message: { type: "string", example: "Lecturer status retrieved successfully" },
+            data: { $ref: "#/components/schemas/LecturerStatusResult" },
+          },
+        },
+        AvailabilityResponse: {
+          type: "object",
+          properties: {
+            success: { type: "boolean", example: true },
+            message: { type: "string", example: "Availability updated successfully" },
+            data: { $ref: "#/components/schemas/Availability" },
+          },
+        },
+        AvailabilityListResponse: {
+          type: "object",
+          properties: {
+            success: { type: "boolean", example: true },
+            message: { type: "string", example: "Availability updated successfully" },
+            data: {
+              type: "array",
+              items: { $ref: "#/components/schemas/Availability" },
+            },
           },
         },
         DefenseListResponse: {
