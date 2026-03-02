@@ -96,4 +96,10 @@ router.get("/council-boards/:id", scheduleController.getCouncilBoardById);
  */
 router.get("/:defenseId", scheduleController.getSchedule);
 
+/**
+ * GET /api/schedule/:defenseId/export
+ * Export schedule to Excel
+ */
+router.get("/:defenseId/export", scheduleController.exportSchedule);
+
 export default router;
