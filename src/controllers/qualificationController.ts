@@ -1,7 +1,9 @@
 import { Request, Response } from "express";
 import * as qualificationService from "../services/qualificationService.js";
-import { successResponse, errorResponse } from "../utils/apiResponse.js";
+import { successResponse, errorResponse, paginatedResponse } from "../utils/apiResponse.js";
 import { CreateQualificationInput, UpdateQualificationInput } from "../types/index.js";
+import { getPaginationParams, getQualificationFilters } from "../utils/requestHelpers.js";
+import { getErrorMessage } from "../utils/typeGuards.js";
 
 /**
  * @swagger
@@ -105,24 +107,20 @@ export const createQualification = async (req: Request, res: Response) => {
  */
 export const getQualifications = async (req: Request, res: Response) => {
   try {
-    const page = parseInt(req.query.page as string) || 1;
-    const limit = parseInt(req.query.limit as string) || 10;
-
-    // Helper to allow single string or take first if array
-    const getString = (param: any): string | undefined => {
-      if (!param) return undefined;
-      return Array.isArray(param) ? (param[0] as string) : (param as string);
-    };
-
-    const filters = {
-      qualificationCode: getString(req.query.qualificationCode),
-      name: getString(req.query.name),
-    };
+    const { page, limit } = getPaginationParams(req);
+    const filters = getQualificationFilters(req);
 
     const result = await qualificationService.getAllQualifications({ page, limit }, filters);
-    return successResponse(res, result, "Qualifications retrieved successfully");
+    return paginatedResponse(
+      res,
+      result.data,
+      page,
+      limit,
+      result.total,
+      "Qualifications retrieved successfully",
+    );
   } catch (error: any) {
-    return errorResponse(res, error.message, 500);
+    return errorResponse(res, getErrorMessage(error), 500);
   }
 };
 

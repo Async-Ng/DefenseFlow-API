@@ -4,7 +4,7 @@ import {
   UpdateQualificationInput,
   PaginatedResult,
   Qualification,
-  QualificationFilterQuery,
+  QualificationFilters,
 } from "../types/index.js";
 
 /**
@@ -27,14 +27,9 @@ export const createQualification = async (
  */
 export const getAllQualifications = async (
   pagination: { page: number; limit: number },
-  filters: QualificationFilterQuery,
+  filters: QualificationFilters,
 ): Promise<PaginatedResult<Qualification>> => {
-  const filterParams = {
-    qualificationCode: filters.qualificationCode as string,
-    name: filters.name as string,
-  };
-
-  return await qualificationRepository.findAll(pagination.page, pagination.limit, filterParams);
+  return await qualificationRepository.findAll(pagination.page, pagination.limit, filters);
 };
 
 /**

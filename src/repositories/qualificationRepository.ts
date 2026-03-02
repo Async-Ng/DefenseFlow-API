@@ -5,6 +5,7 @@ import type {
   CreateQualificationInput,
   UpdateQualificationInput,
   PaginatedResult,
+  QualificationFilters,
 } from "../types/index.js";
 
 /**
@@ -25,10 +26,18 @@ export const create = async (data: CreateQualificationInput): Promise<Qualificat
 export const findAll = async (
   page: number = 1,
   limit: number = 10,
-  filters: { qualificationCode?: string; name?: string } = {},
+  filters: QualificationFilters = {},
 ): Promise<PaginatedResult<Qualification>> => {
   const skip = (page - 1) * limit;
   const where: Prisma.QualificationWhereInput = {};
+
+  // Apply search
+  if (filters.search) {
+    where.OR = [
+      { qualificationCode: { contains: filters.search, mode: "insensitive" } },
+      { name: { contains: filters.search, mode: "insensitive" } },
+    ];
+  }
 
   // Apply filters
   if (filters.qualificationCode) {
