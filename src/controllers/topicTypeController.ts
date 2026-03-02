@@ -1,7 +1,9 @@
 import { Request, Response } from "express";
 import * as topicTypeService from "../services/topicTypeService.js";
-import { successResponse, errorResponse } from "../utils/apiResponse.js";
+import { successResponse, errorResponse, paginatedResponse } from "../utils/apiResponse.js";
 import { CreateTopicTypeInput, UpdateTopicTypeInput } from "../types/index.js";
+import { getPaginationParams, getTopicTypeFilters } from "../utils/requestHelpers.js";
+import { getErrorMessage } from "../utils/typeGuards.js";
 
 /**
  * @swagger
@@ -105,14 +107,20 @@ export const createTopicType = async (req: Request, res: Response) => {
  */
 export const getTopicTypes = async (req: Request, res: Response) => {
   try {
-    const page = parseInt(req.query.page as string) || 1;
-    const limit = parseInt(req.query.limit as string) || 10;
-    const name = req.query.name as string | undefined;
+    const { page, limit } = getPaginationParams(req);
+    const filters = getTopicTypeFilters(req);
 
-    const result = await topicTypeService.getAllTopicTypes({ page, limit }, { name });
-    return successResponse(res, result, "Topic types retrieved successfully");
+    const result = await topicTypeService.getAllTopicTypes({ page, limit }, filters);
+    return paginatedResponse(
+      res,
+      result.data,
+      page,
+      limit,
+      result.total,
+      "Topic types retrieved successfully",
+    );
   } catch (error: any) {
-    return errorResponse(res, error.message, 500);
+    return errorResponse(res, getErrorMessage(error), 500);
   }
 };
 

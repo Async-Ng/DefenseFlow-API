@@ -95,6 +95,7 @@ export type IncludeQuery = {
 export type SemesterFilterQuery = {
   semesterCode?: string | string[];
   name?: string | string[];
+  search?: string | string[];
 };
 
 /**
@@ -105,6 +106,7 @@ export type DefenseFilterQuery = {
   defenseCode?: string | string[];
   type?: string | string[];
   maxCouncilsPerDay?: string | string[];
+  search?: string | string[];
 };
 
 /**
@@ -116,6 +118,7 @@ export type CouncilBoardFilterQuery = {
   defenseId?: string | string[];
   boardCode?: string | string[];
   name?: string | string[];
+  search?: string | string[];
 };
 
 // ============================================================================
@@ -198,6 +201,7 @@ export type TopicFilterQuery = {
   title?: string | string[];
   semesterId?: string | string[];
   supervisorIds?: string | string[];
+  search?: string | string[];
 };
 
 export type TopicFilters = {
@@ -205,6 +209,7 @@ export type TopicFilters = {
   title?: string;
   semesterId?: number;
   supervisorIds?: number[];
+  search?: string;
 };
 
 export type CreateQualificationInput = {
@@ -216,8 +221,15 @@ export type CreateQualificationInput = {
 export type UpdateQualificationInput = Partial<CreateQualificationInput>;
 
 export type QualificationFilterQuery = {
+  qualificationCode?: string | string[];
+  name?: string | string[];
+  search?: string | string[];
+};
+
+export type QualificationFilters = {
   qualificationCode?: string;
   name?: string;
+  search?: string;
 };
 
 export type CreateTopicTypeInput = {
@@ -231,7 +243,13 @@ export type UpdateTopicTypeInput = {
 };
 
 export type TopicTypeFilterQuery = {
+  name?: string | string[];
+  search?: string | string[];
+};
+
+export type TopicTypeFilters = {
   name?: string;
+  search?: string;
 };
 
 export type LecturerQualificationInput = {
@@ -265,6 +283,7 @@ export type TopicDefenseFilterQuery = {
   topicId?: string | string[];
   topicCode?: string | string[];
   finalResult?: string | string[];
+  search?: string | string[];
 };
 
 export type TopicDefenseFilters = {
@@ -272,6 +291,7 @@ export type TopicDefenseFilters = {
   topicId?: number;
   topicCode?: string;
   finalResult?: DefenseResult;
+  search?: string;
 };
 
 export type LecturerWithQualifications = Lecturer & {
@@ -362,6 +382,7 @@ export type PaginatedResult<T> = {
 export type SemesterFilters = {
   semesterCode?: string;
   name?: string;
+  search?: string;
 };
 
 export type DefenseFilters = {
@@ -369,6 +390,7 @@ export type DefenseFilters = {
   semesterId?: number;
   type?: DefenseType;
   maxCouncilsPerDay?: number;
+  search?: string;
 };
 
 export type CouncilBoardFilters = {
@@ -377,6 +399,7 @@ export type CouncilBoardFilters = {
   defenseId?: number;
   boardCode?: string;
   name?: string;
+  search?: string;
 };
 
 export type CouncilBoardSort = {
@@ -388,6 +411,14 @@ export type LecturerFilters = {
   lecturerCode?: string;
   fullName?: string;
   email?: string;
+  search?: string;
+};
+
+export type LecturerFilterQuery = {
+  lecturerCode?: string | string[];
+  fullName?: string | string[];
+  email?: string | string[];
+  search?: string | string[];
 };
 
 // ============================================================================

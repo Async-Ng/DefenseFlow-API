@@ -43,6 +43,18 @@ export const createDefense = async (data: CreateDefenseInput): Promise<any> => {
     throw new Error(`Semester with ID ${data.semesterId} not found`);
   }
 
+  // Check if a Main defense already exists for this semester
+  if (data.type === "Main") {
+    const existingMain = await defenseRepository.findMainBySemesterId(
+      data.semesterId,
+    );
+    if (existingMain) {
+      throw new Error(
+        `Semester already has a Main defense ('${existingMain.defenseCode}')`,
+      );
+    }
+  }
+
   // Validate defense days if provided
   if (data.defenseDays && data.defenseDays.length > 0) {
     // Validate each defense day has required fields
@@ -127,6 +139,18 @@ export const updateDefense = async (
     const duplicate = await defenseRepository.findByCode(data.defenseCode);
     if (duplicate) {
       throw new Error(`Defense with code '${data.defenseCode}' already exists`);
+    }
+  }
+
+  // If updating to Main, check if another Main defense exists for this semester
+  if (data.type === "Main") {
+    const existingMain = await defenseRepository.findMainBySemesterId(
+      existing.semesterId,
+    );
+    if (existingMain && existingMain.id !== id) {
+      throw new Error(
+        `Semester already has another Main defense ('${existingMain.defenseCode}')`,
+      );
     }
   }
 

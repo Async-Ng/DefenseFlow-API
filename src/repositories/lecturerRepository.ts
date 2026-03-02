@@ -44,6 +44,15 @@ export const findAll = async (
   const skip = (page - 1) * limit;
   const where: Prisma.LecturerWhereInput = {};
 
+  // Apply search
+  if (filters.search) {
+    where.OR = [
+      { lecturerCode: { contains: filters.search, mode: "insensitive" } },
+      { fullName: { contains: filters.search, mode: "insensitive" } },
+      { email: { contains: filters.search, mode: "insensitive" } },
+    ];
+  }
+
   // Apply filters
   if (filters.lecturerCode) {
     where.lecturerCode = {

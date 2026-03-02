@@ -1,8 +1,8 @@
 import { Request, Response } from "express";
 import * as lecturerService from "../services/lecturerService.js";
-import { successResponse, errorResponse, notFoundResponse, validationErrorResponse, createdResponse } from "../utils/apiResponse.js";
+import { successResponse, errorResponse, notFoundResponse, validationErrorResponse, createdResponse, paginatedResponse } from "../utils/apiResponse.js";
 import { getErrorMessage } from "../utils/typeGuards.js";
-import { getIdParam } from "../utils/requestHelpers.js";
+import { getIdParam, getPaginationParams, getLecturerFilters } from "../utils/requestHelpers.js";
 import type {
   IdParam,
   PaginationQuery,
@@ -11,12 +11,7 @@ import type {
   UpdateLecturerInput,
 } from "../types/index.js";
 
-// Define filter query type
-type LecturerFilterQuery = {
-  lecturerCode?: string | string[];
-  fullName?: string | string[];
-  email?: string | string[];
-};
+// Redundant LecturerFilterQuery removed
 
 /**
  * @swagger
@@ -275,38 +270,22 @@ export const deleteLecturer = async (req: Request, res: Response): Promise<Respo
  *               $ref: '#/components/schemas/ErrorResponse'
  */
 export const getAllLecturers = async (
-  req: Request<{}, {}, {}, PaginationQuery & LecturerFilterQuery>,
+  req: Request,
   res: Response,
 ): Promise<Response> => {
   try {
-    const page = parseInt(req.query.page as string) || 1;
-    const limit = parseInt(req.query.limit as string) || 10;
-
-    const filters = {
-      lecturerCode: req.query.lecturerCode as string | undefined,
-      fullName: req.query.fullName as string | undefined,
-      email: req.query.email as string | undefined,
-    };
+    const { page, limit } = getPaginationParams(req);
+    const filters = getLecturerFilters(req);
 
     const result = await lecturerService.getAllLecturers(page, limit, filters);
 
-    const totalPages = Math.ceil(result.total / result.limit);
-
-    return successResponse(
+    return paginatedResponse(
       res,
       result.data,
+      page,
+      limit,
+      result.total,
       "Lecturers retrieved successfully",
-      200,
-      {
-        pagination: {
-          currentPage: result.page,
-          pageSize: result.limit,
-          totalItems: result.total,
-          totalPages,
-          hasNextPage: result.page < totalPages,
-          hasPreviousPage: result.page > 1,
-        },
-      },
     );
   } catch (error: unknown) {
     const message = getErrorMessage(error);

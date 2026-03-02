@@ -3,6 +3,7 @@ import type {
   CreateTopicTypeInput,
   UpdateTopicTypeInput,
   PaginatedResult,
+  TopicTypeFilters,
 } from "../types/index.js";
 import type { TopicTypeWithQualifications } from "../repositories/topicTypeRepository.js";
 
@@ -18,7 +19,7 @@ export const createTopicType = async (
 
 export const getAllTopicTypes = async (
   pagination: { page: number; limit: number },
-  filters: { name?: string } = {},
+  filters: TopicTypeFilters = {},
 ): Promise<PaginatedResult<TopicTypeWithQualifications>> => {
   return await topicTypeRepository.findAll(pagination.page, pagination.limit, filters);
 };

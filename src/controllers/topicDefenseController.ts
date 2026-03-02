@@ -8,8 +8,8 @@ import {
   createdResponse,
 } from "../utils/apiResponse.js";
 import { getErrorMessage } from "../utils/typeGuards.js";
-import { getIdParam } from "../utils/requestHelpers.js";
-import { CreateTopicDefenseInput, TopicDefenseFilters } from "../types/index.js";
+import { getPaginationParams, getTopicDefenseFilters, getIdParam } from "../utils/requestHelpers.js";
+import { CreateTopicDefenseInput } from "../types/index.js";
 
 /**
  * @swagger
@@ -196,15 +196,8 @@ export const getTopicDefenses = async (
   res: Response,
 ): Promise<Response> => {
   try {
-    const filters: TopicDefenseFilters = {
-      defenseId: req.query.defenseId ? Number(req.query.defenseId) : undefined,
-      topicId: req.query.topicId ? Number(req.query.topicId) : undefined,
-      topicCode: req.query.topicCode ? String(req.query.topicCode) : undefined,
-      finalResult: req.query.finalResult as any,
-    };
-    
-    const page = req.query.page ? Number(req.query.page) : 1;
-    const limit = req.query.limit ? Number(req.query.limit) : 10;
+    const filters = getTopicDefenseFilters(req);
+    const { page, limit } = getPaginationParams(req);
 
     const result = await topicDefenseService.getTopicDefenses(filters, page, limit);
     return successResponse(res, result, "Topic defenses retrieved successfully");

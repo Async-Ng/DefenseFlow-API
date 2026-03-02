@@ -154,11 +154,21 @@ export const findCouncilBoardsByDefense = async (
  * Find all council boards with filters, pagination, and sorting
  */
 export const findAll = async (
-  filters: CouncilBoardFilters,
-  pagination: { skip?: number; take?: number },
+  filters: CouncilBoardFilters = {},
+  page: number = 1,
+  limit: number = 10,
   sort?: CouncilBoardSort,
-): Promise<{ data: CouncilBoard[]; total: number }> => {
+): Promise<{ data: any[]; total: number }> => {
+  const skip = (page - 1) * limit;
   const where: Prisma.CouncilBoardWhereInput = {};
+
+  // Apply search
+  if (filters.search) {
+    where.OR = [
+      { boardCode: { contains: filters.search, mode: "insensitive" } },
+      { name: { contains: filters.search, mode: "insensitive" } },
+    ];
+  }
 
   if (filters.defenseDayId) {
     where.defenseDayId = filters.defenseDayId;
@@ -189,8 +199,8 @@ export const findAll = async (
   const [data, total] = await Promise.all([
     prisma.councilBoard.findMany({
       where,
-      skip: pagination.skip,
-      take: pagination.take,
+      skip,
+      take: limit,
       orderBy,
       include: {
         councilBoardMembers: {

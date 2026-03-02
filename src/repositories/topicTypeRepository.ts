@@ -5,6 +5,7 @@ import type {
   CreateTopicTypeInput,
   UpdateTopicTypeInput,
   PaginatedResult,
+  TopicTypeFilters,
 } from "../types/index.js";
 
 // Shape of a qualification nested inside the junction row
@@ -63,10 +64,14 @@ export const create = async (data: CreateTopicTypeInput): Promise<TopicTypeWithQ
 export const findAll = async (
   page: number = 1,
   limit: number = 10,
-  filters: { name?: string } = {},
+  filters: TopicTypeFilters = {},
 ): Promise<PaginatedResult<TopicTypeWithQualifications>> => {
   const skip = (page - 1) * limit;
   const where: Prisma.TopicTypeWhereInput = {};
+
+  if (filters.search) {
+    where.name = { contains: filters.search, mode: "insensitive" };
+  }
 
   if (filters.name) {
     where.name = { contains: filters.name, mode: "insensitive" };
