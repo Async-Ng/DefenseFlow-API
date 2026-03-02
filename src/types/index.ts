@@ -215,6 +215,7 @@ export type TopicFilters = {
 export type CreateQualificationInput = {
   qualificationCode: string;
   name: string;
+  isCommon?: boolean;
   description?: string;
 };
 
