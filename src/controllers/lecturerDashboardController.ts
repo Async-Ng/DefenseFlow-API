@@ -1,4 +1,4 @@
-import { Request, Response } from "express";
+;import { Request, Response } from "express";
 import * as lecturerService from "../services/lecturerService.js";
 import { successResponse, errorResponse, notFoundResponse } from "../utils/apiResponse.js";
 import { getErrorMessage } from "../utils/typeGuards.js";
