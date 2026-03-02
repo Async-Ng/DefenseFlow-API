@@ -16,6 +16,7 @@ export const create = async (data: CreateQualificationInput): Promise<Qualificat
     data: {
       qualificationCode: data.qualificationCode,
       name: data.name,
+      isCommon: data.isCommon ?? false,
     },
   });
 };
@@ -89,6 +90,7 @@ export const update = async (
 
   if (data.qualificationCode !== undefined) updateData.qualificationCode = data.qualificationCode;
   if (data.name !== undefined) updateData.name = data.name;
+  if (data.isCommon !== undefined) updateData.isCommon = data.isCommon;
 
   return await prisma.qualification.update({
     where: { id },
