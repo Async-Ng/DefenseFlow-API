@@ -953,6 +953,17 @@ const options: swaggerJsdoc.Options = {
             },
           },
         },
+        LecturerSimpleListResponse: {
+          type: "object",
+          properties: {
+            success: { type: "boolean", example: true },
+            message: { type: "string", example: "Lecturers retrieved successfully" },
+            data: {
+              type: "array",
+              items: { $ref: "#/components/schemas/Lecturer" },
+            },
+          },
+        },
         QualificationResponse: {
           type: "object",
           properties: {
@@ -1054,6 +1065,76 @@ const options: swaggerJsdoc.Options = {
                     },
                   },
                 ],
+              },
+            },
+          },
+        },
+        ScheduleResponse: {
+          type: "object",
+          properties: {
+            success: { type: "boolean", example: true },
+            message: { type: "string", example: "Schedule retrieved successfully" },
+            data: {
+              type: "object",
+              properties: {
+                data: {
+                  type: "array",
+                  items: { $ref: "#/components/schemas/CouncilBoard" },
+                },
+                total: { type: "integer", example: 10 },
+                page: { type: "integer", example: 1 },
+                limit: { type: "integer", example: 10 },
+              },
+            },
+          },
+        },
+        CouncilBoardResponse: {
+          type: "object",
+          properties: {
+            success: { type: "boolean", example: true },
+            message: { type: "string", example: "Council board retrieved successfully" },
+            data: { $ref: "#/components/schemas/CouncilBoard" },
+          },
+        },
+        DefenseCouncilResponse: {
+          type: "object",
+          properties: {
+            success: { type: "boolean", example: true },
+            message: { type: "string", example: "Defense council retrieved successfully" },
+            data: { $ref: "#/components/schemas/DefenseCouncil" },
+          },
+        },
+        LecturerDefenseConfigResponse: {
+          type: "object",
+          properties: {
+            success: { type: "boolean", example: true },
+            message: { type: "string", example: "Configuration retrieved successfully" },
+            data: { $ref: "#/components/schemas/LecturerDefenseConfig" },
+          },
+        },
+        LecturerDefenseConfigListResponse: {
+          type: "object",
+          properties: {
+            success: { type: "boolean", example: true },
+            message: { type: "string", example: "Configurations retrieved successfully" },
+            data: {
+              type: "array",
+              items: { $ref: "#/components/schemas/LecturerDefenseConfig" },
+            },
+            meta: {
+              type: "object",
+              properties: {
+                pagination: {
+                  type: "object",
+                  properties: {
+                    currentPage: { type: "integer", example: 1 },
+                    pageSize: { type: "integer", example: 10 },
+                    totalItems: { type: "integer", example: 50 },
+                    totalPages: { type: "integer", example: 5 },
+                    hasNextPage: { type: "boolean", example: true },
+                    hasPreviousPage: { type: "boolean", example: false },
+                  },
+                },
               },
             },
           },
