@@ -698,7 +698,7 @@ export const publishSchedule = async (defenseId: number) =>
 
 export const updateDefenseCouncil = async (
   defenseCouncilId: number,
-  data: { startTime?: Date; endTime?: Date; councilBoardId?: number }
+  data: { startTime?: Date; endTime?: Date; councilBoardId?: number | null }
 ) => {
   const dc = await prisma.defenseCouncil.findUnique({ where: { id: defenseCouncilId } });
   if (!dc) throw new AppError(404, "Defense Council not found");
@@ -716,7 +716,7 @@ export const updateDefenseCouncil = async (
 
 export const updateCouncilBoard = async (
   councilBoardId: number,
-  data: { presidentId?: number; secretaryId?: number; memberIds?: number[] }
+  data: { presidentId?: number | null; secretaryId?: number | null; memberIds?: number[] }
 ) => {
   const { presidentId, secretaryId, memberIds } = data;
 

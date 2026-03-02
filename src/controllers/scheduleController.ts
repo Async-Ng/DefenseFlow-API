@@ -401,7 +401,7 @@ export const updateDefenseCouncil = async (
     const schema = z.object({
       startTime: z.string().datetime().optional(),
       endTime: z.string().datetime().optional(),
-      councilBoardId: z.number().int().optional(),
+      councilBoardId: z.number().int().nullable().optional(),
     });
 
     const validation = schema.safeParse(req.body);
@@ -485,8 +485,8 @@ export const updateCouncilBoard = async (
     if (isNaN(councilBoardId)) throw new AppError(400, "Invalid council board ID");
 
     const schema = z.object({
-      presidentId: z.number().int().optional(),
-      secretaryId: z.number().int().optional(),
+      presidentId: z.number().int().nullable().optional(),
+      secretaryId: z.number().int().nullable().optional(),
       memberIds: z.array(z.number().int()).optional(),
     });
 

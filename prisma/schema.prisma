@@ -134,10 +134,10 @@ model DefenseCouncil {
   id                 Int          @id @default(autoincrement())
   defenseCouncilCode String       @unique @map("defense_council_code") @db.VarChar(50)
   registrationId     Int          @map("registration_id")
-  councilBoardId     Int          @map("council_board_id")
+  councilBoardId     Int?         @map("council_board_id")
   startTime          DateTime?    @map("start_time") @db.Time(6)
   endTime            DateTime?    @map("end_time") @db.Time(6)
-  councilBoard       CouncilBoard @relation(fields: [councilBoardId], references: [id])
+  councilBoard       CouncilBoard? @relation(fields: [councilBoardId], references: [id])
   topicDefense       TopicDefense @relation(fields: [registrationId], references: [id])
 
   @@map("Defense_Councils")
