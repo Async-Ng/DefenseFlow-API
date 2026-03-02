@@ -53,9 +53,14 @@ export const getTopicDefenses = async (
   limit: number = 10
 ) => {
   const { data, total } = await topicDefenseRepository.findAndCountAll(filters, page, limit);
+  
+  const mappedData = data.map(record => ({
+    ...record,
+    isScheduled: (record as any).defenseCouncils?.length > 0
+  }));
 
   return {
-    data,
+    data: mappedData,
     total,
     page,
     limit,

@@ -283,6 +283,7 @@ export type TopicDefenseFilterQuery = {
   topicId?: string | string[];
   topicCode?: string | string[];
   finalResult?: string | string[];
+  isScheduled?: string | string[];
   search?: string | string[];
 };
 
@@ -291,6 +292,7 @@ export type TopicDefenseFilters = {
   topicId?: number;
   topicCode?: string;
   finalResult?: DefenseResult;
+  isScheduled?: boolean;
   search?: string;
 };
 

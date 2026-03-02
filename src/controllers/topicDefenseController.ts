@@ -115,6 +115,11 @@ export const createTopicDefense = async (
  *           type: string
  *           enum: [Pending, Passed, Failed]
  *       - in: query
+ *         name: isScheduled
+ *         schema:
+ *           type: boolean
+ *         description: Filter by scheduling status
+ *       - in: query
  *         name: page
  *         schema:
  *           type: integer
@@ -176,6 +181,9 @@ export const createTopicDefense = async (
  *                           finalResult:
  *                             type: string
  *                             example: "Pending"
+ *                           isScheduled:
+ *                             type: boolean
+ *                             example: false
  *                     total:
  *                       type: integer
  *                       example: 50

@@ -220,6 +220,7 @@ export const getTopicDefenseFilters = (req: Request): TopicDefenseFilters => {
     topicId: isString(req.query.topicId) ? parseInt(req.query.topicId, 10) : undefined,
     topicCode: isString(req.query.topicCode) ? req.query.topicCode : undefined,
     finalResult: req.query.finalResult as any,
+    isScheduled: req.query.isScheduled === "true" ? true : req.query.isScheduled === "false" ? false : undefined,
     search: isString(req.query.search) ? req.query.search : undefined,
   };
 };
