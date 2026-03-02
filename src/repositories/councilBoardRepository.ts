@@ -253,3 +253,51 @@ export const findAll = async (
   return { data, total };
 };
 
+/**
+ * Find a council board by ID with all related data
+ */
+export const findById = async (id: number): Promise<CouncilBoard | null> => {
+  return await prisma.councilBoard.findUnique({
+    where: { id },
+    include: {
+      defenseDay: {
+        include: {
+          defense: true,
+        },
+      },
+      semester: true,
+      councilBoardMembers: {
+        include: {
+          lecturer: {
+            include: {
+              lecturerQualifications: {
+                include: {
+                  qualification: true,
+                },
+              },
+            },
+          },
+        },
+      },
+      defenseCouncils: {
+        orderBy: { startTime: "asc" },
+        include: {
+          topicDefense: {
+            include: {
+              topic: {
+                include: {
+                  topicSupervisors: {
+                    include: {
+                      lecturer: true,
+                    },
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
+    },
+  });
+};
+

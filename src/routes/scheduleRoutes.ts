@@ -62,6 +62,15 @@ router.put("/council-boards/:councilBoardId", scheduleController.updateCouncilBo
 
 /**
  * @swagger
+ * /api/schedule/council-boards/{id}:
+ *   get:
+ *     summary: Get council board details by ID
+ *     tags: [Schedule]
+ */
+router.get("/council-boards/:id", scheduleController.getCouncilBoardById);
+
+/**
+ * @swagger
  * /api/schedule/{defenseId}:
  *   get:
  *     summary: Get generated schedule for a defense

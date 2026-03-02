@@ -682,6 +682,14 @@ export const getSchedule = async (
   };
 };
 
+export const getCouncilBoardById = async (id: number): Promise<CouncilBoard> => {
+  const board = await councilBoardRepository.findById(id);
+  if (!board) {
+    throw new AppError(404, "Council Board not found");
+  }
+  return board;
+};
+
 export const publishSchedule = async (defenseId: number) =>
   prisma.defense.update({
     where: { id: defenseId },

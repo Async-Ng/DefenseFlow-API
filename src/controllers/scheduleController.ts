@@ -210,6 +210,59 @@ export const getSchedule = async (
 
 /**
  * @swagger
+ * /api/schedule/council-boards/{id}:
+ *   get:
+ *     summary: "[ADMIN, LECTURER] Get council board details by ID"
+ *     tags: [Schedule]
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: integer
+ *         description: Council Board ID
+ *     responses:
+ *       200:
+ *         description: Council board details retrieved successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/CouncilBoardResponse'
+ *       404:
+ *         description: Council board not found
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ *       500:
+ *         description: Server error
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ */
+export const getCouncilBoardById = async (
+  req: Request,
+  res: Response,
+  next: NextFunction,
+) => {
+  try {
+    const id = parseInt(req.params.id as string);
+
+    if (isNaN(id)) {
+      throw new AppError(400, "Invalid council board ID");
+    }
+
+    const result = await scheduleService.getCouncilBoardById(id);
+
+    return successResponse(res, result, "Council board details retrieved successfully");
+  } catch (error) {
+    return next(error);
+  }
+};
+
+/**
+ * @swagger
  * /api/schedule/publish:
  *   post:
  *     summary: "[ADMIN] Publish the schedule for a defense (making it visible to lecturers)"
