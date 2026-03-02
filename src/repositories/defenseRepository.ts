@@ -86,7 +86,7 @@ export const findAll = async (
   page: number = 1,
   limit: number = 10,
   filters: DefenseFilters = {},
-  include: IncludeOptions = {},
+  _include: IncludeOptions = {},
 ): Promise<PaginatedResult<any>> => {
   const skip = (page - 1) * limit;
   const where: Prisma.DefenseWhereInput = {};
@@ -109,14 +109,10 @@ export const findAll = async (
   const includeOptions: Prisma.DefenseInclude = {
     semester: true,
     defenseDays: {
-      orderBy: { defenseDayCode: "asc" },
+      orderBy: { dayDate: "asc" },
     },
   };
 
-  if (include.defenseDays) {
-    // Already included by default, but keeping for compatibility or specific options if expanded later
-    includeOptions.defenseDays = true; 
-  }
 
   const [data, total] = await Promise.all([
     prisma.defense.findMany({
@@ -124,8 +120,8 @@ export const findAll = async (
       skip,
       take: limit,
       orderBy: [
-        { type: "asc" },
-        { workStartTime: "desc" },
+        { semesterId: "desc" },
+        { id: "desc" },
       ],
       include: includeOptions,
     }),
@@ -168,6 +164,20 @@ export const findByCode = async (defenseCode: string): Promise<any | null> => {
   return await prisma.defense.findUnique({
     where: { defenseCode },
     include: { semester: true },
+  });
+};
+
+/**
+ * Find "Main" defense for a specific semester
+ */
+export const findMainBySemesterId = async (
+  semesterId: number,
+): Promise<any | null> => {
+  return await prisma.defense.findFirst({
+    where: {
+      semesterId,
+      type: "Main",
+    },
   });
 };
 
