@@ -667,10 +667,10 @@ export const getSchedule = async (
   pagination: { page: number; limit: number },
   sort?: CouncilBoardSort,
 ): Promise<PaginatedResult<CouncilBoard>> => {
-  const skip = (pagination.page - 1) * pagination.limit;
   const { data, total } = await councilBoardRepository.findAll(
     filters,
-    { skip, take: pagination.limit },
+    pagination.page,
+    pagination.limit,
     sort,
   );
 

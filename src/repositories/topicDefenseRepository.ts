@@ -51,6 +51,15 @@ export const findAndCountAll = async (
     ...(filters.finalResult && { finalResult: filters.finalResult }),
   };
 
+  // Apply search
+  if (filters.search) {
+    whereClause.OR = [
+      { topicDefenseCode: { contains: filters.search, mode: "insensitive" } },
+      { topic: { is: { topicCode: { contains: filters.search, mode: "insensitive" } } } },
+      { topic: { is: { title: { contains: filters.search, mode: "insensitive" } } } },
+    ];
+  }
+
   // If topicCode search is provided, map it through the relation
   if (filters.topicCode) {
     whereClause.topic = {

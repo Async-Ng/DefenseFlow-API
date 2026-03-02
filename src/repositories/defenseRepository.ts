@@ -91,6 +91,14 @@ export const findAll = async (
   const skip = (page - 1) * limit;
   const where: Prisma.DefenseWhereInput = {};
 
+  // Apply search
+  if (filters.search) {
+    where.OR = [
+      { defenseCode: { contains: filters.search, mode: "insensitive" } },
+      { name: { contains: filters.search, mode: "insensitive" } },
+    ];
+  }
+
   // Apply filters
   if (filters.defenseCode) {
     where.defenseCode = { contains: filters.defenseCode };
