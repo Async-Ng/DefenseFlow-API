@@ -67,8 +67,6 @@ router.put("/defense-councils/:defenseCouncilId", scheduleController.updateDefen
  *             required:
  *               - registrationId
  *               - councilBoardId
- *               - startTime
- *               - endTime
  *             properties:
  *               registrationId:
  *                 type: integer

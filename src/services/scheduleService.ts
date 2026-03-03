@@ -129,6 +129,18 @@ const coversAllCommonQualifications = (
   return commonQualifications.every(q => groupQualIds.has(q.id));
 };
 
+/**
+ * C6 — A lecturer must not be a supervisor for any of the topics in the board.
+ */
+const isNotSupervisorForAnyTopic = (
+  lecturerId: number,
+  topicChunk: FullTopic[]
+): boolean => {
+  return !topicChunk.some(topic =>
+    topic.topicSupervisors.some(ts => ts.lecturerId === lecturerId)
+  );
+};
+
 // =============================================================================
 // SCORING
 // =============================================================================
@@ -176,12 +188,14 @@ const logPartialCoverage = (
 const getEligibleCandidates = (
   lecturers: FullLecturer[],
   defenseDayId: number,
-  state: SchedulingState
+  state: SchedulingState,
+  topicChunk: FullTopic[] = []
 ): FullLecturer[] =>
   lecturers.filter(l =>
     isNotAlreadyAssignedOnDay(l.id, defenseDayId, state) &&
     isUnderTopicLimit(l.id, state) &&
-    isAvailableOnDay(l, defenseDayId)
+    isAvailableOnDay(l, defenseDayId) &&
+    isNotSupervisorForAnyTopic(l.id, topicChunk)
   );
 
 // =============================================================================
@@ -294,8 +308,8 @@ const getPendingTopics = (
   topics.filter(t => !scheduledIds.has(t.id) && !deferred.some(d => d.id === t.id));
 
 const minutesToDate = (totalMinutes: number): Date => {
-  const d = new Date();
-  d.setHours(Math.floor(totalMinutes / 60), totalMinutes % 60, 0, 0);
+  const d = new Date(0);
+  d.setUTCHours(Math.floor(totalMinutes / 60), totalMinutes % 60, 0, 0);
   return d;
 };
 
@@ -438,7 +452,7 @@ const runScheduler = (ctx: SchedulingContext): { boards: PlannedBoard[]; unsched
       
       const topicChunk = similarTopics.slice(0, topicsPerBoard);
       
-      const candidates = getEligibleCandidates(lecturers, day.id, state);
+      const candidates = getEligibleCandidates(lecturers, day.id, state, topicChunk);
       const result = tryScheduleStrict(topicChunk, candidates, commonQualifications, commonQualificationIds, day.id);
 
       if (result === "insufficient_candidates") { pass1Running = false; }
@@ -469,7 +483,7 @@ const runScheduler = (ctx: SchedulingContext): { boards: PlannedBoard[]; unsched
         const similarTopics = pendingDeferred.filter(t => t.topicTypeId === firstTopicType);
         const topicChunk = similarTopics.slice(0, topicsPerBoard);
 
-        const candidates = getEligibleCandidates(lecturers, day.id, state);
+        const candidates = getEligibleCandidates(lecturers, day.id, state, topicChunk);
         const board = tryScheduleBestEffort(topicChunk, candidates, commonQualifications, commonQualificationIds, day.id);
         
         if (!board) break; // If we can't form a board even with best effort, give up for this day.
@@ -571,23 +585,60 @@ const persistSchedule = async (defenseId: number, boards: PlannedBoard[]): Promi
 
   await prisma.$transaction(async (tx) => {
     // Clear old schedule
-    const oldBoards = await tx.councilBoard.findMany({ where: { defenseDay: { defenseId } } });
+    const oldBoards = await tx.councilBoard.findMany({
+      where: { defenseDay: { defenseId: defenseId } },
+      select: { id: true }
+    });
     const oldBoardIds = oldBoards.map(b => b.id);
 
-    await tx.defenseCouncil.deleteMany({ where: { councilBoardId: { in: oldBoardIds } } });
-    await tx.councilBoardMember.deleteMany({ where: { councilBoardId: { in: oldBoardIds } } });
-    await tx.councilBoard.deleteMany({ where: { defenseDay: { defenseId } } });
+    // 1. Delete by boardCode prefix to handle orphaned data or overlapped codes
+    const boardCodePrefix = `HD-${defense.defenseCode}-`;
+    await tx.councilBoardMember.deleteMany({
+      where: { councilBoard: { boardCode: { startsWith: boardCodePrefix } } }
+    });
+    await tx.defenseCouncil.deleteMany({
+      where: { councilBoard: { boardCode: { startsWith: boardCodePrefix } } }
+    });
+    await tx.councilBoard.deleteMany({
+      where: { boardCode: { startsWith: boardCodePrefix } }
+    });
+
+    // 2. Delete slots associated with these boards OR with topics in this defense
+    await tx.defenseCouncil.deleteMany({
+      where: {
+        OR: [
+          { councilBoardId: { in: oldBoardIds } },
+          { topicDefense: { defenseId: defenseId } }
+        ]
+      }
+    });
+
+    // 2. Delete board members
+    await tx.councilBoardMember.deleteMany({
+      where: { councilBoardId: { in: oldBoardIds } }
+    });
+
+    // 3. Delete the boards
+    await tx.councilBoard.deleteMany({
+      where: { id: { in: oldBoardIds } }
+    });
 
     try {
+
       // Insert new schedule
+      let globalBoardIndex = 1;
       for (const planned of boards) {
-        // 1. Create the board
+        // 1. Create the board - use FPT sequence logic (e.g. HD-SP25_MAIN-01)
+        const boardSeq = String(globalBoardIndex).padStart(2, '0');
+        const boardCode = `HD-${defense.defenseCode}-${boardSeq}`;
+        globalBoardIndex++;
+
         const board = await tx.councilBoard.create({
           data: {
-            boardCode: `CB-${defenseId}-${planned.defenseDayId}-${Date.now()}-${Math.floor(Math.random() * 1000)}`,
+            boardCode: boardCode,
             defenseDayId: planned.defenseDayId,
             semesterId: planned.topics[0]?.semesterId ?? defense.semesterId,
-            name: "Defense Council Board",
+            name: `Hội đồng ${boardSeq}`,
           },
         });
 
@@ -614,8 +665,11 @@ const persistSchedule = async (defenseId: number, boards: PlannedBoard[]): Promi
             continue;
           }
 
+          // Use the Board Code + Group Code (Topic Code) for the defense council slot
+          const dcCode = `${boardCode}-${topic.topicCode || topic.id}`;
+
           councilsToCreate.push({
-            defenseCouncilCode: `DC-${defenseId}-${topic.topicCode}-${Date.now()}-${Math.floor(Math.random() * 1000)}`,
+            defenseCouncilCode: dcCode,
             registrationId: registration.id,
             councilBoardId: board.id,
             startTime: minutesToDate(topicCursor),
@@ -845,9 +899,46 @@ export const deleteDefenseCouncil = async (id: number) => {
 export const createDefenseCouncil = async (data: {
   registrationId: number;
   councilBoardId: number;
-  startTime: Date;
-  endTime: Date;
+  startTime?: Date;
+  endTime?: Date;
 }) => {
+  let { startTime, endTime } = data;
+
+  if (!startTime || !endTime) {
+    const board = await prisma.councilBoard.findUnique({
+      where: { id: data.councilBoardId },
+      include: {
+        defenseDay: {
+          include: { defense: true },
+        },
+        defenseCouncils: {
+          orderBy: { endTime: "desc" },
+          take: 1,
+        },
+      },
+    });
+
+    if (!board) throw new AppError(404, "Council board not found");
+    const defense = board.defenseDay?.defense;
+    if (!defense) throw new AppError(404, "Defense configuration not found");
+
+    const timePerTopic = defense.timePerTopic ?? 45;
+
+    if (!startTime) {
+      if (board.defenseCouncils.length > 0 && board.defenseCouncils[0].endTime) {
+        startTime = board.defenseCouncils[0].endTime;
+      } else {
+        const [startH, startM] = (defense.workStartTime ?? "07:30").split(":").map(Number);
+        startTime = minutesToDate(startH * 60 + startM);
+      }
+    }
+
+    if (!endTime) {
+      const startMinutes = startTime.getHours() * 60 + startTime.getMinutes();
+      endTime = minutesToDate(startMinutes + timePerTopic);
+    }
+  }
+
   const code = `DC-${data.registrationId}-${data.councilBoardId}-${Date.now().toString(36).toUpperCase()}`;
 
   return prisma.defenseCouncil.create({
@@ -855,8 +946,8 @@ export const createDefenseCouncil = async (data: {
       defenseCouncilCode: code,
       registrationId: data.registrationId,
       councilBoardId: data.councilBoardId,
-      startTime: data.startTime,
-      endTime: data.endTime,
+      startTime: startTime,
+      endTime: endTime,
     },
   });
 };

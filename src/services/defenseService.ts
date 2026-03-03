@@ -215,19 +215,6 @@ export const deleteDefense = async (id: number): Promise<Defense> => {
     throw new Error(`Defense with ID ${id} not found`);
   }
 
-  // Check for dependencies
-  const dependencies = await defenseRepository.checkDependencies(id);
-  if (dependencies.hasCouncilBoards) {
-    throw new Error(
-      "Cannot delete defense with associated council boards. Please delete council boards first.",
-    );
-  }
-  if (dependencies.hasRegistrations) {
-    throw new Error(
-      "Cannot delete defense with topic registrations. Please remove registrations first.",
-    );
-  }
-
-  // Delete defense
+  // Delete defense (cascading handled in repository transaction)
   return await defenseRepository.deleteDefense(id);
 };
