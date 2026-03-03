@@ -280,9 +280,10 @@ export const deleteDefense = async (id: number): Promise<Defense> => {
     // 1. Delete DefenseCouncil (slots) linked to this defense
     await tx.defenseCouncil.deleteMany({
       where: {
-        topicDefense: {
-          defenseId: id,
-        },
+        OR: [
+          { topicDefense: { defenseId: id } },
+          { councilBoard: { defenseDay: { defenseId: id } } }
+        ]
       },
     });
 
