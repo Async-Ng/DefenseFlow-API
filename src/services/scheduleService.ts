@@ -845,9 +845,46 @@ export const deleteDefenseCouncil = async (id: number) => {
 export const createDefenseCouncil = async (data: {
   registrationId: number;
   councilBoardId: number;
-  startTime: Date;
-  endTime: Date;
+  startTime?: Date;
+  endTime?: Date;
 }) => {
+  let { startTime, endTime } = data;
+
+  if (!startTime || !endTime) {
+    const board = await prisma.councilBoard.findUnique({
+      where: { id: data.councilBoardId },
+      include: {
+        defenseDay: {
+          include: { defense: true },
+        },
+        defenseCouncils: {
+          orderBy: { endTime: "desc" },
+          take: 1,
+        },
+      },
+    });
+
+    if (!board) throw new AppError(404, "Council board not found");
+    const defense = board.defenseDay?.defense;
+    if (!defense) throw new AppError(404, "Defense configuration not found");
+
+    const timePerTopic = defense.timePerTopic ?? 45;
+
+    if (!startTime) {
+      if (board.defenseCouncils.length > 0 && board.defenseCouncils[0].endTime) {
+        startTime = board.defenseCouncils[0].endTime;
+      } else {
+        const [startH, startM] = (defense.workStartTime ?? "07:30").split(":").map(Number);
+        startTime = minutesToDate(startH * 60 + startM);
+      }
+    }
+
+    if (!endTime) {
+      const startMinutes = startTime.getHours() * 60 + startTime.getMinutes();
+      endTime = minutesToDate(startMinutes + timePerTopic);
+    }
+  }
+
   const code = `DC-${data.registrationId}-${data.councilBoardId}-${Date.now().toString(36).toUpperCase()}`;
 
   return prisma.defenseCouncil.create({
@@ -855,8 +892,8 @@ export const createDefenseCouncil = async (data: {
       defenseCouncilCode: code,
       registrationId: data.registrationId,
       councilBoardId: data.councilBoardId,
-      startTime: data.startTime,
-      endTime: data.endTime,
+      startTime: startTime,
+      endTime: endTime,
     },
   });
 };

@@ -572,8 +572,8 @@ export const createDefenseCouncil = async (
     const schema = z.object({
       registrationId: z.number(),
       councilBoardId: z.number(),
-      startTime: z.string().transform((v) => new Date(v)),
-      endTime: z.string().transform((v) => new Date(v)),
+      startTime: z.string().transform((v) => new Date(v)).optional(),
+      endTime: z.string().transform((v) => new Date(v)).optional(),
     });
 
     const validated = schema.parse(req.body);

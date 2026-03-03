@@ -276,14 +276,61 @@ export const update = async (
  * Delete defense
  */
 export const deleteDefense = async (id: number): Promise<Defense> => {
-  // Delete in transaction to handle defense days
   return await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
-    // Delete defense days first
+    // 1. Delete DefenseCouncil (slots) linked to this defense
+    await tx.defenseCouncil.deleteMany({
+      where: {
+        topicDefense: {
+          defenseId: id,
+        },
+      },
+    });
+
+    // 2. Delete CouncilBoardMember assignments
+    await tx.councilBoardMember.deleteMany({
+      where: {
+        councilBoard: {
+          defenseDay: {
+            defenseId: id,
+          },
+        },
+      },
+    });
+
+    // 3. Delete CouncilBoard records
+    await tx.councilBoard.deleteMany({
+      where: {
+        defenseDay: {
+          defenseId: id,
+        },
+      },
+    });
+
+    // 4. Delete LecturerDayAvailability
+    await tx.lecturerDayAvailability.deleteMany({
+      where: {
+        defenseDay: {
+          defenseId: id,
+        },
+      },
+    });
+
+    // 5. Delete DefenseDay records
     await tx.defenseDay.deleteMany({
       where: { defenseId: id },
     });
 
-    // Delete defense
+    // 6. Delete LecturerDefenseConfig
+    await tx.lecturerDefenseConfig.deleteMany({
+      where: { defenseId: id },
+    });
+
+    // 7. Delete TopicDefense (registrations)
+    await tx.topicDefense.deleteMany({
+      where: { defenseId: id },
+    });
+
+    // 8. Finally, delete the Defense itself
     return await tx.defense.delete({
       where: { id },
     });
