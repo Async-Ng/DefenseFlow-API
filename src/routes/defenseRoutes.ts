@@ -6,6 +6,7 @@ import {
   updateDefense,
   deleteDefense,
   publishAvailability,
+  importFailedTopics,
 } from "../controllers/defenseController.js";
 import * as defenseDayController from "../controllers/defenseDayController.js";
 import { requireRole } from "../middleware/auth.js";
@@ -29,6 +30,9 @@ router.delete("/:id", requireRole("admin"), deleteDefense);
 
 // Publish availability — Admin only
 router.post("/:id/publish-availability", requireRole("admin"), publishAvailability);
+
+// Import failed topics from Main to Resit — Admin only
+router.post("/:id/import-failed-topics", requireRole("admin"), importFailedTopics);
 
 // Defense Day endpoints — Admin only
 router.patch("/:defenseId/days/:dayId", requireRole("admin"), defenseDayController.updateDefenseDay);

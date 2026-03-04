@@ -407,3 +407,66 @@ export const publishAvailability = async (
     return errorResponse(res, message, 500);
   }
 };
+
+/**
+ * @swagger
+ * /api/defenses/{id}/import-failed-topics:
+ *   post:
+ *     summary: "[ADMIN] Auto-transfer failed topics from the Main defense into a Resit defense"
+ *     tags: [Defenses]
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: integer
+ *         description: Resit Defense ID
+ *     responses:
+ *       200:
+ *         description: Topics imported successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ApiResponse'
+ *       400:
+ *         description: Bad Request (Target is not a Resit defense, or Main defense not found)
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ValidationErrorResponse'
+ *       404:
+ *         description: Defense not found
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ *       500:
+ *         description: Server error
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ */
+export const importFailedTopics = async (
+  req: Request,
+  res: Response,
+): Promise<Response> => {
+  try {
+    const id = getIdParam(req);
+    const result = await defenseService.importFailedTopics(id);
+    return successResponse(res, result, "Failed topics imported successfully");
+  } catch (error: unknown) {
+    const message = getErrorMessage(error);
+    if (message.includes("not found")) {
+      return notFoundResponse(res, message);
+    }
+    if (
+      message.includes("must be a Resit defense") ||
+      message.includes("does not have") || 
+      message.includes("already imported")
+    ) {
+      return validationErrorResponse(res, { message });
+    }
+    return errorResponse(res, message, 500);
+  }
+};

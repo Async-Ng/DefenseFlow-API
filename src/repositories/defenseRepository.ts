@@ -186,6 +186,7 @@ export const findMainBySemesterId = async (
       semesterId,
       type: "Main",
     },
+    orderBy: { id: "desc" }, // pick the most recently created Main defense
   });
 };
 
