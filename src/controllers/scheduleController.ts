@@ -8,6 +8,7 @@ import {
   getPaginationParams,
   getSortParams,
   getIdParam,
+  getActiveRole,
 } from "../utils/requestHelpers.js";
 import { z } from "zod";
 
@@ -200,9 +201,11 @@ export const getSchedule = async (
     const filters = getCouncilBoardFilters(req);
     filters.defenseId = defenseId; // Path param takes precedence or adds to filters
 
-    // Authorization: If the user is a lecturer (not admin), only show their assigned boards
+    // Authorization: If the active role is lecturer (not admin), only show their assigned boards
     const user = req.user;
-    if (user && !user.app_metadata?.roles?.includes("admin")) {
+    const activeRole = getActiveRole(req);
+    
+    if (user && activeRole !== "admin") {
         const lecturerId = user.app_metadata?.lecturerId;
         if (lecturerId) {
             filters.lecturerId = lecturerId;
@@ -271,9 +274,11 @@ export const getCouncilBoardById = async (
 
     const result = await scheduleService.getCouncilBoardById(id);
 
-    // Authorization: if user is a lecturer (not admin), they can only view boards they are part of
+    // Authorization: if active role is lecturer (not admin), they can only view boards they are part of
     const user = req.user;
-    if (user && !user.app_metadata?.roles?.includes("admin")) {
+    const activeRole = getActiveRole(req);
+    
+    if (user && activeRole !== "admin") {
       const lecturerId = user.app_metadata?.lecturerId;
       const boardMembers = (result as any).councilBoardMembers || [];
       const isMember = boardMembers.some(

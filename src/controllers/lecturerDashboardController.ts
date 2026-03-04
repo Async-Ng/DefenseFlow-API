@@ -2,7 +2,7 @@
 import * as lecturerService from "../services/lecturerService.js";
 import { successResponse, errorResponse, notFoundResponse } from "../utils/apiResponse.js";
 import { getErrorMessage } from "../utils/typeGuards.js";
-import { getIdParam } from "../utils/requestHelpers.js";
+import { getIdParam, getActiveRole } from "../utils/requestHelpers.js";
 
 /**
  * @swagger
@@ -58,7 +58,9 @@ export const getLecturerDashboard = async (req: Request, res: Response): Promise
 
     // Authorization: Lecturers can only access their own dashboard
     const user = req.user;
-    if (user && !user.app_metadata?.roles?.includes("admin")) {
+    const activeRole = getActiveRole(req);
+    
+    if (user && activeRole !== "admin") {
       if (user.app_metadata?.lecturerId !== id) {
         return errorResponse(res, "Forbidden: You can only access your own dashboard", 403);
       }
@@ -114,7 +116,9 @@ export const getSupervisedTopics = async (req: Request, res: Response): Promise<
 
     // Authorization: Lecturers can only access their own supervised topics
     const user = req.user;
-    if (user && !user.app_metadata?.roles?.includes("admin")) {
+    const activeRole = getActiveRole(req);
+    
+    if (user && activeRole !== "admin") {
       if (user.app_metadata?.lecturerId !== id) {
         return errorResponse(res, "Forbidden: You can only access your own supervised topics", 403);
       }
@@ -170,7 +174,9 @@ export const getAssignedCouncilBoards = async (req: Request, res: Response): Pro
 
     // Authorization: Lecturers can only access their own council boards
     const user = req.user;
-    if (user && !user.app_metadata?.roles?.includes("admin")) {
+    const activeRole = getActiveRole(req);
+    
+    if (user && activeRole !== "admin") {
       if (user.app_metadata?.lecturerId !== id) {
         return errorResponse(res, "Forbidden: You can only access your own assigned council boards", 403);
       }

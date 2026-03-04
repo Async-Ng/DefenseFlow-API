@@ -244,3 +244,32 @@ export const getSortParams = (
 
   return { field: sortField, order: sortOrder };
 };
+
+/**
+ * Extracts the active role for the current request.
+ * Allows multi-role users to switch perspectives via the 'X-Active-Role' header.
+ * If the header is missing, it falls back to the highest privilege ('admin' > 'lecturer').
+ * 
+ * @param req - Express request object
+ * @returns The active role string (e.g., 'admin', 'lecturer') or null if undefined.
+ * @throws Error if the provided header role is not held by the user.
+ */
+export const getActiveRole = (req: Request): string | null => {
+  const userRoles: string[] = (req.user?.app_metadata?.roles as string[]) ?? [];
+  const activeRoleHeader = req.headers["x-active-role"] as string | undefined;
+
+  // 1. If header is provided, strictly validate it
+  if (activeRoleHeader) {
+    if (!userRoles.includes(activeRoleHeader)) {
+      throw new Error(`Forbidden: User does not have the requested role '${activeRoleHeader}'`);
+    }
+    return activeRoleHeader;
+  }
+
+  // 2. Fallback logic: Admin > Lecturer
+  if (userRoles.includes("admin")) return "admin";
+  if (userRoles.includes("lecturer")) return "lecturer";
+
+  // 3. Unknown / no roles
+  return userRoles.length > 0 ? userRoles[0] : null;
+};

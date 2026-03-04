@@ -42,10 +42,12 @@ export const authenticate = async (
   next();
 };
 
+import { getActiveRole } from "../utils/requestHelpers.js";
+
 /**
  * requireRole middleware factory
- * Checks if the authenticated user has at least one of the allowed roles.
- * Roles are stored in user.app_metadata.roles as a string array.
+ * Checks if the authenticated user's active role is in the allowed roles list.
+ * The active role is determined by the 'X-Active-Role' header or falls back to 'admin' > 'lecturer'.
  *
  * Usage: router.post("/", authenticate, requireRole("admin"), handler)
  */
@@ -55,16 +57,23 @@ export const requireRole = (...allowedRoles: string[]) => {
     res: Response,
     next: NextFunction,
   ): void | Response => {
-    const userRoles: string[] = (req.user?.app_metadata?.roles as string[]) ?? [];
-    const hasAccess = allowedRoles.some((role) => userRoles.includes(role));
+    try {
+      // Determine the active role (throws if they request an invalid X-Active-Role)
+      const activeRole = getActiveRole(req);
 
-    if (!hasAccess) {
+      if (!activeRole || !allowedRoles.includes(activeRole)) {
+        return res.status(403).json({
+          success: false,
+          message: `Forbidden. Required role(s): ${allowedRoles.join(", ")}. Your active role is '${activeRole}'.`,
+        });
+      }
+
+      next();
+    } catch (error: any) {
       return res.status(403).json({
         success: false,
-        message: `Forbidden. Required role(s): ${allowedRoles.join(", ")}.`,
+        message: error.message || "Forbidden",
       });
     }
-
-    next();
   };
 };
