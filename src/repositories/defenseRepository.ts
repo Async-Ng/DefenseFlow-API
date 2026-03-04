@@ -362,3 +362,13 @@ export const checkDependencies = async (
     hasRegistrations: registrationCount > 0,
   };
 };
+
+/**
+ * Publish availability for a defense (allow lecturers to register)
+ */
+export const publishAvailability = async (id: number): Promise<Defense> => {
+  return await prisma.defense.update({
+    where: { id },
+    data: { isAvailabilityPublished: true },
+  });
+};

@@ -348,3 +348,62 @@ export const deleteDefense = async (
     return errorResponse(res, message, 500);
   }
 };
+
+/**
+ * @swagger
+ * /api/defenses/{id}/publish-availability:
+ *   post:
+ *     summary: "[ADMIN] Publish defense days so lecturers can register availability"
+ *     tags: [Defenses]
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: integer
+ *         description: Defense ID
+ *     responses:
+ *       200:
+ *         description: Availability published successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/DefenseResponse'
+ *       400:
+ *         description: Already published
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ValidationErrorResponse'
+ *       404:
+ *         description: Defense not found
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ *       500:
+ *         description: Server error
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ */
+export const publishAvailability = async (
+  req: Request,
+  res: Response,
+): Promise<Response> => {
+  try {
+    const id = getIdParam(req);
+    const defense = await defenseService.publishAvailability(id);
+    return successResponse(res, formatDefense(defense), "Availability published successfully");
+  } catch (error: unknown) {
+    const message = getErrorMessage(error);
+    if (message.includes("not found")) {
+      return notFoundResponse(res, message);
+    }
+    if (message.includes("already published")) {
+      return validationErrorResponse(res, { message });
+    }
+    return errorResponse(res, message, 500);
+  }
+};
