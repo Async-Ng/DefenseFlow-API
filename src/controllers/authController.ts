@@ -17,7 +17,8 @@ import {
  * @swagger
  * /api/auth/login:
  *   post:
- *     summary: Login with email and password
+ *     summary: Authenticate user with email and password
+ *     description: Exchange email and password for a JWT access token and user metadata.
  *     tags: [Auth]
  *     requestBody:
  *       required: true
@@ -32,38 +33,60 @@ import {
  *               email:
  *                 type: string
  *                 format: email
+ *                 description: The user's registered email address.
  *                 example: lecturer@fpt.edu.vn
  *               password:
  *                 type: string
+ *                 description: The user's password.
  *                 example: password123
  *     responses:
  *       200:
- *         description: Login successful
+ *         description: Login successful. Returns the JWT token and user info.
  *         content:
  *           application/json:
  *             schema:
  *               type: object
  *               properties:
- *                 accessToken:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 message:
  *                   type: string
- *                 user:
+ *                   example: "Login successful"
+ *                 data:
  *                   type: object
  *                   properties:
- *                     id:
+ *                     accessToken:
  *                       type: string
- *                     email:
+ *                       description: JWT valid for API requests.
+ *                     refreshToken:
  *                       type: string
- *                     roles:
- *                       type: array
- *                       items:
- *                         type: string
- *                     lecturerId:
+ *                       description: Token used to obtain a new access token.
+ *                     expiresIn:
  *                       type: integer
- *                       nullable: true
+ *                       description: Number of seconds until the access token expires.
+ *                     user:
+ *                       type: object
+ *                       properties:
+ *                         id:
+ *                           type: string
+ *                           format: uuid
+ *                         email:
+ *                           type: string
+ *                           format: email
+ *                         roles:
+ *                           type: array
+ *                           items:
+ *                             type: string
+ *                         lecturerId:
+ *                           type: integer
+ *                           nullable: true
  *       400:
- *         description: Missing email or password
+ *         description: Validation error. Email and password are required.
  *       401:
- *         description: Invalid credentials
+ *         description: Invalid credentials (wrong password or unregistered email).
+ *       500:
+ *         description: Internal server error.
  */
 export const login = async (req: Request, res: Response): Promise<Response> => {
   const { email, password } = req.body;
@@ -85,13 +108,32 @@ export const login = async (req: Request, res: Response): Promise<Response> => {
  * @swagger
  * /api/auth/logout:
  *   post:
- *     summary: Logout current user
+ *     summary: Sign out the current user
+ *     description: Invalidate the current session in Supabase and clear the authentication token. Requires a valid Bearer token.
  *     tags: [Auth]
  *     security:
  *       - bearerAuth: []
  *     responses:
  *       200:
- *         description: Logout successful
+ *         description: Logout successful.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 message:
+ *                   type: string
+ *                   example: "Logout successful"
+ *                 data:
+ *                   type: object
+ *                   example: {}
+ *       401:
+ *         description: Unauthorized. Invalid or missing token.
+ *       500:
+ *         description: Internal server error during logout.
  */
 export const logout = async (_req: Request, res: Response): Promise<Response> => {
   try {
@@ -106,15 +148,47 @@ export const logout = async (_req: Request, res: Response): Promise<Response> =>
  * @swagger
  * /api/auth/me:
  *   get:
- *     summary: Get current authenticated user info
+ *     summary: Retrieve current authenticated user profile
+ *     description: Decodes the provided Bearer token and returns the current user's payload, including their roles and linked lecturer ID.
  *     tags: [Auth]
  *     security:
  *       - bearerAuth: []
  *     responses:
  *       200:
- *         description: User info retrieved
+ *         description: Successfully retrieved user profile information.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 message:
+ *                   type: string
+ *                   example: "User info retrieved"
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     id:
+ *                       type: string
+ *                       format: uuid
+ *                       description: Supabase Auth User ID.
+ *                     email:
+ *                       type: string
+ *                       format: email
+ *                       description: The user's email address.
+ *                     roles:
+ *                       type: array
+ *                       description: List of system roles assigned to the user.
+ *                       items:
+ *                         type: string
+ *                     lecturerId:
+ *                       type: integer
+ *                       nullable: true
+ *                       description: The ID of the associated Lecturer record, if applicable.
  *       401:
- *         description: Not authenticated
+ *         description: Unauthorized. The token is missing, invalid, or expired.
  */
 export const getMe = async (req: Request, res: Response): Promise<Response> => {
   const payload = buildMePayload(req.user!);
@@ -125,27 +199,40 @@ export const getMe = async (req: Request, res: Response): Promise<Response> => {
  * @swagger
  * /api/auth/google:
  *   get:
- *     summary: Initiate Google OAuth login
- *     description: Returns a Google OAuth URL. Redirect the user to this URL to start the Google login flow.
+ *     summary: Initiate Google OAuth Authorization URL
+ *     description: Generates a Supabase Google OAuth URL. The frontend should redirect the user to this URL to start the Google login flow.
  *     tags: [Auth]
  *     parameters:
  *       - in: query
  *         name: redirectTo
  *         schema:
  *           type: string
- *         description: Frontend callback URL after Google login
+ *         required: false
+ *         description: The frontend callback URL where Supabase will redirect the user after Google authorization. Defaults to the environment frontend URL.
  *         example: http://localhost:5173/auth/callback
  *     responses:
  *       200:
- *         description: OAuth URL generated successfully
+ *         description: OAuth URL generated successfully.
  *         content:
  *           application/json:
  *             schema:
  *               type: object
  *               properties:
- *                 url:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 message:
  *                   type: string
- *                   description: Google OAuth URL to redirect the user to
+ *                   example: "Redirect to this URL to login with Google"
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     url:
+ *                       type: string
+ *                       format: uri
+ *                       description: Google OAuth authorization URL.
+ *       500:
+ *         description: Internal server error while generating the OAuth URL.
  */
 export const googleSignIn = async (req: Request, res: Response): Promise<Response> => {
   const redirectTo =
@@ -164,11 +251,11 @@ export const googleSignIn = async (req: Request, res: Response): Promise<Respons
  * @swagger
  * /api/auth/callback:
  *   get:
- *     summary: Handle Google OAuth callback
+ *     summary: Exchange Google OAuth code for Session
  *     description: |
- *       Exchanges the authorization code (returned by Google) for a Supabase session.
- *       Automatically assigns the `lecturer` role and links `lecturerId` if the user email
- *       matches an existing lecturer in the database.
+ *       Exchanges the authorization `code` returned by Google for a Supabase session containing JWT tokens.
+ *       If it's the user's first time logging in, it attempts to assign the `lecturer` role and link their `lecturerId` by verifying if the email exists in the `Lecturers` database table.
+ *       If the email is not registered in the system, it denies access and cleans up the newly created user record.
  *     tags: [Auth]
  *     parameters:
  *       - in: query
@@ -176,16 +263,57 @@ export const googleSignIn = async (req: Request, res: Response): Promise<Respons
  *         required: true
  *         schema:
  *           type: string
- *         description: Authorization code from Google
+ *         description: Authorization code provided by Google OAuth redirect.
  *     responses:
  *       200:
- *         description: Login successful
+ *         description: Session established successfully. Returns JWT tokens and user metadata.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 message:
+ *                   type: string
+ *                   example: "Login successful"
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     accessToken:
+ *                       type: string
+ *                       description: JWT valid for API requests.
+ *                     refreshToken:
+ *                       type: string
+ *                       description: Token used to obtain a new access token.
+ *                     expiresIn:
+ *                       type: integer
+ *                       description: Seconds until the access token expires.
+ *                     user:
+ *                       type: object
+ *                       properties:
+ *                         id:
+ *                           type: string
+ *                           format: uuid
+ *                         email:
+ *                           type: string
+ *                           format: email
+ *                         roles:
+ *                           type: array
+ *                           items:
+ *                             type: string
+ *                         lecturerId:
+ *                           type: integer
+ *                           nullable: true
  *       400:
- *         description: Missing authorization code
+ *         description: Bad request. Missing authorization code.
  *       401:
- *         description: Failed to exchange code for session
+ *         description: Authentication failed. Code exchange failed with Supabase.
  *       403:
- *         description: Email not registered in the system
+ *         description: Access denied. The user's email was not found in the `Lecturers` table.
+ *       500:
+ *         description: Internal server error during callback processing.
  */
 export const googleCallback = async (req: Request, res: Response): Promise<Response> => {
   const code = req.query.code as string;
