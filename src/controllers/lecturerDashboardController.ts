@@ -55,6 +55,15 @@ import { getIdParam } from "../utils/requestHelpers.js";
 export const getLecturerDashboard = async (req: Request, res: Response): Promise<Response> => {
   try {
     const id = getIdParam(req);
+
+    // Authorization: Lecturers can only access their own dashboard
+    const user = req.user;
+    if (user && !user.app_metadata?.roles?.includes("admin")) {
+      if (user.app_metadata?.lecturerId !== id) {
+        return errorResponse(res, "Forbidden: You can only access your own dashboard", 403);
+      }
+    }
+
     const stats = await lecturerService.getLecturerDashboard(id);
     return successResponse(res, stats, "Lecturer dashboard retrieved successfully");
   } catch (error: unknown) {
@@ -102,6 +111,15 @@ export const getLecturerDashboard = async (req: Request, res: Response): Promise
 export const getSupervisedTopics = async (req: Request, res: Response): Promise<Response> => {
   try {
     const id = getIdParam(req);
+
+    // Authorization: Lecturers can only access their own supervised topics
+    const user = req.user;
+    if (user && !user.app_metadata?.roles?.includes("admin")) {
+      if (user.app_metadata?.lecturerId !== id) {
+        return errorResponse(res, "Forbidden: You can only access your own supervised topics", 403);
+      }
+    }
+
     const topics = await lecturerService.getSupervisedTopics(id);
     return successResponse(res, topics, "Supervised topics retrieved successfully");
   } catch (error: unknown) {
@@ -149,6 +167,15 @@ export const getSupervisedTopics = async (req: Request, res: Response): Promise<
 export const getAssignedCouncilBoards = async (req: Request, res: Response): Promise<Response> => {
   try {
     const id = getIdParam(req);
+
+    // Authorization: Lecturers can only access their own council boards
+    const user = req.user;
+    if (user && !user.app_metadata?.roles?.includes("admin")) {
+      if (user.app_metadata?.lecturerId !== id) {
+        return errorResponse(res, "Forbidden: You can only access your own assigned council boards", 403);
+      }
+    }
+
     const boards = await lecturerService.getAssignedCouncilBoards(id);
     return successResponse(res, boards, "Council boards retrieved successfully");
   } catch (error: unknown) {

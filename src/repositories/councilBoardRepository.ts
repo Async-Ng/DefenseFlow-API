@@ -193,6 +193,14 @@ export const findAll = async (
     where.name = { contains: filters.name, mode: "insensitive" };
   }
 
+  if (filters.lecturerId) {
+    where.councilBoardMembers = {
+      some: {
+        lecturerId: filters.lecturerId,
+      },
+    };
+  }
+
   let orderBy: Prisma.CouncilBoardOrderByWithRelationInput = { id: "asc" };
   
   if (sort) {
