@@ -1,11 +1,17 @@
 /**
  * Auth Controller
- * Handles login and logout via Supabase Auth
+ * Handles HTTP request/response for authentication.
+ * All business logic is delegated to authService.
  */
 import { Request, Response } from "express";
-import { supabase } from "../config/supabase.js";
 import { successResponse, errorResponse, validationErrorResponse } from "../utils/apiResponse.js";
-import { prisma } from "../config/prisma.js";
+import {
+  loginWithPassword,
+  logoutUser,
+  buildMePayload,
+  generateGoogleOAuthUrl,
+  handleGoogleCallback,
+} from "../services/authService.js";
 
 /**
  * @swagger
@@ -59,51 +65,20 @@ import { prisma } from "../config/prisma.js";
  *       401:
  *         description: Invalid credentials
  */
-export const login = async (
-  req: Request,
-  res: Response,
-): Promise<Response> => {
+export const login = async (req: Request, res: Response): Promise<Response> => {
   const { email, password } = req.body;
 
   if (!email || !password) {
-    return validationErrorResponse(res, {
-      message: "Email and password are required.",
-    });
+    return validationErrorResponse(res, { message: "Email and password are required." });
   }
 
-  const { data, error } = await supabase.auth.signInWithPassword({
-    email,
-    password,
-  });
+  const result = await loginWithPassword(email, password);
 
-  if (error || !data.session) {
-    return res.status(401).json({
-      success: false,
-      message: "Invalid email or password.",
-    });
+  if (!result) {
+    return res.status(401).json({ success: false, message: "Invalid email or password." });
   }
 
-  const user = data.user;
-  const appMeta = user.app_metadata as {
-    roles?: string[];
-    lecturerId?: number;
-  };
-
-  return successResponse(
-    res,
-    {
-      accessToken: data.session.access_token,
-      refreshToken: data.session.refresh_token,
-      expiresIn: data.session.expires_in,
-      user: {
-        id: user.id,
-        email: user.email,
-        roles: appMeta.roles ?? [],
-        lecturerId: appMeta.lecturerId ?? null,
-      },
-    },
-    "Login successful",
-  );
+  return successResponse(res, result, "Login successful");
 };
 
 /**
@@ -118,17 +93,13 @@ export const login = async (
  *       200:
  *         description: Logout successful
  */
-export const logout = async (
-  _req: Request,
-  res: Response,
-): Promise<Response> => {
-  const { error } = await supabase.auth.signOut();
-
-  if (error) {
+export const logout = async (_req: Request, res: Response): Promise<Response> => {
+  try {
+    await logoutUser();
+    return successResponse(res, {}, "Logout successful");
+  } catch {
     return errorResponse(res, "Logout failed", 500);
   }
-
-  return successResponse(res, {}, "Logout successful");
 };
 
 /**
@@ -145,26 +116,9 @@ export const logout = async (
  *       401:
  *         description: Not authenticated
  */
-export const getMe = async (
-  req: Request,
-  res: Response,
-): Promise<Response> => {
-  const user = req.user!;
-  const appMeta = user.app_metadata as {
-    roles?: string[];
-    lecturerId?: number;
-  };
-
-  return successResponse(
-    res,
-    {
-      id: user.id,
-      email: user.email,
-      roles: appMeta.roles ?? [],
-      lecturerId: appMeta.lecturerId ?? null,
-    },
-    "User info retrieved",
-  );
+export const getMe = async (req: Request, res: Response): Promise<Response> => {
+  const payload = buildMePayload(req.user!);
+  return successResponse(res, payload, "User info retrieved");
 };
 
 /**
@@ -193,27 +147,17 @@ export const getMe = async (
  *                   type: string
  *                   description: Google OAuth URL to redirect the user to
  */
-export const googleSignIn = async (
-  req: Request,
-  res: Response,
-): Promise<Response> => {
+export const googleSignIn = async (req: Request, res: Response): Promise<Response> => {
   const redirectTo =
     (req.query.redirectTo as string) ||
     `${process.env.FRONTEND_URL ?? "http://localhost:5173"}/auth/callback`;
 
-  const { data, error } = await supabase.auth.signInWithOAuth({
-    provider: "google",
-    options: {
-      redirectTo,
-      skipBrowserRedirect: true,
-    },
-  });
-
-  if (error || !data.url) {
+  try {
+    const result = await generateGoogleOAuthUrl(redirectTo);
+    return successResponse(res, result, "Redirect to this URL to login with Google");
+  } catch {
     return errorResponse(res, "Failed to generate Google OAuth URL.", 500);
   }
-
-  return successResponse(res, { url: data.url }, "Redirect to this URL to login with Google");
 };
 
 /**
@@ -240,81 +184,29 @@ export const googleSignIn = async (
  *         description: Missing authorization code
  *       401:
  *         description: Failed to exchange code for session
+ *       403:
+ *         description: Email not registered in the system
  */
-export const googleCallback = async (
-  req: Request,
-  res: Response,
-): Promise<Response> => {
+export const googleCallback = async (req: Request, res: Response): Promise<Response> => {
   const code = req.query.code as string;
 
   if (!code) {
-    return res.status(400).json({
-      success: false,
-      message: "Missing authorization code from Google.",
-    });
+    return res.status(400).json({ success: false, message: "Missing authorization code from Google." });
   }
 
-  // Exchange the code for a Supabase session
-  const { data, error } = await supabase.auth.exchangeCodeForSession(code);
+  try {
+    const result = await handleGoogleCallback(code);
 
-  if (error || !data.session) {
-    return res.status(401).json({
-      success: false,
-      message: "Failed to exchange code for session. Please try again.",
-    });
-  }
-
-  const user = data.user;
-  const appMeta = user.app_metadata as { roles?: string[]; lecturerId?: number };
-
-  // First-time Google login: assign roles based on Lecturers table
-  if (!appMeta.roles || appMeta.roles.length === 0) {
-    const lecturer = await prisma.lecturer.findFirst({
-      where: { email: user.email ?? "" },
-      select: { id: true },
-    });
-
-    if (!lecturer) {
-      // Email not recognized — delete the ghost Supabase user and reject
-      await supabase.auth.admin.deleteUser(user.id);
+    if (result.kind === "access_denied") {
       return res.status(403).json({
         success: false,
-        message: `Access denied. The email "${user.email}" is not registered in the system. Please contact your administrator.`,
+        message: `Access denied. The email "${result.email}" is not registered in the system. Please contact your administrator.`,
       });
     }
 
-    // Assign lecturer role + link lecturerId in Supabase metadata
-    await supabase.auth.admin.updateUserById(user.id, {
-      app_metadata: {
-        roles: ["lecturer"],
-        lecturerId: lecturer.id,
-      },
-    });
-
-    // Link authId in Lecturers table if not already set
-    await prisma.lecturer.update({
-      where: { id: lecturer.id },
-      data: { authId: user.id },
-    });
-
-    appMeta.roles = ["lecturer"];
-    appMeta.lecturerId = lecturer.id;
+    return successResponse(res, result.data, "Login successful");
+  } catch (err) {
+    const message = err instanceof Error ? err.message : "Authentication failed.";
+    return res.status(401).json({ success: false, message });
   }
-
-
-  return successResponse(
-    res,
-    {
-      accessToken: data.session.access_token,
-      refreshToken: data.session.refresh_token,
-      expiresIn: data.session.expires_in,
-      user: {
-        id: user.id,
-        email: user.email,
-        roles: appMeta.roles ?? [],
-        lecturerId: appMeta.lecturerId ?? null,
-      },
-    },
-    "Login successful",
-  );
 };
