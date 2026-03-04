@@ -6,6 +6,7 @@ import {
   downloadTopicTemplate,
   downloadLecturerTemplate,
 } from "../controllers/importController.js";
+import { requireRole } from "../middleware/auth.js";
 
 const router: express.Router = express.Router();
 
@@ -31,10 +32,11 @@ const upload = multer({
 });
 
 // Template Routes
-router.get("/topics/template", downloadTopicTemplate);
-router.get("/lecturers/template", downloadLecturerTemplate);
+router.get("/topics/template", requireRole("admin"), downloadTopicTemplate);
+router.get("/lecturers/template", requireRole("admin"), downloadLecturerTemplate);
 
-router.post("/topics", upload.single("file"), importTopics);
-router.post("/lecturers", upload.single("file"), importLecturers);
+router.post("/topics", requireRole("admin"), upload.single("file"), importTopics);
+router.post("/lecturers", requireRole("admin"), upload.single("file"), importLecturers);
+
 
 export default router;

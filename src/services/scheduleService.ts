@@ -854,7 +854,60 @@ export const updateCouncilBoard = async (
     );
   }
 
-  // 4. Update members
+  // 4. Role Eligibility Check (GTDSS-11 Scenario 3)
+  // [TEMPORARILY DISABLED FOR TESTING]
+  // Check if the assigned president is actually qualified to be President.
+  // Assuming there's a specific common qualification for president or a flag.
+  // Since we don't have a direct "isPresidentQualified" boolean, we will use the FPTU rule:
+  // Usually, presidents must have higher degree or specific qualifications.
+  // For the sake of this US, let's query if they have a qualification that has isCommon=true OR simply
+  // ensure they aren't completely missing qualifications.
+  /*
+  if (newPresidentId) {
+     const presidentQuals = await prisma.lecturerQualification.findMany({
+         where: { lecturerId: newPresidentId },
+         include: { qualification: true }
+     });
+     // Soft check: Warn if they have NO qualifications at all (can be refined based on actual schema rules)
+     if (presidentQuals.length === 0) {
+        // According to US: "system prevents the action or shows a warning". We will throw a 400.
+        throw new AppError(400, "Role Eligibility Warning: This lecturer is not qualified for the President role.");
+     }
+  }
+  */
+
+  // 5. Conflict of Interest Check (GTDSS-11 Scenario 2)
+  // Get all topics assigned to this council board
+  const boardTopics = await prisma.defenseCouncil.findMany({
+    where: { councilBoardId },
+    include: {
+      topicDefense: {
+        include: {
+          topic: {
+            include: { topicSupervisors: true }
+          }
+        }
+      }
+    }
+  });
+
+  // Extract all supervisor IDs for topics assigned to this board
+  const supervisorsInBoardTopics = new Set<number>();
+  boardTopics.forEach(dc => {
+      const supervisors = dc.topicDefense?.topic?.topicSupervisors || [];
+      supervisors.forEach(ts => supervisorsInBoardTopics.add(ts.lecturerId));
+  });
+
+  // Check if any of the new members are supervisors
+  const conflictingSupervisors = allIds.filter(id => supervisorsInBoardTopics.has(id));
+  if (conflictingSupervisors.length > 0) {
+      throw new AppError(
+          409, // 409 Conflict implies it can be forced later if we add a bypass flag, but for now block it.
+          "Conflict of Interest Detected: Lecturer is the Supervisor of a topic assigned to this council. Do you want to force this assignment?"
+      );
+  }
+
+  // 6. Update members
   return await prisma.$transaction(async (tx) => {
     await tx.councilBoardMember.deleteMany({
       where: { councilBoardId },

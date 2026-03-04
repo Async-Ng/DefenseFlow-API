@@ -25,6 +25,11 @@ export const getDefenseDays = async (
     throw new Error(`Defense with ID ${defenseId} not found`);
   }
 
+  // Check if availability has been published by admin
+  if (!defense.isAvailabilityPublished) {
+    throw new Error("Defense days have not been published yet. Please wait for the admin to open the availability registration.");
+  }
+
   // Get all defense days for this defense
   return await availabilityRepository.getDefenseDaysByDefenseId(defenseId);
 };
@@ -40,6 +45,11 @@ export const getDefenseDaysWithAvailability = async (
   const defense = await availabilityRepository.getDefenseById(defenseId);
   if (!defense) {
     throw new Error(`Defense with ID ${defenseId} not found`);
+  }
+
+  // Check if availability has been published by admin
+  if (!defense.isAvailabilityPublished) {
+    throw new Error("Defense days have not been published yet. Please wait for the admin to open the availability registration.");
   }
 
   // Verify lecturer exists
@@ -118,12 +128,16 @@ export const updateAvailability = async (
     throw new Error(`Defense day with ID ${defenseDayId} not found`);
   }
 
-  // Get the defense to check if it's locked
+  // Get the defense to check if it's published and not locked
   const defense = await availabilityRepository.getDefenseById(
     defenseDay.defenseId,
   );
   if (!defense) {
     throw new Error(`Defense not found`);
+  }
+
+  if (!defense.isAvailabilityPublished) {
+    throw new Error("Defense days have not been published yet. Please wait for the admin to open the availability registration.");
   }
 
   if (defense.status === "Locked") {
@@ -171,11 +185,15 @@ export const batchUpdateAvailability = async (
     }
   }
 
-  // Check if defense is locked
+  // Check if defense is published and not locked
   if (defenseId) {
     const defense = await availabilityRepository.getDefenseById(defenseId);
     if (!defense) {
       throw new Error(`Defense not found`);
+    }
+
+    if (!defense.isAvailabilityPublished) {
+      throw new Error("Defense days have not been published yet. Please wait for the admin to open the availability registration.");
     }
 
     if (defense.status === "Locked") {
@@ -212,12 +230,16 @@ export const removeAvailability = async (
     throw new Error(`Defense day with ID ${defenseDayId} not found`);
   }
 
-  // Check if defense is locked
+  // Check if defense is published and not locked
   const defense = await availabilityRepository.getDefenseById(
     defenseDay.defenseId,
   );
   if (!defense) {
     throw new Error(`Defense not found`);
+  }
+
+  if (!defense.isAvailabilityPublished) {
+    throw new Error("Defense days have not been published yet. Please wait for the admin to open the availability registration.");
   }
 
   if (defense.status === "Locked") {

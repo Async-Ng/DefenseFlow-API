@@ -120,11 +120,127 @@ export const update = async (
 };
 
 /**
- * Delete semester
+ * Delete semester (simple — no related data)
  */
 export const deleteSemester = async (id: number): Promise<Semester> => {
   return await prisma.semester.delete({
     where: { id },
+  });
+};
+
+/**
+ * Delete semester and ALL related data in a single transaction.
+ * Deletion order respects FK constraints (leaf → root):
+ *   DefenseCouncil → CouncilBoardMember → CouncilBoard →
+ *   LecturerDayAvailability → TopicDefense → LecturerDefenseConfig →
+ *   DefenseDay → Defense → TopicSupervisor → TopicQualification →
+ *   Topic → Semester
+ */
+export const deleteSemesterCascade = async (id: number): Promise<Semester> => {
+  return await prisma.$transaction(async (tx) => {
+    // 1. Collect IDs of records that belong to this semester
+
+    // Defenses belonging to this semester
+    const defenses = await tx.defense.findMany({
+      where: { semesterId: id },
+      select: { id: true },
+    });
+    const defenseIds = defenses.map((d) => d.id);
+
+    // DefenseDays belonging to those defenses
+    const defenseDays = await tx.defenseDay.findMany({
+      where: { defenseId: { in: defenseIds } },
+      select: { id: true },
+    });
+    const defenseDayIds = defenseDays.map((d) => d.id);
+
+    // CouncilBoards belonging to this semester (includes both via DefenseDay and direct semesterId)
+    const councilBoards = await tx.councilBoard.findMany({
+      where: { semesterId: id },
+      select: { id: true },
+    });
+    const councilBoardIds = councilBoards.map((cb) => cb.id);
+
+    // TopicDefenses belonging to defenses of this semester
+    const topicDefenses = await tx.topicDefense.findMany({
+      where: { defenseId: { in: defenseIds } },
+      select: { id: true },
+    });
+    const topicDefenseIds = topicDefenses.map((td) => td.id);
+
+    // Topics belonging to this semester
+    const topics = await tx.topic.findMany({
+      where: { semesterId: id },
+      select: { id: true },
+    });
+    const topicIds = topics.map((t) => t.id);
+
+    // 2. Delete in correct order
+
+    // DefenseCouncil — FK → CouncilBoard, TopicDefense
+    await tx.defenseCouncil.deleteMany({
+      where: {
+        OR: [
+          { councilBoardId: { in: councilBoardIds } },
+          { registrationId: { in: topicDefenseIds } },
+        ],
+      },
+    });
+
+    // CouncilBoardMember — FK → CouncilBoard
+    await tx.councilBoardMember.deleteMany({
+      where: { councilBoardId: { in: councilBoardIds } },
+    });
+
+    // CouncilBoard — FK → DefenseDay, Semester
+    await tx.councilBoard.deleteMany({
+      where: { semesterId: id },
+    });
+
+    // LecturerDayAvailability — FK → DefenseDay
+    await tx.lecturerDayAvailability.deleteMany({
+      where: { defenseDayId: { in: defenseDayIds } },
+    });
+
+    // TopicDefense — FK → Topic, Defense
+    await tx.topicDefense.deleteMany({
+      where: { defenseId: { in: defenseIds } },
+    });
+
+    // LecturerDefenseConfig — FK → Defense
+    await tx.lecturerDefenseConfig.deleteMany({
+      where: { defenseId: { in: defenseIds } },
+    });
+
+    // DefenseDay — FK → Defense
+    await tx.defenseDay.deleteMany({
+      where: { defenseId: { in: defenseIds } },
+    });
+
+    // Defense — FK → Semester
+    await tx.defense.deleteMany({
+      where: { semesterId: id },
+    });
+
+    // TopicSupervisor — FK → Topic
+    await tx.topicSupervisor.deleteMany({
+      where: { topicId: { in: topicIds } },
+    });
+
+    // TopicQualification — FK → Topic
+    await tx.topicQualification.deleteMany({
+      where: { topicId: { in: topicIds } },
+    });
+
+    // Topic — FK → Semester
+    await tx.topic.deleteMany({
+      where: { semesterId: id },
+    });
+
+    // Finally — delete the Semester itself
+    return await tx.semester.delete({
+      where: { id },
+    });
   });
 };
 

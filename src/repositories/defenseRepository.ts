@@ -186,6 +186,7 @@ export const findMainBySemesterId = async (
       semesterId,
       type: "Main",
     },
+    orderBy: { id: "desc" }, // pick the most recently created Main defense
   });
 };
 
@@ -361,4 +362,14 @@ export const checkDependencies = async (
     hasCouncilBoards: councilCount > 0,
     hasRegistrations: registrationCount > 0,
   };
+};
+
+/**
+ * Publish availability for a defense (allow lecturers to register)
+ */
+export const publishAvailability = async (id: number): Promise<Defense> => {
+  return await prisma.defense.update({
+    where: { id },
+    data: { isAvailabilityPublished: true },
+  });
 };

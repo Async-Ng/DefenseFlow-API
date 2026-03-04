@@ -2,7 +2,9 @@ import express, { Application, Request, Response } from "express";
 import cors from "cors";
 import swaggerUi from "swagger-ui-express";
 import routes from "./routes/index.js";
+import authRoutes from "./routes/authRoutes.js";
 import { errorHandler } from "./middleware/errorHandler.js";
+import { authenticate } from "./middleware/auth.js";
 import { swaggerSpec } from "./config/swagger.js";
 
 const app: Application = express();
@@ -24,10 +26,14 @@ app.get("/", (_req: Request, res: Response) => {
   });
 });
 
-// Routes
-app.use("/api", routes);
+// Public routes (no token required)
+app.use("/api/auth", authRoutes);
+
+// Protected routes (requires valid JWT)
+app.use("/api", authenticate, routes);
 
 // Error handling
 app.use(errorHandler);
 
 export default app;
+

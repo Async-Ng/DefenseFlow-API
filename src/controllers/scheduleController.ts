@@ -8,6 +8,7 @@ import {
   getPaginationParams,
   getSortParams,
   getIdParam,
+  getActiveRole,
 } from "../utils/requestHelpers.js";
 import { z } from "zod";
 
@@ -200,6 +201,17 @@ export const getSchedule = async (
     const filters = getCouncilBoardFilters(req);
     filters.defenseId = defenseId; // Path param takes precedence or adds to filters
 
+    // Authorization: If the active role is lecturer (not admin), only show their assigned boards
+    const user = req.user;
+    const activeRole = getActiveRole(req);
+    
+    if (user && activeRole !== "admin") {
+        const lecturerId = user.app_metadata?.lecturerId;
+        if (lecturerId) {
+            filters.lecturerId = lecturerId;
+        }
+    }
+
     const pagination = getPaginationParams(req);
     const sort = getSortParams(req, "id");
 
@@ -261,6 +273,22 @@ export const getCouncilBoardById = async (
     }
 
     const result = await scheduleService.getCouncilBoardById(id);
+
+    // Authorization: if active role is lecturer (not admin), they can only view boards they are part of
+    const user = req.user;
+    const activeRole = getActiveRole(req);
+    
+    if (user && activeRole !== "admin") {
+      const lecturerId = user.app_metadata?.lecturerId;
+      const boardMembers = (result as any).councilBoardMembers || [];
+      const isMember = boardMembers.some(
+        (member: any) => member.lecturerId === lecturerId
+      );
+      
+      if (!isMember) {
+        throw new AppError(403, "Forbidden: You can only view council boards you are assigned to");
+      }
+    }
 
     return successResponse(res, result, "Council board details retrieved successfully");
   } catch (error) {
