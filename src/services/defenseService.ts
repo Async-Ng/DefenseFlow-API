@@ -218,3 +218,20 @@ export const deleteDefense = async (id: number): Promise<Defense> => {
   // Delete defense (cascading handled in repository transaction)
   return await defenseRepository.deleteDefense(id);
 };
+
+/**
+ * Publish availability registration for a defense
+ * Once published, lecturers can view and register their availability
+ */
+export const publishAvailability = async (id: number): Promise<Defense> => {
+  const existing = await defenseRepository.findById(id);
+  if (!existing) {
+    throw new Error(`Defense with ID ${id} not found`);
+  }
+
+  if (existing.isAvailabilityPublished) {
+    throw new Error(`Availability for defense '${existing.defenseCode}' is already published`);
+  }
+
+  return await defenseRepository.publishAvailability(id);
+};

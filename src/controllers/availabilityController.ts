@@ -135,6 +135,15 @@ export const getDefenseDaysWithAvailability = async (
       ? parseInt(req.query.lecturerId, 10)
       : undefined;
 
+    // Authorization: Lecturers can only access their own availability
+    const user = req.user;
+    if (user && !user.app_metadata?.roles?.includes("admin")) {
+      if (lecturerId !== user.app_metadata?.lecturerId) {
+        errorResponse(res, "Forbidden: You can only view your own availability", 403);
+        return;
+      }
+    }
+
     if (isNaN(defenseId)) {
       errorResponse(res, "Invalid defense ID", 400);
       return;
@@ -221,6 +230,15 @@ export const getLecturerStatus = async (
     const defenseId = req.query.defenseId
       ? parseInt(req.query.defenseId, 10)
       : undefined;
+
+    // Authorization: Lecturers can only access their own status
+    const user = req.user;
+    if (user && !user.app_metadata?.roles?.includes("admin")) {
+      if (lecturerId !== user.app_metadata?.lecturerId) {
+        errorResponse(res, "Forbidden: You can only view your own status", 403);
+        return;
+      }
+    }
 
     if (isNaN(lecturerId)) {
       errorResponse(res, "Invalid lecturer ID", 400);
@@ -311,6 +329,15 @@ export const updateAvailability = async (
   try {
     const lecturerId = parseInt(req.params.lecturerId, 10);
     const { defenseDayId, status } = req.body;
+
+    // Authorization: Lecturers can only update their own availability
+    const user = req.user;
+    if (user && !user.app_metadata?.roles?.includes("admin")) {
+      if (lecturerId !== user.app_metadata?.lecturerId) {
+        errorResponse(res, "Forbidden: You can only modify your own availability", 403);
+        return;
+      }
+    }
 
     if (isNaN(lecturerId)) {
       errorResponse(res, "Invalid lecturer ID", 400);
@@ -417,6 +444,15 @@ export const batchUpdateAvailability = async (
   try {
     const lecturerId = parseInt(req.params.lecturerId, 10);
     const data = req.body;
+
+    // Authorization: Lecturers can only update their own availability
+    const user = req.user;
+    if (user && !user.app_metadata?.roles?.includes("admin")) {
+      if (lecturerId !== user.app_metadata?.lecturerId) {
+        errorResponse(res, "Forbidden: You can only modify your own availability", 403);
+        return;
+      }
+    }
 
     if (isNaN(lecturerId)) {
       errorResponse(res, "Invalid lecturer ID", 400);
@@ -528,6 +564,15 @@ export const removeAvailability = async (
   try {
     const lecturerId = parseInt(req.params.lecturerId, 10);
     const defenseDayId = parseInt(req.params.defenseDayId, 10);
+
+    // Authorization: Lecturers can only update their own availability
+    const user = req.user;
+    if (user && !user.app_metadata?.roles?.includes("admin")) {
+      if (lecturerId !== user.app_metadata?.lecturerId) {
+        errorResponse(res, "Forbidden: You can only modify your own availability", 403);
+        return;
+      }
+    }
 
     if (isNaN(lecturerId)) {
       errorResponse(res, "Invalid lecturer ID", 400);

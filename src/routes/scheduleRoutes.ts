@@ -1,5 +1,7 @@
 import express from "express";
 import * as scheduleController from "../controllers/scheduleController.js";
+import { requireRole } from "../middleware/auth.js";
+
 
 const router: express.Router = express.Router();
 
@@ -30,7 +32,7 @@ const router: express.Router = express.Router();
  *       400:
  *         description: Invalid input or preconditions not met
  */
-router.post("/generate", scheduleController.generateSchedule);
+router.post("/generate", requireRole("admin"), scheduleController.generateSchedule);
 
 
 /**
@@ -40,7 +42,7 @@ router.post("/generate", scheduleController.generateSchedule);
  *     summary: Publish schedule
  *     tags: [Schedule]
  */
-router.post("/publish", scheduleController.publishSchedule);
+router.post("/publish", requireRole("admin"), scheduleController.publishSchedule);
 
 /**
  * @swagger
@@ -49,7 +51,7 @@ router.post("/publish", scheduleController.publishSchedule);
  *     summary: Update defense council (Manual Scheduling)
  *     tags: [Schedule]
  */
-router.put("/defense-councils/:defenseCouncilId", scheduleController.updateDefenseCouncil);
+router.put("/defense-councils/:defenseCouncilId", requireRole("admin"), scheduleController.updateDefenseCouncil);
 
 /**
  * @swagger
@@ -107,7 +109,7 @@ router.put("/defense-councils/:defenseCouncilId", scheduleController.updateDefen
  *       500:
  *         description: Server error
  */
-router.post("/defense-councils", scheduleController.createDefenseCouncil);
+router.post("/defense-councils", requireRole("admin"), scheduleController.createDefenseCouncil);
 
 /**
  * @swagger
@@ -142,7 +144,7 @@ router.post("/defense-councils", scheduleController.createDefenseCouncil);
  *       500:
  *         description: Server error
  */
-router.delete("/defense-councils/:id", scheduleController.deleteDefenseCouncil);
+router.delete("/defense-councils/:id", requireRole("admin"), scheduleController.deleteDefenseCouncil);
 
 /**
  * @swagger
@@ -151,7 +153,7 @@ router.delete("/defense-councils/:id", scheduleController.deleteDefenseCouncil);
  *     summary: Update council board members
  *     tags: [Schedule]
  */
-router.put("/council-boards/:councilBoardId", scheduleController.updateCouncilBoard);
+router.put("/council-boards/:councilBoardId", requireRole("admin"), scheduleController.updateCouncilBoard);
 
 /**
  * @swagger

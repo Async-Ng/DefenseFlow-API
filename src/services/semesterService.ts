@@ -109,7 +109,7 @@ export const updateSemester = async (
 };
 
 /**
- * Delete semester
+ * Delete semester and cascade-delete all related data
  */
 export const deleteSemester = async (id: number): Promise<Semester> => {
   // Check if semester exists
@@ -118,16 +118,8 @@ export const deleteSemester = async (id: number): Promise<Semester> => {
     throw new Error(`Semester with ID ${id} not found`);
   }
 
-  // Check for active defenses
-  const hasDefenses = await semesterRepository.hasActiveDefenses(id);
-  if (hasDefenses) {
-    throw new Error(
-      "Cannot delete semester with active defenses. Please delete all defenses first.",
-    );
-  }
-
-  // Delete semester
-  return await semesterRepository.deleteSemester(id);
+  // Cascade-delete semester and all associated data in a single transaction
+  return await semesterRepository.deleteSemesterCascade(id);
 };
 
 /**

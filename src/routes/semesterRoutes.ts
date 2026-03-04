@@ -1,7 +1,6 @@
 /**
  * Semester Routes (TypeScript)
  */
-
 import express from "express";
 import {
   createSemester,
@@ -10,11 +9,12 @@ import {
   updateSemester,
   deleteSemester,
 } from "../controllers/semesterController.js";
+import { requireRole } from "../middleware/auth.js";
 
 const router: express.Router = express.Router();
 
-// Create semester
-router.post("/", createSemester);
+// Create semester — Admin only
+router.post("/", requireRole("admin"), createSemester);
 
 // Get all semesters
 router.get("/", getAllSemesters);
@@ -22,10 +22,10 @@ router.get("/", getAllSemesters);
 // Get semester by ID
 router.get("/:id", getSemesterById);
 
-// Update semester
-router.patch("/:id", updateSemester);
+// Update semester — Admin only
+router.patch("/:id", requireRole("admin"), updateSemester);
 
-// Delete semester
-router.delete("/:id", deleteSemester);
+// Delete semester — Admin only
+router.delete("/:id", requireRole("admin"), deleteSemester);
 
 export default router;
