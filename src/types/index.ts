@@ -403,6 +403,7 @@ export type CouncilBoardFilters = {
   boardCode?: string;
   name?: string;
   search?: string;
+  lecturerId?: number;
 };
 
 export type CouncilBoardSort = {

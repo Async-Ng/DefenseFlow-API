@@ -137,6 +137,7 @@ export const getCouncilBoardFilters = (req: Request): CouncilBoardFilters => {
   const defenseIdParam = req.query.defenseId;
   const boardCodeParam = req.query.boardCode;
   const nameParam = req.query.name;
+  const lecturerIdParam = req.query.lecturerId;
 
   return {
     defenseDayId: isString(defenseDayIdParam) ? parseInt(defenseDayIdParam, 10) : undefined,
@@ -145,6 +146,7 @@ export const getCouncilBoardFilters = (req: Request): CouncilBoardFilters => {
     boardCode: isString(boardCodeParam) ? boardCodeParam : undefined,
     name: isString(nameParam) ? nameParam : undefined,
     search: isString(req.query.search) ? req.query.search : undefined,
+    lecturerId: isString(lecturerIdParam) ? parseInt(lecturerIdParam, 10) : undefined,
   };
 };
 /**
