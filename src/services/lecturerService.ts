@@ -58,11 +58,8 @@ export const createLecturer = async (data: CreateLecturerInput): Promise<Lecture
   const lecturer = await lecturerRepository.create(data);
 
   try {
-    // 2. Create in Supabase Auth (User will log in with Email/Password)
-    // Default password is lecturerCode (padded to 6 chars minimum)
-    const defaultPassword = data.lecturerCode.length < 6 
-      ? data.lecturerCode.padEnd(6, '0') 
-      : data.lecturerCode;
+    // Default password is 000000
+    const defaultPassword = "000000";
     
     const { data: authUser, error: authError } = await supabase.auth.admin.createUser({
       email: data.email || "",
@@ -281,10 +278,8 @@ export const resetLecturerPassword = async (id: number): Promise<void> => {
     throw new Error(`Giảng viên ${lecturer.lecturerCode} chưa có tài khoản Auth để reset.`);
   }
 
-  // Default password is lecturerCode (padded to 6 chars minimum)
-  const defaultPassword = lecturer.lecturerCode.length < 6 
-    ? lecturer.lecturerCode.padEnd(6, '0') 
-    : lecturer.lecturerCode;
+  // Default password is 000000
+  const defaultPassword = "000000";
 
   const { error } = await supabase.auth.admin.updateUserById(lecturer.authId, {
     password: defaultPassword,
