@@ -11,6 +11,7 @@ import {
   buildMePayload,
   generateGoogleOAuthUrl,
   handleGoogleCallback,
+  loginWithIdToken,
 } from "../services/authService.js";
 
 /**
@@ -329,6 +330,71 @@ export const googleCallback = async (req: Request, res: Response): Promise<Respo
       return res.status(403).json({
         success: false,
         message: `Access denied. The email "${result.email}" is not registered in the system. Please contact your administrator.`,
+      });
+    }
+
+    return successResponse(res, result.data, "Login successful");
+  } catch (err) {
+    const message = err instanceof Error ? err.message : "Authentication failed.";
+    return res.status(401).json({ success: false, message });
+  }
+};
+/**
+ * @swagger
+ * /api/auth/google-native:
+ *   post:
+ *     summary: Authenticate with Google ID Token (Native Mobile)
+ *     description: |
+ *       Exchanges a Google `idToken` (obtained via native mobile Google SDK) for a Supabase session.
+ *       Follows the same role assignment and lecturer linking logic as the web-based Google login.
+ *     tags: [Auth]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - idToken
+ *             properties:
+ *               idToken:
+ *                 type: string
+ *                 description: The Google ID Token from the mobile client.
+ *     responses:
+ *       200:
+ *         description: Login successful. Returns JWT tokens and user metadata.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                 message:
+ *                   type: string
+ *                 data:
+ *                   type: object
+ *       400:
+ *         description: Missing idToken.
+ *       401:
+ *         description: Authentication failed.
+ *       403:
+ *         description: Access denied (email not registered).
+ */
+export const googleNativeSignIn = async (req: Request, res: Response): Promise<Response> => {
+  const { idToken } = req.body;
+
+  if (!idToken) {
+    return validationErrorResponse(res, { message: "Missing idToken." });
+  }
+
+  try {
+    const result = await loginWithIdToken(idToken);
+
+    if (result.kind === "access_denied") {
+      return res.status(403).json({
+        success: false,
+        message: `Access denied. The email "${result.email}" is not registered in the system.`,
       });
     }
 

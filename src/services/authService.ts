@@ -118,9 +118,50 @@ export type GoogleCallbackResult =
   | { kind: "access_denied"; email: string };
 
 /**
- * Exchange a Google authorization code for a Supabase session.
- * On first login, assigns the `lecturer` role if the email exists in the database.
- * Returns access_denied if the email is not registered.
+ * Synchronizes Supabase user metadata (roles, lecturerId) with the Lecturers table.
+ * Used during both Web (callback) and Mobile (idToken) Google login flows.
+ */
+async function syncUserMetadata(user: User): Promise<AppMeta | "access_denied"> {
+  const appMeta = user.app_metadata as AppMeta;
+
+  // If already has roles, no need to sync (avoid extra DB calls)
+  if (appMeta.roles && appMeta.roles.length > 0) {
+    return appMeta;
+  }
+
+  // First-time login: assign roles based on Lecturers table
+  const lecturer = await prisma.lecturer.findFirst({
+    where: { email: user.email ?? "" },
+    select: { id: true },
+  });
+
+  if (!lecturer) {
+    // Email not recognized — delete the ghost Supabase user and reject
+    await supabase.auth.admin.deleteUser(user.id);
+    return "access_denied";
+  }
+
+  const newMeta: AppMeta = {
+    roles: ["lecturer"],
+    lecturerId: lecturer.id,
+  };
+
+  // Assign lecturer role + link lecturerId in Supabase app_metadata
+  await supabase.auth.admin.updateUserById(user.id, {
+    app_metadata: newMeta,
+  });
+
+  // Link authId in Lecturers table if not already set
+  await prisma.lecturer.update({
+    where: { id: lecturer.id },
+    data: { authId: user.id },
+  });
+
+  return newMeta;
+}
+
+/**
+ * Exchange a Google authorization code for a Supabase session (Web Flow).
  */
 export async function handleGoogleCallback(
   code: string,
@@ -131,37 +172,10 @@ export async function handleGoogleCallback(
     throw new Error("Failed to exchange code for session. Please try again.");
   }
 
-  const user = data.user;
-  let appMeta = user.app_metadata as AppMeta;
+  const metaResult = await syncUserMetadata(data.user);
 
-  // First-time Google login: assign roles based on Lecturers table
-  if (!appMeta.roles || appMeta.roles.length === 0) {
-    const lecturer = await prisma.lecturer.findFirst({
-      where: { email: user.email ?? "" },
-      select: { id: true },
-    });
-
-    if (!lecturer) {
-      // Email not recognized — delete the ghost Supabase user and reject
-      await supabase.auth.admin.deleteUser(user.id);
-      return { kind: "access_denied", email: user.email ?? "" };
-    }
-
-    // Assign lecturer role + link lecturerId in Supabase app_metadata
-    await supabase.auth.admin.updateUserById(user.id, {
-      app_metadata: {
-        roles: ["lecturer"],
-        lecturerId: lecturer.id,
-      },
-    });
-
-    // Link authId in Lecturers table if not already set
-    await prisma.lecturer.update({
-      where: { id: lecturer.id },
-      data: { authId: user.id },
-    });
-
-    appMeta = { roles: ["lecturer"], lecturerId: lecturer.id };
+  if (metaResult === "access_denied") {
+    return { kind: "access_denied", email: data.user.email ?? "" };
   }
 
   return {
@@ -171,10 +185,48 @@ export async function handleGoogleCallback(
       refreshToken: data.session.refresh_token,
       expiresIn: data.session.expires_in,
       user: {
-        id: user.id,
-        email: user.email,
-        roles: appMeta.roles ?? [],
-        lecturerId: appMeta.lecturerId ?? null,
+        id: data.user.id,
+        email: data.user.email,
+        roles: metaResult.roles ?? [],
+        lecturerId: metaResult.lecturerId ?? null,
+      },
+    },
+  };
+}
+
+/**
+ * Sign in with a Google ID Token (Native Mobile Flow).
+ * Returns session tokens and user metadata on success.
+ */
+export async function loginWithIdToken(
+  idToken: string,
+): Promise<GoogleCallbackResult> {
+  const { data, error } = await supabase.auth.signInWithIdToken({
+    provider: "google",
+    token: idToken,
+  });
+
+  if (error || !data.session) {
+    throw new Error(error?.message || "ID Token authentication failed.");
+  }
+
+  const metaResult = await syncUserMetadata(data.user);
+
+  if (metaResult === "access_denied") {
+    return { kind: "access_denied", email: data.user.email ?? "" };
+  }
+
+  return {
+    kind: "success",
+    data: {
+      accessToken: data.session.access_token,
+      refreshToken: data.session.refresh_token,
+      expiresIn: data.session.expires_in,
+      user: {
+        id: data.user.id,
+        email: data.user.email,
+        roles: metaResult.roles ?? [],
+        lecturerId: metaResult.lecturerId ?? null,
       },
     },
   };
