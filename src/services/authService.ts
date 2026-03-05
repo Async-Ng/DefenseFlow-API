@@ -119,9 +119,9 @@ export type GoogleCallbackResult =
 
 /**
  * Synchronizes Supabase user metadata (roles, lecturerId) with the Lecturers table.
- * Used during both Web (callback) and Mobile (idToken) Google login flows.
+ * Used during both Web (callback), Mobile (idToken), and /me verification Google login flows.
  */
-async function syncUserMetadata(user: User): Promise<AppMeta | "access_denied"> {
+export async function syncUserMetadata(user: User): Promise<AppMeta | "access_denied"> {
   const appMeta = user.app_metadata as AppMeta;
 
   // If already has roles, no need to sync (avoid extra DB calls)
