@@ -521,3 +521,45 @@ export const deleteLecturerQualification = async (
     return errorResponse(res, message, 500);
   }
 };
+
+/**
+ * @swagger
+ * /api/lecturers/{id}/reset-password:
+ *   post:
+ *     summary: "[ADMIN] Reset lecturer password to default"
+ *     description: Resets the specified lecturer's password to their `lecturerCode` (padded to 6 characters if shorter). **No old password required.**
+ *     tags: [Lecturers]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: integer
+ *         description: Lecturer ID to reset password for.
+ *     responses:
+ *       200:
+ *         description: Password reset successfully.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ApiResponse'
+ *       404:
+ *         description: Lecturer not found or has no Auth account.
+ *       500:
+ *         description: Internal server error.
+ */
+export const resetPassword = async (req: Request, res: Response): Promise<Response> => {
+  try {
+    const id = getIdParam(req);
+    await lecturerService.resetLecturerPassword(id);
+    return successResponse(res, null, "Đã reset mật khẩu về mặc định thành công.");
+  } catch (error: unknown) {
+    const message = getErrorMessage(error);
+    if (message.includes("not found") || message.includes("chưa có tài khoản")) {
+      return notFoundResponse(res, message);
+    }
+    return errorResponse(res, message, 500);
+  }
+};

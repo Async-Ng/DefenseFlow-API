@@ -240,3 +240,15 @@ export async function loginWithIdToken(
     },
   };
 }
+/**
+ * Change the password for the current authenticated user.
+ */
+export async function changeUserPassword(userId: string, newPassword: string): Promise<void> {
+  const { error } = await supabase.auth.admin.updateUserById(userId, {
+    password: newPassword,
+  });
+
+  if (error) {
+    throw new Error(`Đổi mật khẩu thất bại: ${error.message}`);
+  }
+}

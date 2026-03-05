@@ -59,8 +59,10 @@ export const createLecturer = async (data: CreateLecturerInput): Promise<Lecture
 
   try {
     // 2. Create in Supabase Auth (User will log in with Email/Password)
-    // Default password is lecturerCode + "@123"
-    const defaultPassword = `${data.lecturerCode}@123`;
+    // Default password is lecturerCode (padded to 6 chars minimum)
+    const defaultPassword = data.lecturerCode.length < 6 
+      ? data.lecturerCode.padEnd(6, '0') 
+      : data.lecturerCode;
     
     const { data: authUser, error: authError } = await supabase.auth.admin.createUser({
       email: data.email || "",
@@ -263,4 +265,32 @@ export const getLecturerDashboard = async (lecturerId: number) => {
     throw new Error(`Lecturer with ID ${lecturerId} not found`);
   }
   return await lecturerRepository.getLecturerDashboardStats(lecturerId);
+};
+
+/**
+ * Reset a lecturer's password to their lecturerCode (padded to 6 chars).
+ * Only accessible by Admin.
+ */
+export const resetLecturerPassword = async (id: number): Promise<void> => {
+  const lecturer = await lecturerRepository.findById(id);
+  if (!lecturer) {
+    throw new Error(`Lecturer with ID ${id} not found`);
+  }
+
+  if (!lecturer.authId) {
+    throw new Error(`Giảng viên ${lecturer.lecturerCode} chưa có tài khoản Auth để reset.`);
+  }
+
+  // Default password is lecturerCode (padded to 6 chars minimum)
+  const defaultPassword = lecturer.lecturerCode.length < 6 
+    ? lecturer.lecturerCode.padEnd(6, '0') 
+    : lecturer.lecturerCode;
+
+  const { error } = await supabase.auth.admin.updateUserById(lecturer.authId, {
+    password: defaultPassword,
+  });
+
+  if (error) {
+    throw new Error(`Reset mật khẩu thất bại: ${error.message}`);
+  }
 };

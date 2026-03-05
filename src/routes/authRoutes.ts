@@ -3,7 +3,7 @@
  * Public endpoints for authentication (no token required)
  */
 import express from "express";
-import { login, logout, getMe, googleSignIn, googleCallback, googleNativeSignIn } from "../controllers/authController.js";
+import { login, logout, getMe, googleSignIn, googleCallback, googleNativeSignIn, changePassword } from "../controllers/authController.js";
 import { authenticate } from "../middleware/auth.js";
 
 
@@ -23,6 +23,9 @@ router.get("/callback", googleCallback);
 
 // POST /api/auth/logout — requires token
 router.post("/logout", authenticate, logout);
+
+// POST /api/auth/change-password — requires token
+router.post("/change-password", authenticate, changePassword);
 
 // GET /api/auth/me — requires token
 router.get("/me", authenticate, getMe);

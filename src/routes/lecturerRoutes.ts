@@ -34,6 +34,9 @@ router.patch("/:id", requireRole("admin"), lecturerController.updateLecturer);
 // DELETE /api/lecturers/:id - Delete lecturer
 router.delete("/:id", requireRole("admin"), lecturerController.deleteLecturer);
 
+// POST /api/lecturers/:id/reset-password - Reset lecturer password (Admin)
+router.post("/:id/reset-password", requireRole("admin"), lecturerController.resetPassword);
+
 
 
 // PATCH /api/lecturers/:id/qualifications - Batch update/upsert (legacy compatible)

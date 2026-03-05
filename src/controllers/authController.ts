@@ -12,7 +12,63 @@ import {
   handleGoogleCallback,
   loginWithIdToken,
   syncUserMetadata,
+  changeUserPassword,
 } from "../services/authService.js";
+
+/**
+ * @swagger
+ * /api/auth/change-password:
+ *   post:
+ *     summary: "[LECTURER, ADMIN] Change own password"
+ *     description: Allows the currently authenticated user to update their password. Password must be at least 6 characters. **NOTE: Old password is NOT required.**
+ *     tags: [Auth]
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - newPassword
+ *             properties:
+ *               newPassword:
+ *                 type: string
+ *                 minLength: 6
+ *                 description: The new password to set.
+ *                 example: "newSecretPassword123"
+ *     responses:
+ *       200:
+ *         description: Password changed successfully.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ApiResponse'
+ *       400:
+ *         description: Validation error (e.g., password too short).
+ *       401:
+ *         description: Unauthorized. Invalid or missing token.
+ *       500:
+ *         description: Internal server error.
+ */
+export const changePassword = async (req: Request, res: Response): Promise<Response> => {
+  try {
+    const { newPassword } = req.body;
+    const user = req.user!;
+
+    if (!newPassword || newPassword.length < 6) {
+      return validationErrorResponse(res, { message: "Mật khẩu mới phải có ít nhất 6 ký tự." });
+    }
+
+    await changeUserPassword(user.id, newPassword);
+
+    return successResponse(res, null, "Đổi mật khẩu thành công.");
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "Đổi mật khẩu thất bại.";
+    return errorResponse(res, message, 500);
+  }
+};
 
 /**
  * @swagger
