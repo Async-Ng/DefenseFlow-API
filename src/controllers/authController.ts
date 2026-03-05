@@ -20,7 +20,7 @@ import {
  * /api/auth/change-password:
  *   post:
  *     summary: "[LECTURER, ADMIN] Change own password"
- *     description: Allows the currently authenticated user to update their password. Password must be at least 6 characters. **NOTE: Old password is NOT required.**
+ *     description: Allows the currently authenticated user to update their password. Password must be at least 6 characters. **NOTE - Old password is NOT required.**
  *     tags: [Auth]
  *     security:
  *       - bearerAuth: []
