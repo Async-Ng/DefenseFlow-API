@@ -33,12 +33,19 @@ const options: swaggerJsdoc.Options = {
           properties: {
             id: { type: "integer", example: 1 },
             topicCode: { type: "string", maxLength: 50, example: "TOPIC_001" },
+            groupCode: { type: "string", maxLength: 50, nullable: true, example: "SE1701" },
             semesterId: { type: "integer", example: 1 },
             title: {
               type: "string",
               maxLength: 255,
               nullable: true,
               example: "AI Research",
+            },
+            vietnameseTitle: {
+              type: "string",
+              maxLength: 255,
+              nullable: true,
+              example: "Nghiên cứu AI",
             },
             semester: { $ref: "#/components/schemas/Semester" },
             topicSupervisors: {
@@ -80,7 +87,9 @@ const options: swaggerJsdoc.Options = {
           type: "object",
           properties: {
             topicCode: { type: "string", maxLength: 50, example: "TOPIC_001" },
+            groupCode: { type: "string", maxLength: 50, example: "SE1701" },
             title: { type: "string", maxLength: 255, example: "AI Research" },
+            vietnameseTitle: { type: "string", maxLength: 255, example: "Nghiên cứu AI" },
             supervisorIds: {
               type: "array",
               items: { type: "integer" },

@@ -5,6 +5,7 @@ interface TopicImportRow {
   groupCode: string;
   topicCode: string;
   title: string;
+  vietnameseTitle?: string;
   supervisor1Code: string;
   supervisor2Code?: string;
   topicTypeName?: string;
@@ -48,19 +49,24 @@ export class ImportService {
     const processedCodes = new Set<string>();
 
     const rawRows = await this.parseExcel<TopicImportRow>(buffer, (row) => {
-      // Cell 1: STT, Cell 2: Group Code, Cell 3: Topic Code, Cell 4: Title, Cell 5: GVHD1, Cell 6: GVHD2
-      const groupCode = row.getCell(2).text?.toString().trim();
-      const topicCode = row.getCell(3).text?.toString().trim();
-      const title = row.getCell(4).text?.toString().trim();
-      const supervisor1Code = row.getCell(5).text?.toString().trim();
-      const supervisor2Code = row.getCell(6).text?.toString().trim();
+      // Cell 1: STT, Cell 2: Topic Code, Cell 3: Group Code, Cell 4: Title EN, Cell 5: Title VI, Cell 6: GVHD Name, Cell 7: GVHD1, Cell 8: GVHD2
+      const topicCode = row.getCell(2).text?.toString().trim();
+      const groupCode = row.getCell(3).text?.toString().trim();
+      const titleEN = row.getCell(4).text?.toString().trim();
+      const titleVI = row.getCell(5).text?.toString().trim();
+      const supervisor1Code = row.getCell(7).text?.toString().trim();
+      const supervisor2Code = row.getCell(8).text?.toString().trim();
 
-      if (!groupCode || !topicCode || !title || !supervisor1Code) return null;
+      const title = titleEN || "";
+      const vietnameseTitle = titleVI || undefined;
+
+      if (!groupCode || !topicCode || (!title && !vietnameseTitle) || !supervisor1Code) return null;
 
       return {
         groupCode,
         topicCode,
         title,
+        vietnameseTitle,
         supervisor1Code,
         supervisor2Code: supervisor2Code || undefined,
       };
@@ -133,7 +139,9 @@ export class ImportService {
 
       validTopics.push({
         topicCode: row.topicCode,
+        groupCode: row.groupCode,
         title: row.title,
+        vietnameseTitle: row.vietnameseTitle,
         semesterId: semesterId,
         topicTypeId: topicTypeId,
         supervisorIds: supervisors.map((s) => s.id),
@@ -249,7 +257,7 @@ export class ImportService {
     const sheet = workbook.addWorksheet("PROJECTS INFORMATION");
 
     // Add header row with merged cells for title
-    sheet.mergeCells('A1:F1');
+    sheet.mergeCells('A1:H1');
     const titleCell = sheet.getCell('A1');
     titleCell.value = 'PROJECTS INFORMATION';
     titleCell.font = { bold: true, size: 14, color: { argb: 'FFFF0000' } }; // Red text
@@ -263,9 +271,11 @@ export class ImportService {
     // Add column headers in row 2
     sheet.getRow(2).values = [
       'STT',
-      'Mã nhóm',
       'Mã đề tài',
+      'Mã nhóm',
       'Tên đề tài Tiếng Anh/ Tiếng Nhật',
+      'Tên đề tài Tiếng Việt',
+      'GVHD',
       'GVHD1',
       'GVHD2',
     ];
@@ -282,14 +292,16 @@ export class ImportService {
 
     // Set column widths
     sheet.getColumn(1).width = 8;  // STT
-    sheet.getColumn(2).width = 15; // Mã nhóm
-    sheet.getColumn(3).width = 15; // Mã đề tài
-    sheet.getColumn(4).width = 60; // Tên đề tài
-    sheet.getColumn(5).width = 15; // GVHD1
-    sheet.getColumn(6).width = 15; // GVHD2
+    sheet.getColumn(2).width = 15; // Mã đề tài
+    sheet.getColumn(3).width = 15; // Mã nhóm
+    sheet.getColumn(4).width = 50; // Tên đề tài Tiếng Anh
+    sheet.getColumn(5).width = 50; // Tên đề tài Tiếng Việt
+    sheet.getColumn(6).width = 25; // GVHD
+    sheet.getColumn(7).width = 15; // GVHD1
+    sheet.getColumn(8).width = 15; // GVHD2
 
     // Add borders to header
-    for (let col = 1; col <= 6; col++) {
+    for (let col = 1; col <= 8; col++) {
       const cell = headerRow.getCell(col);
       cell.border = {
         top: { style: 'thin' },

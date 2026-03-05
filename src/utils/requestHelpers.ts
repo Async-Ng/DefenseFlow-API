@@ -180,6 +180,7 @@ export const getTopicFilters = (req: Request): TopicFilters => {
 
   return {
     topicCode: isString(req.query.topicCode) ? req.query.topicCode : undefined,
+    groupCode: isString(req.query.groupCode) ? req.query.groupCode : undefined,
     title: isString(req.query.title) ? req.query.title : undefined,
     semesterId: isString(req.query.semesterId) ? parseInt(req.query.semesterId, 10) : undefined,
     supervisorIds,

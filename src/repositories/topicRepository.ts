@@ -35,8 +35,11 @@ export const findAll = async (
   if (filters.topicCode) {
     where.topicCode = { contains: filters.topicCode };
   }
+  if (filters.groupCode) {
+    where.groupCode = { contains: filters.groupCode, mode: "insensitive" };
+  }
   if (filters.title) {
-    where.title = { contains: filters.title };
+    where.title = { contains: filters.title, mode: "insensitive" };
   }
   if (filters.semesterId) {
     where.semesterId = filters.semesterId;

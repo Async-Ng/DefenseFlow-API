@@ -50,8 +50,10 @@ model Lecturer {
 model Topic {
   id                  Int                  @id @default(autoincrement())
   topicCode           String               @unique @map("topic_code") @db.VarChar(50)
-  semesterId          Int                  @map("semester_id")
+  groupCode           String?              @map("group_code") @db.VarChar(50)
   title               String?              @db.VarChar(255)
+  vietnameseTitle     String?              @map("vietnamese_title") @db.VarChar(255)
+  semesterId          Int                  @map("semester_id")
   topicTypeId         Int?                 @map("topic_type_id")
   topicDefenses       TopicDefense[]
   topicQualifications TopicQualification[]

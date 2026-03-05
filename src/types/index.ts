@@ -183,21 +183,26 @@ export type UpdateTopicResultInput = {
 
 export type CreateTopicInput = {
   topicCode: string;
+  groupCode?: string;
   semesterId: number;
   title?: string;
+  vietnameseTitle?: string;
   topicTypeId?: number;
   supervisorIds?: number[];
 };
 
 export type UpdateTopicInput = {
   topicCode?: string;
+  groupCode?: string;
   title?: string;
+  vietnameseTitle?: string;
   topicTypeId?: number;
   supervisorIds?: number[];
 };
 
 export type TopicFilterQuery = {
   topicCode?: string | string[];
+  groupCode?: string | string[];
   title?: string | string[];
   semesterId?: string | string[];
   supervisorIds?: string | string[];
@@ -206,6 +211,7 @@ export type TopicFilterQuery = {
 
 export type TopicFilters = {
   topicCode?: string;
+  groupCode?: string;
   title?: string;
   semesterId?: number;
   supervisorIds?: number[];
