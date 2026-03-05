@@ -252,3 +252,36 @@ export async function changeUserPassword(userId: string, newPassword: string): P
     throw new Error(`Đổi mật khẩu thất bại: ${error.message}`);
   }
 }
+
+/**
+ * Update the profile information for a user.
+ */
+export async function updateUserProfile(
+  userId: string,
+  lecturerId: number,
+  data: { fullName?: string; email?: string }
+): Promise<void> {
+  // 1. Update Database
+  await prisma.lecturer.update({
+    where: { id: lecturerId },
+    data: {
+      fullName: data.fullName,
+      email: data.email,
+    },
+  });
+
+  // 2. Update Supabase Auth metadata
+  if (data.fullName) {
+    const { error } = await supabase.auth.admin.updateUserById(userId, {
+      user_metadata: { full_name: data.fullName },
+      app_metadata: { fullName: data.fullName } // Syncing app_metadata as well since syncUserMetadata uses it
+    });
+
+    if (error) {
+      throw new Error(`Cập nhật Auth metadata thất bại: ${error.message}`);
+    }
+  }
+
+  // Note: Changing email in Supabase is a sensitive operation that usually involves re-verification.
+  // For simplicity and immediate effect in this system, we focus on the database and metadata.
+}

@@ -13,6 +13,7 @@ import {
   loginWithIdToken,
   syncUserMetadata,
   changeUserPassword,
+  updateUserProfile,
 } from "../services/authService.js";
 
 /**
@@ -482,5 +483,64 @@ export const googleNativeSignIn = async (req: Request, res: Response): Promise<R
   } catch (err) {
     const message = err instanceof Error ? err.message : "Authentication failed.";
     return res.status(401).json({ success: false, message });
+  }
+};
+/**
+ * @swagger
+ * /api/auth/profile:
+ *   patch:
+ *     summary: "[LECTURER, ADMIN] Update own profile"
+ *     description: Allows the currently authenticated user to update their full name and email.
+ *     tags: [Auth]
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               fullName:
+ *                 type: string
+ *                 example: "Nguyen Van A"
+ *               email:
+ *                 type: string
+ *                 format: email
+ *                 example: "new.email@fpt.edu.vn"
+ *     responses:
+ *       200:
+ *         description: Profile updated successfully.
+ *       400:
+ *         description: Validation or processing error.
+ *       401:
+ *         description: Unauthorized.
+ *       500:
+ *         description: Internal server error.
+ */
+export const updateProfile = async (req: Request, res: Response): Promise<Response> => {
+  try {
+    const user = req.user!;
+    const { fullName, email } = req.body;
+    const lecturerId = (user.app_metadata as any).lecturerId;
+
+    if (!lecturerId) {
+      return errorResponse(res, "Không tìm thấy thông tin giảng viên liên kết với tài khoản này.", 403);
+    }
+
+    const dataToUpdate: { fullName?: string; email?: string } = {};
+    if (fullName) dataToUpdate.fullName = fullName;
+    if (email) dataToUpdate.email = email;
+
+    if (Object.keys(dataToUpdate).length === 0) {
+      return errorResponse(res, "Không có thông tin nào để cập nhật.", 400);
+    }
+
+    await updateUserProfile(user.id, lecturerId, dataToUpdate);
+
+    return successResponse(res, null, "Cập nhật profile thành công.");
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "Cập nhật profile thất bại.";
+    return errorResponse(res, message, 500);
   }
 };

@@ -52,8 +52,14 @@ export const getLecturerById = async (
     if (isNaN(id)) {
       return errorResponse(res, "Invalid lecturer ID", 400);
     }
-
     const lecturer = await lecturerService.getLecturerById(id);
+
+    // Privacy rule: Only admins can see qualifications
+    const userRoles = (req.user?.app_metadata as any)?.roles || [];
+    if (!userRoles.includes("admin")) {
+      delete (lecturer as any).lecturerQualifications;
+    }
+
     return successResponse(res, lecturer, "Lecturer retrieved successfully");
   } catch (error: unknown) {
     const message = getErrorMessage(error);
@@ -273,8 +279,17 @@ export const getAllLecturers = async (
   try {
     const { page, limit } = getPaginationParams(req);
     const filters = getLecturerFilters(req);
-
     const result = await lecturerService.getAllLecturers(page, limit, filters);
+
+    // Privacy rule: Only admins can see qualifications
+    const userRoles = (req.user?.app_metadata as any)?.roles || [];
+    if (!userRoles.includes("admin")) {
+      result.data = result.data.map(lecturer => {
+        const l = lecturer as any;
+        delete l.lecturerQualifications;
+        return l;
+      });
+    }
 
     return paginatedResponse(
       res,
