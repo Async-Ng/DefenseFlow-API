@@ -3,6 +3,7 @@
  * Business logic layer for Lecturer operations (Functional)
  */
 
+import { supabase } from "../config/supabase.js";
 import * as lecturerRepository from "../repositories/lecturerRepository.js";
 import type {
   Lecturer,
@@ -52,7 +53,45 @@ export const createLecturer = async (data: CreateLecturerInput): Promise<Lecture
   if (existing) {
     throw new Error(`Lecturer with code ${data.lecturerCode} already exists`);
   }
-  return await lecturerRepository.create(data);
+
+  // 1. Create in Database first to get the local ID
+  const lecturer = await lecturerRepository.create(data);
+
+  try {
+    // 2. Create in Supabase Auth (User will log in with Email/Password)
+    // Default password is lecturerCode + "@123"
+    const defaultPassword = `${data.lecturerCode}@123`;
+    
+    const { data: authUser, error: authError } = await supabase.auth.admin.createUser({
+      email: data.email || "",
+      password: defaultPassword,
+      email_confirm: true,
+      user_metadata: {
+        full_name: data.fullName,
+      },
+      app_metadata: {
+        roles: ["lecturer"],
+        lecturerId: lecturer.id,
+        fullName: data.fullName,
+      }
+    });
+
+    if (authError) {
+      // Rollback: Delete the lecturer if auth creation fails
+      console.error("Supabase Auth creation failed, rolling back lecturer record:", authError.message);
+      await lecturerRepository.deleteLecturer(lecturer.id);
+      throw new Error(`Lỗi tạo tài khoản Auth: ${authError.message}`);
+    }
+
+    // 3. Link Supabase auth_id back to our Lecturer record
+    const updated = await lecturerRepository.update(lecturer.id, {
+      authId: authUser.user.id
+    });
+
+    return updated;
+  } catch (error: any) {
+    throw error;
+  }
 };
 
 /**
@@ -83,8 +122,6 @@ export const deleteLecturer = async (id: number): Promise<void> => {
     throw new Error(`Lecturer with ID ${id} not found`);
   }
 
-  // Optional: Add dependency checks here (e.g. if lecturer is currently in a council board)
-  
   await lecturerRepository.deleteLecturer(id);
 };
 
@@ -171,8 +208,6 @@ export const addLecturerQualifications = async (
   const updated = await lecturerRepository.findById(id, true);
   return updated as LecturerWithQualifications;
 };
-
-
 
 /**
  * Delete a qualification from a lecturer

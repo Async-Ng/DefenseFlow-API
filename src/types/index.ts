@@ -272,7 +272,9 @@ export type CreateLecturerInput = {
   email?: string;
 };
 
-export type UpdateLecturerInput = Partial<CreateLecturerInput>;
+export type UpdateLecturerInput = Partial<CreateLecturerInput> & {
+  authId?: string;
+};
 
 export type CreateTopicDefenseInput = {
   topicIds: number[];
