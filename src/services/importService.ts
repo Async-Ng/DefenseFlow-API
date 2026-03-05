@@ -112,7 +112,7 @@ export class ImportService {
             create: {
               lecturerCode: code,
               fullName: code, // Placeholder, can be updated later
-              email: `${code}@fe.edu.vn`, // Placeholder email
+              email: `${code.toLowerCase()}@fe.edu.vn`, // Placeholder email
             },
           })
         )
