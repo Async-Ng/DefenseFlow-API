@@ -31,7 +31,7 @@ export class ImportService {
     const results: T[] = [];
 
     worksheet.eachRow((row, rowNumber) => {
-      if (rowNumber === 1) return; // Skip header
+      if (rowNumber <= 2) return; // Skip header rows (Title + Columns)
       const mapped = mapRow(row);
       if (mapped) results.push(mapped);
     });
@@ -98,31 +98,25 @@ export class ImportService {
         continue;
       }
 
-      // 2. Find supervisors by Code
+      // 2. Find supervisors by Code, auto-create if not found
       const supervisorCodes = [row.supervisor1Code];
       if (row.supervisor2Code) {
         supervisorCodes.push(row.supervisor2Code);
       }
 
-      const supervisors = await prisma.lecturer.findMany({
-        where: {
-          lecturerCode: { in: supervisorCodes },
-        },
-      });
-
-      if (supervisors.length !== supervisorCodes.length) {
-        const foundCodes = supervisors.map((s) => s.lecturerCode);
-        const notFoundCodes = supervisorCodes.filter(
-          (code) => !foundCodes.includes(code),
-        );
-        errors.push({
-          row: rowNum,
-          message: `Supervisor(s) with code(s) '${notFoundCodes.join(
-            ", ",
-          )}' not found.`,
-        });
-        continue;
-      }
+      const supervisors = await Promise.all(
+        supervisorCodes.map((code) =>
+          prisma.lecturer.upsert({
+            where: { lecturerCode: code },
+            update: {},
+            create: {
+              lecturerCode: code,
+              fullName: code, // Placeholder, can be updated later
+              email: `${code}@fe.edu.vn`, // Placeholder email
+            },
+          })
+        )
+      );
 
       // 3. Resolve Topic Type
       let topicTypeId: number | undefined;
@@ -181,10 +175,10 @@ export class ImportService {
     const processedCodes = new Set<string>();
 
     const rawRows = await this.parseExcel<LecturerImportRow>(buffer, (row) => {
-      // Cell 1: Lecturer Code (Optional), Cell 2: Name, Cell 3: Email
-      const lecturerCode = row.getCell(1).text?.toString().trim();
-      const name = row.getCell(2).text?.toString().trim();
-      const email = row.getCell(3).text?.toString().trim();
+      // Cell 1: STT, Cell 2: Lecturer Code (Optional), Cell 3: Name, Cell 4: Email
+      const lecturerCode = row.getCell(2).text?.toString().trim();
+      const name = row.getCell(3).text?.toString().trim();
+      const email = row.getCell(4).text?.toString().trim();
 
       if (!name || !email) return null;
       return { name, email, lecturerCode };
@@ -313,13 +307,54 @@ export class ImportService {
    */
   async getLecturerTemplate(): Promise<Buffer> {
     const workbook = new ExcelJS.Workbook();
-    const sheet = workbook.addWorksheet("Lecturers");
+    const sheet = workbook.addWorksheet("LECTURERS INFORMATION");
 
-    sheet.columns = [
-      { header: "Lecturer Code", key: "lecturerCode", width: 15 },
-      { header: "Name", key: "name", width: 30 },
-      { header: "Email", key: "email", width: 30 },
+    // Add header row with merged cells for title
+    sheet.mergeCells('A1:D1');
+    const titleCell = sheet.getCell('A1');
+    titleCell.value = 'LECTURERS INFORMATION';
+    titleCell.font = { bold: true, size: 14, color: { argb: 'FFFF0000' } }; // Red text
+    titleCell.alignment = { horizontal: 'center', vertical: 'middle' };
+    titleCell.fill = {
+      type: 'pattern',
+      pattern: 'solid',
+      fgColor: { argb: 'FFFFFFFF' }, // White background
+    };
+
+    // Add column headers in row 2
+    sheet.getRow(2).values = [
+      'STT',
+      'Mã giảng viên',
+      'Họ và tên',
+      'Email',
     ];
+
+    // Style the header row
+    const headerRow = sheet.getRow(2);
+    headerRow.font = { bold: true };
+    headerRow.alignment = { horizontal: 'center', vertical: 'middle' };
+    headerRow.fill = {
+      type: 'pattern',
+      pattern: 'solid',
+      fgColor: { argb: 'FFD9D9D9' }, // Light gray
+    };
+
+    // Set column widths
+    sheet.getColumn(1).width = 8;  // STT
+    sheet.getColumn(2).width = 20; // Mã giảng viên
+    sheet.getColumn(3).width = 30; // Họ và tên
+    sheet.getColumn(4).width = 40; // Email
+
+    // Add borders to header
+    for (let col = 1; col <= 4; col++) {
+      const cell = headerRow.getCell(col);
+      cell.border = {
+        top: { style: 'thin' },
+        left: { style: 'thin' },
+        bottom: { style: 'thin' },
+        right: { style: 'thin' },
+      };
+    }
 
     return ((await workbook.xlsx.writeBuffer()) as unknown) as Buffer;
   }
