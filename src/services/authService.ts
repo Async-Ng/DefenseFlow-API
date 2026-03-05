@@ -11,6 +11,7 @@ import type { User } from "@supabase/supabase-js";
 export interface AppMeta {
   roles?: string[];
   lecturerId?: number;
+  fullName?: string;
 }
 
 export interface AuthUserPayload {
@@ -18,6 +19,7 @@ export interface AuthUserPayload {
   email: string | undefined;
   roles: string[];
   lecturerId: number | null;
+  name: string | null;
 }
 
 export interface LoginResult {
@@ -40,6 +42,7 @@ function extractUserPayload(user: User): AuthUserPayload {
     email: user.email,
     roles: appMeta.roles ?? [],
     lecturerId: appMeta.lecturerId ?? null,
+    name: appMeta.fullName ?? null,
   };
 }
 
@@ -124,26 +127,30 @@ export type GoogleCallbackResult =
 export async function syncUserMetadata(user: User): Promise<AppMeta | "access_denied"> {
   const appMeta = user.app_metadata as AppMeta;
 
-  // If already has roles, no need to sync (avoid extra DB calls)
-  if (appMeta.roles && appMeta.roles.length > 0) {
+  // If already has roles AND fullName, no need to sync
+  if (appMeta.roles && appMeta.roles.length > 0 && appMeta.fullName) {
     return appMeta;
   }
 
-  // First-time login: assign roles based on Lecturers table
+  // Find lecturer info
   const lecturer = await prisma.lecturer.findFirst({
     where: { email: user.email ?? "" },
-    select: { id: true },
+    select: { id: true, fullName: true },
   });
 
   if (!lecturer) {
-    // Email not recognized — delete the ghost Supabase user and reject
-    await supabase.auth.admin.deleteUser(user.id);
-    return "access_denied";
+    // Only delete if it's a completely unknown user (no roles)
+    if (!appMeta.roles || appMeta.roles.length === 0) {
+      await supabase.auth.admin.deleteUser(user.id);
+      return "access_denied";
+    }
+    return appMeta; // Keep as is if they already have roles but aren't in Lecturers (unlikely)
   }
 
   const newMeta: AppMeta = {
-    roles: ["lecturer"],
+    roles: appMeta.roles && appMeta.roles.length > 0 ? appMeta.roles : ["lecturer"],
     lecturerId: lecturer.id,
+    fullName: lecturer.fullName || undefined,
   };
 
   // Assign lecturer role + link lecturerId in Supabase app_metadata
@@ -189,6 +196,7 @@ export async function handleGoogleCallback(
         email: data.user.email,
         roles: metaResult.roles ?? [],
         lecturerId: metaResult.lecturerId ?? null,
+        name: metaResult.fullName ?? null,
       },
     },
   };
@@ -227,6 +235,7 @@ export async function loginWithIdToken(
         email: data.user.email,
         roles: metaResult.roles ?? [],
         lecturerId: metaResult.lecturerId ?? null,
+        name: metaResult.fullName ?? null,
       },
     },
   };

@@ -205,12 +205,12 @@ export const getMe = async (req: Request, res: Response): Promise<Response> => {
       });
     }
 
-    // Build payload using synchronized metadata
     const payload = {
       id: user.id,
       email: user.email,
       roles: metaResult.roles ?? [],
       lecturerId: metaResult.lecturerId ?? null,
+      name: metaResult.fullName ?? null,
     };
 
     return successResponse(res, payload, "User info retrieved");
