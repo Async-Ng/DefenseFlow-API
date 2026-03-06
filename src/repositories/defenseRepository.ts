@@ -30,6 +30,7 @@ export const create = async (data: CreateDefenseInput): Promise<Defense> => {
       timePerTopic: data.timePerTopic,
       maxCouncilsPerDay: data.maxCouncilsPerDay,
       workStartTime: data.workStartTime,
+      status: data.status || "Open",
       availabilityStartDate: data.availabilityStartDate ? new Date(data.availabilityStartDate) : null,
       availabilityEndDate: data.availabilityEndDate ? new Date(data.availabilityEndDate) : null,
     },
@@ -54,6 +55,7 @@ export const createWithDays = async (
         timePerTopic: defenseData.timePerTopic,
         maxCouncilsPerDay: defenseData.maxCouncilsPerDay,
         workStartTime: defenseData.workStartTime,
+        status: defenseData.status || "Open",
         availabilityStartDate: defenseData.availabilityStartDate ? new Date(defenseData.availabilityStartDate) : null,
         availabilityEndDate: defenseData.availabilityEndDate ? new Date(defenseData.availabilityEndDate) : null,
       },
@@ -208,6 +210,8 @@ export const update = async (
     updateData.maxCouncilsPerDay = data.maxCouncilsPerDay;
   if (data.workStartTime !== undefined)
     updateData.workStartTime = data.workStartTime;
+  if (data.status !== undefined)
+    updateData.status = data.status;
   if (data.availabilityStartDate !== undefined)
     updateData.availabilityStartDate = data.availabilityStartDate ? new Date(data.availabilityStartDate) : null;
   if (data.availabilityEndDate !== undefined)

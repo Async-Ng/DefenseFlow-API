@@ -255,6 +255,13 @@ const options: swaggerJsdoc.Options = {
               example: "08:00:00",
             },
             maxCouncilsPerDay: { type: "integer", example: 1 },
+            status: {
+              type: "string",
+              enum: ["Open", "Locked"],
+              default: "Open",
+              example: "Open",
+              description: "Current status of the defense round",
+            },
             availabilityStartDate: {
               type: "string",
               format: "date",
@@ -290,6 +297,12 @@ const options: swaggerJsdoc.Options = {
               example: "08:00:00",
             },
             maxCouncilsPerDay: { type: "integer", example: 1 },
+            status: {
+              type: "string",
+              enum: ["Open", "Locked"],
+              example: "Open",
+              description: "Current status of the defense round",
+            },
             availabilityStartDate: {
               type: "string",
               format: "date",

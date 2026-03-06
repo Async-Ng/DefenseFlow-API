@@ -24,6 +24,7 @@ import type {
   CouncilBoardMember,
   TopicSupervisor,
   DefenseCouncil,
+  DefenseStatus,
 } from "../../generated/prisma/client.js";
 
 export type {
@@ -44,6 +45,7 @@ export type {
   CouncilBoardMember,
   TopicSupervisor,
   DefenseCouncil,
+  DefenseStatus,
 };
 
 // ============================================================================
@@ -106,6 +108,7 @@ export type DefenseFilterQuery = {
   defenseCode?: string | string[];
   type?: string | string[];
   maxCouncilsPerDay?: string | string[];
+  status?: string | string[];
   search?: string | string[];
 };
 
@@ -142,6 +145,7 @@ export type CreateDefenseInput = {
   timePerTopic?: number;
   maxCouncilsPerDay?: number;
   workStartTime?: string;
+  status?: DefenseStatus;
   defenseDays?: CreateDefenseDayInput[];
   availabilityStartDate?: string;
   availabilityEndDate?: string;
@@ -160,6 +164,7 @@ export type UpdateDefenseInput = {
   timePerTopic?: number;
   maxCouncilsPerDay?: number;
   workStartTime?: string;
+  status?: DefenseStatus;
   defenseDays?: CreateDefenseDayInput[];
   availabilityStartDate?: string;
   availabilityEndDate?: string;
@@ -411,6 +416,7 @@ export type DefenseFilters = {
   semesterId?: number;
   type?: DefenseType;
   maxCouncilsPerDay?: number;
+  status?: DefenseStatus;
   search?: string;
 };
 
