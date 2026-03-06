@@ -282,6 +282,11 @@ export type UpdateLecturerInput = Partial<CreateLecturerInput> & {
   authId?: string;
 };
 
+export type UpdateLecturerRolesInput = {
+  isLecturer: boolean;
+  isAdmin: boolean;
+};
+
 export type CreateTopicDefenseInput = {
   topicIds: number[];
   defenseId: number;

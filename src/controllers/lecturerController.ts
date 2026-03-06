@@ -8,6 +8,7 @@ import type {
   UpdateLecturerQualificationsInput,
   CreateLecturerInput,
   UpdateLecturerInput,
+  UpdateLecturerRolesInput,
 } from "../types/index.js";
 
 /**
@@ -574,6 +575,73 @@ export const resetPassword = async (req: Request, res: Response): Promise<Respon
     const message = getErrorMessage(error);
     if (message.includes("not found") || message.includes("chưa có tài khoản")) {
       return notFoundResponse(res, message);
+    }
+    return errorResponse(res, message, 500);
+  }
+};
+
+/**
+ * @swagger
+ * /api/lecturers/{id}/roles:
+ *   patch:
+ *     summary: "[ADMIN] Update lecturer roles"
+ *     description: Update the roles (isLecturer, isAdmin) of a lecturer.
+ *     tags: [Lecturers]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: integer
+ *         description: Lecturer ID.
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - isLecturer
+ *               - isAdmin
+ *             properties:
+ *               isLecturer:
+ *                 type: boolean
+ *               isAdmin:
+ *                 type: boolean
+ *     responses:
+ *       200:
+ *         description: Roles updated successfully.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ApiResponse'
+ *       400:
+ *         description: Invalid input or user attempting to clear all roles.
+ *       404:
+ *         description: Lecturer not found or has no Auth account.
+ *       500:
+ *         description: Internal server error.
+ */
+export const updateLecturerRoles = async (req: Request, res: Response): Promise<Response> => {
+  try {
+    const id = getIdParam(req);
+    const data: UpdateLecturerRolesInput = req.body;
+    
+    if (typeof data.isLecturer !== "boolean" || typeof data.isAdmin !== "boolean") {
+       return validationErrorResponse(res, { message: "isLecturer and isAdmin must be boolean values" });
+    }
+
+    await lecturerService.updateLecturerRoles(id, data);
+    return successResponse(res, null, "Cập nhật quyền thành công.");
+  } catch (error: unknown) {
+    const message = getErrorMessage(error);
+    if (message.includes("not found") || message.includes("chưa có tài khoản")) {
+      return notFoundResponse(res, message);
+    }
+    if (message.includes("ít nhất một quyền")) {
+      return errorResponse(res, message, 400);
     }
     return errorResponse(res, message, 500);
   }

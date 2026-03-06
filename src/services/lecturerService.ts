@@ -13,6 +13,7 @@ import type {
   LecturerFilters,
   CreateLecturerInput,
   UpdateLecturerInput,
+  UpdateLecturerRolesInput,
 } from "../types/index.js";
 
 /**
@@ -287,5 +288,51 @@ export const resetLecturerPassword = async (id: number): Promise<void> => {
 
   if (error) {
     throw new Error(`Reset mật khẩu thất bại: ${error.message}`);
+  }
+};
+
+/**
+ * Update the roles for a lecturer in Supabase Auth via boolean flags.
+ * Only accessible by Admin.
+ */
+export const updateLecturerRoles = async (id: number, rolesInput: UpdateLecturerRolesInput): Promise<void> => {
+  const lecturer = await lecturerRepository.findById(id);
+  if (!lecturer) {
+    throw new Error(`Lecturer with ID ${id} not found`);
+  }
+
+  if (!lecturer.authId) {
+    throw new Error(`Giảng viên ${lecturer.lecturerCode} chưa có tài khoản Auth để cập nhật quyền.`);
+  }
+
+  // Fetch current user details from Supabase admin
+  const { data: { user }, error: getUserError } = await supabase.auth.admin.getUserById(lecturer.authId);
+  
+  if (getUserError || !user) {
+    throw new Error(`Lỗi khi lấy thông tin tài khoản: ${getUserError?.message}`);
+  }
+
+  const appMeta = user.app_metadata || {};
+  
+  // Construct new roles array based on flags
+  const newRoles: string[] = [];
+  if (rolesInput.isLecturer) newRoles.push("lecturer");
+  if (rolesInput.isAdmin) newRoles.push("admin");
+  
+  // Always ensure they have at least one role (fallback to lecturer or don't allow empty, but let's just use what's passed)
+  if (newRoles.length === 0) {
+     throw new Error(`Một tài khoản phải có ít nhất một quyền.`);
+  }
+
+  // Update Supabase Auth metadata
+  const { error: updateError } = await supabase.auth.admin.updateUserById(lecturer.authId, {
+    app_metadata: {
+      ...appMeta,
+      roles: newRoles,
+    }
+  });
+
+  if (updateError) {
+    throw new Error(`Cập nhật quyền thất bại: ${updateError.message}`);
   }
 };
