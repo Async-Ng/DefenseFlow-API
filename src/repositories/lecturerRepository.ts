@@ -55,15 +55,13 @@ export const findAll = async (
 
   // Apply filters
   if (filters.lecturerCode) {
-    where.lecturerCode = {
-      contains: filters.lecturerCode,
-    };
+    where.lecturerCode = { contains: filters.lecturerCode, mode: "insensitive" };
   }
   if (filters.fullName) {
-    where.fullName = { contains: filters.fullName };
+    where.fullName = { contains: filters.fullName, mode: "insensitive" };
   }
   if (filters.email) {
-    where.email = { contains: filters.email };
+    where.email = { contains: filters.email, mode: "insensitive" };
   }
 
   const [data, total] = await Promise.all([
