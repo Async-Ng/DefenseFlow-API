@@ -287,6 +287,11 @@ export type UpdateLecturerRolesInput = {
   isAdmin: boolean;
 };
 
+export type PublishAvailabilityInput = {
+  availabilityStartDate?: string;
+  availabilityEndDate?: string;
+};
+
 export type CreateTopicDefenseInput = {
   topicIds: number[];
   defenseId: number;

@@ -223,17 +223,30 @@ export const deleteDefense = async (id: number): Promise<Defense> => {
  * Publish availability registration for a defense
  * Once published, lecturers can view and register their availability
  */
-export const publishAvailability = async (id: number): Promise<Defense> => {
+export const publishAvailability = async (
+  id: number,
+  startDate?: string,
+  endDate?: string,
+): Promise<Defense> => {
   const existing = await defenseRepository.findById(id);
   if (!existing) {
     throw new Error(`Defense with ID ${id} not found`);
   }
 
   if (existing.isAvailabilityPublished) {
-    throw new Error(`Availability for defense '${existing.defenseCode}' is already published`);
+    throw new Error(
+      `Availability for defense '${existing.defenseCode}' is already published`,
+    );
   }
 
-  return await defenseRepository.publishAvailability(id);
+  // Validate dates if provided
+  if (startDate && endDate) {
+    if (new Date(startDate) > new Date(endDate)) {
+      throw new Error("Start date cannot be after end date");
+    }
+  }
+
+  return await defenseRepository.publishAvailability(id, startDate, endDate);
 };
 
 /**

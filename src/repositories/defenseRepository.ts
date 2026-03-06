@@ -367,9 +367,17 @@ export const checkDependencies = async (
 /**
  * Publish availability for a defense (allow lecturers to register)
  */
-export const publishAvailability = async (id: number): Promise<Defense> => {
+export const publishAvailability = async (
+  id: number,
+  startDate?: string,
+  endDate?: string,
+): Promise<Defense> => {
   return await prisma.defense.update({
     where: { id },
-    data: { isAvailabilityPublished: true },
+    data: {
+      isAvailabilityPublished: true,
+      availabilityStartDate: startDate ? new Date(startDate) : undefined,
+      availabilityEndDate: endDate ? new Date(endDate) : undefined,
+    },
   });
 };

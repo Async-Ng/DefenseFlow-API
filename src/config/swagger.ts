@@ -179,6 +179,13 @@ const options: swaggerJsdoc.Options = {
               nullable: true,
               example: "Main",
             },
+            status: {
+              type: "string",
+              enum: ["Open", "Locked"],
+              default: "Open",
+              example: "Open",
+              description: "Current status of the defense round",
+            },
             timePerTopic: {
               type: "integer",
               nullable: true,
@@ -186,7 +193,7 @@ const options: swaggerJsdoc.Options = {
             },
             workStartTime: {
               type: "string",
-              format: "time", // Prisma @db.Time maps to string in JSON usually, representing time
+              format: "time",
               nullable: true,
               example: "08:00:00",
             },
@@ -194,6 +201,32 @@ const options: swaggerJsdoc.Options = {
               type: "integer",
               nullable: true,
               example: 1,
+            },
+            isAvailabilityPublished: {
+              type: "boolean",
+              default: false,
+              example: false,
+              description: "Whether the admin has published availability days for lecturers to register",
+            },
+            isSchedulePublished: {
+              type: "boolean",
+              default: false,
+              example: false,
+              description: "Whether the final defense schedule has been published",
+            },
+            availabilityStartDate: {
+              type: "string",
+              format: "date",
+              nullable: true,
+              example: "2026-05-01",
+              description: "Start date of the availability registration window",
+            },
+            availabilityEndDate: {
+              type: "string",
+              format: "date",
+              nullable: true,
+              example: "2026-05-20",
+              description: "End date of the availability registration window",
             },
             defenseDays: {
               type: "array",
@@ -222,6 +255,20 @@ const options: swaggerJsdoc.Options = {
               example: "08:00:00",
             },
             maxCouncilsPerDay: { type: "integer", example: 1 },
+            availabilityStartDate: {
+              type: "string",
+              format: "date",
+              nullable: true,
+              example: "2026-05-01",
+              description: "Start date of the availability registration window",
+            },
+            availabilityEndDate: {
+              type: "string",
+              format: "date",
+              nullable: true,
+              example: "2026-05-20",
+              description: "End date of the availability registration window",
+            },
             defenseDays: {
               type: "array",
               items: {
@@ -243,11 +290,44 @@ const options: swaggerJsdoc.Options = {
               example: "08:00:00",
             },
             maxCouncilsPerDay: { type: "integer", example: 1 },
+            availabilityStartDate: {
+              type: "string",
+              format: "date",
+              nullable: true,
+              example: "2026-05-01",
+              description: "Start date of the availability registration window",
+            },
+            availabilityEndDate: {
+              type: "string",
+              format: "date",
+              nullable: true,
+              example: "2026-05-20",
+              description: "End date of the availability registration window",
+            },
             defenseDays: {
               type: "array",
               items: {
                 $ref: "#/components/schemas/CreateDefenseDayInput",
               },
+            },
+          },
+        },
+        PublishAvailabilityInput: {
+          type: "object",
+          properties: {
+            availabilityStartDate: {
+              type: "string",
+              format: "date",
+              nullable: true,
+              example: "2026-05-01",
+              description: "Start date of the availability registration window",
+            },
+            availabilityEndDate: {
+              type: "string",
+              format: "date",
+              nullable: true,
+              example: "2026-05-20",
+              description: "End date of the availability registration window",
             },
           },
         },

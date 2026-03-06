@@ -30,6 +30,9 @@ export const getDefenseDays = async (
     throw new Error("Defense days have not been published yet. Please wait for the admin to open the availability registration.");
   }
 
+  // Check if current time is within the availability registration window
+  validateAvailabilityWindow(defense);
+
   // Get all defense days for this defense
   return await availabilityRepository.getDefenseDaysByDefenseId(defenseId);
 };
@@ -51,6 +54,9 @@ export const getDefenseDaysWithAvailability = async (
   if (!defense.isAvailabilityPublished) {
     throw new Error("Defense days have not been published yet. Please wait for the admin to open the availability registration.");
   }
+
+  // Check if current time is within the availability registration window
+  validateAvailabilityWindow(defense);
 
   // Verify lecturer exists
   const lecturer = await availabilityRepository.getLecturerById(lecturerId);
@@ -254,20 +260,26 @@ export const removeAvailability = async (
 
 const validateAvailabilityWindow = (defense: any) => {
   const now = new Date();
-  
-  if (defense.availabilityStartDate) {
-    const start = new Date(defense.availabilityStartDate);
+
+  const start = defense.availabilityStartDate ? new Date(defense.availabilityStartDate) : null;
+  const end = defense.availabilityEndDate ? new Date(defense.availabilityEndDate) : null;
+
+  // If neither date is set, no window restriction — skip
+  if (!start && !end) return;
+
+  if (start) {
     start.setHours(0, 0, 0, 0);
     if (now < start) {
-      throw new Error("Registration period has not started yet");
+      const dateStr = start.toLocaleDateString("vi-VN");
+      throw new Error(`Availability registration has not started yet. Registration opens on ${dateStr}.`);
     }
   }
 
-  if (defense.availabilityEndDate) {
-    const end = new Date(defense.availabilityEndDate);
+  if (end) {
     end.setHours(23, 59, 59, 999);
     if (now > end) {
-      throw new Error("Registration period has ended");
+      const dateStr = end.toLocaleDateString("vi-VN");
+      throw new Error(`Availability registration period has ended (closed on ${dateStr}).`);
     }
   }
 };

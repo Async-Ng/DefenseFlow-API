@@ -86,6 +86,9 @@ export const createDefense = async (
  * /api/defenses:
  *   get:
  *     summary: "[ADMIN, LECTURER] Get all defenses"
+ *     description: |
+ *       Returns a list of defenses.
+ *       **Visibility Note:** For non-admin roles, `defenseDays` list will be empty if `isAvailabilityPublished` is false.
  *     tags: [Defenses]
  *     parameters:
  *       - in: query
@@ -177,6 +180,9 @@ export const getAllDefenses = async (
  * /api/defenses/{id}:
  *   get:
  *     summary: "[ADMIN, LECTURER] Get defense by ID"
+ *     description: |
+ *       Returns details of a specific defense.
+ *       **Visibility Note:** For non-admin roles, `defenseDays` list will be empty if `isAvailabilityPublished` is false.
  *     tags: [Defenses]
  *     parameters:
  *       - in: path
@@ -377,6 +383,9 @@ export const deleteDefense = async (
  * /api/defenses/{id}/publish-availability:
  *   post:
  *     summary: "[ADMIN] Publish defense days so lecturers can register availability"
+ *     description: |
+ *       Publishes the availability for a specific defense. 
+ *       You can optionally provide a registration window (start and end dates).
  *     tags: [Defenses]
  *     parameters:
  *       - in: path
@@ -385,6 +394,12 @@ export const deleteDefense = async (
  *         schema:
  *           type: integer
  *         description: Defense ID
+ *     requestBody:
+ *       required: false
+ *       content:
+ *         application/json:
+ *           schema:
+ *             $ref: '#/components/schemas/PublishAvailabilityInput'
  *     responses:
  *       200:
  *         description: Availability published successfully
@@ -393,7 +408,7 @@ export const deleteDefense = async (
  *             schema:
  *               $ref: '#/components/schemas/DefenseResponse'
  *       400:
- *         description: Already published
+ *         description: Already published or invalid dates
  *         content:
  *           application/json:
  *             schema:
@@ -417,14 +432,26 @@ export const publishAvailability = async (
 ): Promise<Response> => {
   try {
     const id = getIdParam(req);
-    const defense = await defenseService.publishAvailability(id);
-    return successResponse(res, formatDefense(defense), "Availability published successfully");
+    const { availabilityStartDate, availabilityEndDate } = req.body;
+    const defense = await defenseService.publishAvailability(
+      id,
+      availabilityStartDate,
+      availabilityEndDate,
+    );
+    return successResponse(
+      res,
+      formatDefense(defense),
+      "Availability published successfully",
+    );
   } catch (error: unknown) {
     const message = getErrorMessage(error);
     if (message.includes("not found")) {
       return notFoundResponse(res, message);
     }
-    if (message.includes("already published")) {
+    if (
+      message.includes("already published") ||
+      message.includes("cannot be after")
+    ) {
       return validationErrorResponse(res, { message });
     }
     return errorResponse(res, message, 500);

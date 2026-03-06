@@ -17,7 +17,10 @@ import type {
  * /api/availability/defenses/{defenseId}/days:
  *   get:
  *     summary: "[ADMIN, LECTURER] Get all defense days for a specific defense"
- *     description: Returns all scheduled days for a particular defense round. This is used by lecturers to see which days they need to provide availability for.
+ *     description: |
+ *       Returns all scheduled days for a particular defense round.
+ *       **Access conditions:** The defense must have `isAvailabilityPublished = true` AND the current date must be within
+ *       the `availabilityStartDate` – `availabilityEndDate` window (if configured). Admins bypass the window check.
  *     tags: [Availability]
  *     parameters:
  *       - in: path
@@ -35,7 +38,7 @@ import type {
  *             schema:
  *               $ref: '#/components/schemas/DefenseDaysResponse'
  *       400:
- *         description: Invalid defense ID format
+ *         description: Availability not published yet, registration window not open, or registration period has ended
  *         content:
  *           application/json:
  *             schema:
@@ -71,7 +74,7 @@ export const getDefenseDays = async (
     const message = getErrorMessage(error);
     if (message.includes("not found")) {
       errorResponse(res, message, 404);
-    } else if (message.includes("not been published yet")) {
+    } else if (message.includes("not been published yet") || message.includes("Registration opens on") || message.includes("period has ended")) {
       errorResponse(res, message, 400);
     } else {
       errorResponse(res, message, 500);
@@ -84,7 +87,10 @@ export const getDefenseDays = async (
  * /api/availability/defenses/{defenseId}/days/with-availability:
  *   get:
  *     summary: "[ADMIN, LECTURER] Get defense days with lecturer's availability status"
- *     description: Returns all defense days for a specific round, indicating for each day whether the specified lecturer is 'Available' or 'Busy'.
+ *     description: |
+ *       Returns all defense days for a specific round, indicating for each day whether the specified lecturer is 'Available' or 'Busy'.
+ *       **Access conditions:** The defense must have `isAvailabilityPublished = true` AND the current date must be within
+ *       the `availabilityStartDate` – `availabilityEndDate` window (if configured). Admins bypass the window check but must still submit their own `lecturerId`.
  *     tags: [Availability]
  *     parameters:
  *       - in: path
@@ -109,7 +115,13 @@ export const getDefenseDays = async (
  *             schema:
  *               $ref: '#/components/schemas/DefenseDaysWithAvailabilityResponse'
  *       400:
- *         description: Invalid parameters or lecturerId missing
+ *         description: Availability not published, registration window not open/closed, or lecturerId missing
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ *       403:
+ *         description: Lecturer tried to view another lecturer's availability
  *         content:
  *           application/json:
  *             schema:
@@ -169,7 +181,7 @@ export const getDefenseDaysWithAvailability = async (
     const message = getErrorMessage(error);
     if (message.includes("not found")) {
       errorResponse(res, message, 404);
-    } else if (message.includes("not been published yet")) {
+    } else if (message.includes("not been published yet") || message.includes("Registration opens on") || message.includes("period has ended")) {
       errorResponse(res, message, 400);
     } else {
       errorResponse(res, message, 500);
@@ -276,7 +288,9 @@ export const getLecturerStatus = async (
  * /api/availability/lecturers/{lecturerId}/availability:
  *   put:
  *     summary: "[LECTURER] Update lecturer availability for a specific defense day"
- *     description: Creates or updates a single availability record for a lecturer on a specific defense day.
+ *     description: |
+ *       Creates or updates a single availability record for a lecturer on a specific defense day.
+ *       **Requires** the defense to have `isAvailabilityPublished = true` and current date to be within `availabilityStartDate` – `availabilityEndDate` (if set).
  *     tags: [Availability]
  *     parameters:
  *       - in: path
@@ -310,7 +324,7 @@ export const getLecturerStatus = async (
  *             schema:
  *               $ref: '#/components/schemas/AvailabilityResponse'
  *       400:
- *         description: Invalid input, invalid status, or registration period closed
+ *         description: Invalid input, invalid status, availability not published, registration not open, or period closed
  *         content:
  *           application/json:
  *             schema:
@@ -499,7 +513,7 @@ export const batchUpdateAvailability = async (
     const message = getErrorMessage(error);
     if (message.includes("not found")) {
       errorResponse(res, message, 404);
-    } else if (message.includes("closed") || message.includes("same defense") || message.includes("not been published yet")) {
+    } else if (message.includes("closed") || message.includes("same defense") || message.includes("not been published yet") || message.includes("Registration opens on") || message.includes("period has ended")) {
       errorResponse(res, message, 400);
     } else {
       errorResponse(res, message, 500);
@@ -600,7 +614,7 @@ export const removeAvailability = async (
     const message = getErrorMessage(error);
     if (message.includes("not found")) {
       errorResponse(res, message, 404);
-    } else if (message.includes("closed") || message.includes("not been published yet")) {
+    } else if (message.includes("closed") || message.includes("not been published yet") || message.includes("Registration opens on") || message.includes("period has ended")) {
       errorResponse(res, message, 400);
     } else {
       errorResponse(res, message, 500);
