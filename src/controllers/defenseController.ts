@@ -14,6 +14,7 @@ import {
   getPaginationParams,
   getIncludeOptions,
   getDefenseFilters,
+  getActiveRole,
 } from "../utils/requestHelpers.js";
 import { formatDefense } from "../utils/formatters.js";
 import type { CreateDefenseInput, UpdateDefenseInput } from "../types/index.js";
@@ -145,7 +146,19 @@ export const getAllDefenses = async (
       filters,
       include,
     );
-    const formattedData = result.data.map(formatDefense);
+
+    // Filter defenseDays for non-admins if not published
+    const activeRole = getActiveRole(req);
+    const isActingAsAdmin = activeRole === "admin";
+
+    const formattedData = result.data.map((defense: any) => {
+      const formatted = formatDefense(defense);
+      if (!isActingAsAdmin && !formatted.isAvailabilityPublished) {
+        formatted.defenseDays = [];
+      }
+      return formatted;
+    });
+
     return paginatedResponse(
       res,
       formattedData,
@@ -202,9 +215,19 @@ export const getDefenseById = async (
 
     // Process
     const defense = await defenseService.getDefenseById(id, include);
+    const formattedDefense = formatDefense(defense);
+
+    // Filter defenseDays for non-admins if not published
+    const activeRole = getActiveRole(req);
+    const isActingAsAdmin = activeRole === "admin";
+
+    if (!isActingAsAdmin && !formattedDefense.isAvailabilityPublished) {
+      formattedDefense.defenseDays = [];
+    }
+
     return successResponse(
       res,
-      formatDefense(defense),
+      formattedDefense,
       "Defense retrieved successfully",
     );
   } catch (error: unknown) {

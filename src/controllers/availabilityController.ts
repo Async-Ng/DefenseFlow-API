@@ -71,6 +71,8 @@ export const getDefenseDays = async (
     const message = getErrorMessage(error);
     if (message.includes("not found")) {
       errorResponse(res, message, 404);
+    } else if (message.includes("not been published yet")) {
+      errorResponse(res, message, 400);
     } else {
       errorResponse(res, message, 500);
     }
@@ -167,6 +169,8 @@ export const getDefenseDaysWithAvailability = async (
     const message = getErrorMessage(error);
     if (message.includes("not found")) {
       errorResponse(res, message, 404);
+    } else if (message.includes("not been published yet")) {
+      errorResponse(res, message, 400);
     } else {
       errorResponse(res, message, 500);
     }
@@ -259,6 +263,8 @@ export const getLecturerStatus = async (
     const message = getErrorMessage(error);
     if (message.includes("not found")) {
       errorResponse(res, message, 404);
+    } else if (message.includes("not been published yet")) {
+      errorResponse(res, message, 400);
     } else {
       errorResponse(res, message, 500);
     }
@@ -364,7 +370,7 @@ export const updateAvailability = async (
     const message = getErrorMessage(error);
     if (message.includes("not found")) {
       errorResponse(res, message, 404);
-    } else if (message.includes("closed")) {
+    } else if (message.includes("closed") || message.includes("not been published yet")) {
       errorResponse(res, message, 400);
     } else {
       errorResponse(res, message, 500);
@@ -493,7 +499,7 @@ export const batchUpdateAvailability = async (
     const message = getErrorMessage(error);
     if (message.includes("not found")) {
       errorResponse(res, message, 404);
-    } else if (message.includes("closed") || message.includes("same defense")) {
+    } else if (message.includes("closed") || message.includes("same defense") || message.includes("not been published yet")) {
       errorResponse(res, message, 400);
     } else {
       errorResponse(res, message, 500);
@@ -594,7 +600,7 @@ export const removeAvailability = async (
     const message = getErrorMessage(error);
     if (message.includes("not found")) {
       errorResponse(res, message, 404);
-    } else if (message.includes("closed")) {
+    } else if (message.includes("closed") || message.includes("not been published yet")) {
       errorResponse(res, message, 400);
     } else {
       errorResponse(res, message, 500);
