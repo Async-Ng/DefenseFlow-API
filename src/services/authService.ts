@@ -285,3 +285,20 @@ export async function updateUserProfile(
   // Note: Changing email in Supabase is a sensitive operation that usually involves re-verification.
   // For simplicity and immediate effect in this system, we focus on the database and metadata.
 }
+/**
+ * Refresh the access token using a refresh token.
+ */
+export async function refreshSession(refreshToken: string): Promise<LoginResult> {
+  const { data, error } = await supabase.auth.refreshSession({ refresh_token: refreshToken });
+
+  if (error || !data.session) {
+    throw new Error(error?.message || "Làm mới phiên làm việc thất bại.");
+  }
+
+  return {
+    accessToken: data.session.access_token,
+    refreshToken: data.session.refresh_token,
+    expiresIn: data.session.expires_in,
+    user: extractUserPayload(data.user!),
+  };
+}

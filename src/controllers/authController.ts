@@ -14,6 +14,7 @@ import {
   syncUserMetadata,
   changeUserPassword,
   updateUserProfile,
+  refreshSession,
 } from "../services/authService.js";
 
 /**
@@ -455,6 +456,27 @@ export const googleCallback = async (req: Request, res: Response): Promise<Respo
  *                   type: string
  *                 data:
  *                   type: object
+ *                   properties:
+ *                     accessToken:
+ *                       type: string
+ *                     refreshToken:
+ *                       type: string
+ *                     expiresIn:
+ *                       type: integer
+ *                     user:
+ *                       type: object
+ *                       properties:
+ *                         id:
+ *                           type: string
+ *                         email:
+ *                           type: string
+ *                         roles:
+ *                           type: array
+ *                           items:
+ *                             type: string
+ *                         lecturerId:
+ *                           type: integer
+ *                           nullable: true
  *       400:
  *         description: Missing idToken.
  *       401:
@@ -542,5 +564,86 @@ export const updateProfile = async (req: Request, res: Response): Promise<Respon
   } catch (error) {
     const message = error instanceof Error ? error.message : "Cập nhật profile thất bại.";
     return errorResponse(res, message, 500);
+  }
+};
+/**
+ * @swagger
+ * /api/auth/refresh:
+ *   post:
+ *     summary: Refresh the user's session
+ *     description: Takes a refresh token and returns a new session with an refreshed access token.
+ *     tags: [Auth]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - refreshToken
+ *             properties:
+ *               refreshToken:
+ *                 type: string
+ *                 description: The refresh token provided during login or previous refresh.
+ *     responses:
+ *       200:
+ *         description: Session refreshed successfully.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 message:
+ *                   type: string
+ *                   example: "Phiên làm mới thành công."
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     accessToken:
+ *                       type: string
+ *                       description: New JWT valid for API requests.
+ *                     refreshToken:
+ *                       type: string
+ *                       description: New refresh token.
+ *                     expiresIn:
+ *                       type: integer
+ *                       description: Seconds until the new access token expires.
+ *                     user:
+ *                       type: object
+ *                       properties:
+ *                         id:
+ *                           type: string
+ *                         email:
+ *                           type: string
+ *                         roles:
+ *                           type: array
+ *                           items:
+ *                             type: string
+ *                         lecturerId:
+ *                           type: integer
+ *                           nullable: true
+ *       400:
+ *         description: Missing refreshToken.
+ *       401:
+ *         description: Invalid or expired refresh token.
+ *       500:
+ *         description: Internal server error.
+ */
+export const refreshToken = async (req: Request, res: Response): Promise<Response> => {
+  const { refreshToken: token } = req.body;
+
+  if (!token) {
+    return validationErrorResponse(res, { message: "Refresh token is required." });
+  }
+
+  try {
+    const result = await refreshSession(token);
+    return successResponse(res, result, "Phiên làm mới thành công.");
+  } catch (err) {
+    const message = err instanceof Error ? err.message : "Phiên làm mới thất bại.";
+    return res.status(401).json({ success: false, message });
   }
 };

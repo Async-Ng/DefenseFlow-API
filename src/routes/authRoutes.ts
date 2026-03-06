@@ -3,7 +3,7 @@
  * Public endpoints for authentication (no token required)
  */
 import express from "express";
-import { login, logout, getMe, googleSignIn, googleCallback, googleNativeSignIn, changePassword, updateProfile } from "../controllers/authController.js";
+import { login, logout, getMe, googleSignIn, googleCallback, googleNativeSignIn, changePassword, updateProfile, refreshToken } from "../controllers/authController.js";
 import { authenticate } from "../middleware/auth.js";
 
 
@@ -11,6 +11,9 @@ const router: express.Router = express.Router();
 
 // POST /api/auth/login — public
 router.post("/login", login);
+
+// POST /api/auth/refresh — public
+router.post("/refresh", refreshToken);
 
 // POST /api/auth/google-native — for mobile (public)
 router.post("/google-native", googleNativeSignIn);
