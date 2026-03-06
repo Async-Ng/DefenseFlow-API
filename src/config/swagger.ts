@@ -26,6 +26,14 @@ const options: swaggerJsdoc.Options = {
       },
     ],
     components: {
+      securitySchemes: {
+        bearerAuth: {
+          type: "http",
+          scheme: "bearer",
+          bearerFormat: "JWT",
+          description: "Enter JWT token to access protected endpoints",
+        },
+      },
       schemas: {
         Topic: {
           type: "object",
@@ -1150,6 +1158,11 @@ const options: swaggerJsdoc.Options = {
         },
       },
     },
+    security: [
+      {
+        bearerAuth: [],
+      },
+    ],
   },
   apis:
     process.env.NODE_ENV === "production"
