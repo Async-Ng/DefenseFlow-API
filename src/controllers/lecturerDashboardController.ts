@@ -135,21 +135,22 @@ export const getSupervisedTopics = async (req: Request, res: Response): Promise<
 
 /**
  * @swagger
- * /api/lecturers/{id}/council-boards:
+ * /api/lecturers/my-schedule:
  *   get:
- *     summary: "[LECTURER] Get council boards assigned to lecturer"
- *     description: Returns a full list of council boards where the specified lecturer is a member, ordered chronologically.
+ *     summary: "[LECTURER] Get personal defense schedule"
+ *     description: Returns a detailed list of all defense councils the authenticated lecturer is assigned to, including dates, rooms, and topics. Requires 'lecturer' role.
  *     tags: [Lecturers]
+ *     security:
+ *       - bearerAuth: []
  *     parameters:
- *       - in: path
- *         name: id
- *         required: true
+ *       - in: query
+ *         name: semesterId
  *         schema:
  *           type: integer
- *         description: Lecturer ID
+ *         description: Optional semester ID to filter the schedule.
  *     responses:
  *       200:
- *         description: List of assigned council boards
+ *         description: Personal schedule retrieved successfully
  *         content:
  *           application/json:
  *             schema:
@@ -162,31 +163,100 @@ export const getSupervisedTopics = async (req: Request, res: Response): Promise<
  *                 data:
  *                   type: array
  *                   items:
- *                     $ref: '#/components/schemas/CouncilBoard'
- *       404:
- *         description: Lecturer not found
+ *                     type: object
+ *                     properties:
+ *                       role:
+ *                         type: string
+ *                         enum: [President, Secretary, Member]
+ *                       councilBoard:
+ *                         type: object
+ *                         properties:
+ *                           boardCode:
+ *                             type: string
+ *                           name:
+ *                             type: string
+ *                           defenseDay:
+ *                             type: object
+ *                             properties:
+ *                               dayDate:
+ *                                 type: string
+ *                                 format: date-time
+ *                               defense:
+ *                                 type: object
+ *                                 properties:
+ *                                   name:
+ *                                     type: string
+ *                           semester:
+ *                             type: object
+ *                             properties:
+ *                               name:
+ *                                 type: string
+ *                           councilBoardMembers:
+ *                             type: array
+ *                             items:
+ *                               type: object
+ *                               properties:
+ *                                 role:
+ *                                   type: string
+ *                                 lecturer:
+ *                                   type: object
+ *                                   properties:
+ *                                     fullName:
+ *                                       type: string
+ *                           defenseCouncils:
+ *                             type: array
+ *                             items:
+ *                               type: object
+ *                               properties:
+ *                                 startTime:
+ *                                   type: string
+ *                                 endTime:
+ *                                   type: string
+ *                                 topicDefense:
+ *                                   type: object
+ *                                   properties:
+ *                                     topic:
+ *                                       type: object
+ *                                       properties:
+ *                                         topicCode:
+ *                                           type: string
+ *                                         title:
+ *                                           type: string
+ *                                         topicSupervisors:
+ *                                           type: array
+ *                                           items:
+ *                                             type: object
+ *                                             properties:
+ *                                               lecturer:
+ *                                                 type: object
+ *                                                 properties:
+ *                                                   fullName:
+ *                                                     type: string
+ *       401:
+ *         description: Unauthorized - Token missing or invalid
+ *       403:
+ *         description: Forbidden - Insufficient permissions
  *       500:
  *         description: Server Error
  */
-export const getAssignedCouncilBoards = async (req: Request, res: Response): Promise<Response> => {
+export const getMySchedule = async (req: Request, res: Response): Promise<Response> => {
   try {
-    const id = getIdParam(req);
-
-    // Authorization: Lecturers can only access their own council boards
     const user = req.user;
-    const activeRole = getActiveRole(req);
-    
-    if (user && activeRole !== "admin") {
-      if (user.app_metadata?.lecturerId !== id) {
-        return errorResponse(res, "Forbidden: You can only access your own assigned council boards", 403);
-      }
+    if (!user) {
+      return errorResponse(res, "Unauthorized", 401);
     }
 
-    const boards = await lecturerService.getAssignedCouncilBoards(id);
-    return successResponse(res, boards, "Council boards retrieved successfully");
+    const lecturerId = user.app_metadata?.lecturerId;
+    if (!lecturerId) {
+       return errorResponse(res, "Lecturer ID not found in user metadata", 403);
+    }
+
+    const semesterId = req.query.semesterId ? parseInt(req.query.semesterId as string) : undefined;
+
+    const schedule = await lecturerService.getPersonalSchedule(lecturerId, { semesterId });
+    return successResponse(res, schedule, "Personal defense schedule retrieved successfully");
   } catch (error: unknown) {
     const message = getErrorMessage(error);
-    if (message.includes("not found")) return notFoundResponse(res, message);
     return errorResponse(res, message, 500);
   }
 };

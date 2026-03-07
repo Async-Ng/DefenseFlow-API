@@ -244,17 +244,6 @@ export const getSupervisedTopics = async (lecturerId: number) => {
 };
 
 /**
- * Get all council boards assigned to a lecturer
- */
-export const getAssignedCouncilBoards = async (lecturerId: number) => {
-  const lecturer = await lecturerRepository.findById(lecturerId);
-  if (!lecturer) {
-    throw new Error(`Lecturer with ID ${lecturerId} not found`);
-  }
-  return await lecturerRepository.findAssignedCouncilBoards(lecturerId);
-};
-
-/**
  * Get dashboard stats for a lecturer
  */
 export const getLecturerDashboard = async (lecturerId: number) => {
@@ -335,4 +324,17 @@ export const updateLecturerRoles = async (id: number, rolesInput: UpdateLecturer
   if (updateError) {
     throw new Error(`Cập nhật quyền thất bại: ${updateError.message}`);
   }
+};
+/**
+ * Get detailed defense schedule for a lecturer
+ */
+export const getPersonalSchedule = async (
+  lecturerId: number,
+  filters: { semesterId?: number } = {},
+) => {
+  const lecturer = await lecturerRepository.findById(lecturerId);
+  if (!lecturer) {
+    throw new Error(`Lecturer with ID ${lecturerId} not found`);
+  }
+  return await lecturerRepository.findPersonalSchedule(lecturerId, filters);
 };

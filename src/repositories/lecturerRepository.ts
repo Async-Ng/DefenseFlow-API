@@ -208,41 +208,6 @@ export const findSupervisedTopics = async (lecturerId: number): Promise<any[]> =
 };
 
 /**
- * Find all council boards assigned to a lecturer
- */
-export const findAssignedCouncilBoards = async (lecturerId: number): Promise<any[]> => {
-  return await prisma.councilBoard.findMany({
-    where: {
-      councilBoardMembers: {
-        some: { lecturerId },
-      },
-    },
-    include: {
-      defenseDay: {
-        include: {
-          defense: {
-            select: { name: true },
-          },
-        },
-      },
-      semester: {
-        select: { name: true },
-      },
-      councilBoardMembers: {
-        include: {
-          lecturer: true,
-        },
-      },
-    },
-    orderBy: {
-      defenseDay: {
-        dayDate: "asc",
-      },
-    },
-  });
-};
-
-/**
  * Get dashboard stats for a lecturer
  */
 export const getLecturerDashboardStats = async (lecturerId: number): Promise<any> => {
@@ -286,6 +251,92 @@ export const getLecturerDashboardStats = async (lecturerId: number): Promise<any
     upcomingCouncils,
     supervisedTopics,
   };
+};
+
+/**
+ * Find detailed defense schedule for a lecturer
+ */
+export const findPersonalSchedule = async (
+  lecturerId: number,
+  filters: { semesterId?: number } = {},
+): Promise<any[]> => {
+  const where: Prisma.CouncilBoardMemberWhereInput = {
+    lecturerId,
+  };
+
+  if (filters.semesterId) {
+    where.councilBoard = {
+      semesterId: filters.semesterId,
+    };
+  }
+
+  return await prisma.councilBoardMember.findMany({
+    where,
+    include: {
+      councilBoard: {
+        include: {
+          defenseDay: {
+            include: {
+              defense: {
+                select: {
+                  name: true,
+                  defenseCode: true,
+                },
+              },
+            },
+          },
+          semester: {
+            select: {
+              name: true,
+              semesterCode: true,
+            },
+          },
+          councilBoardMembers: {
+            include: {
+              lecturer: {
+                select: {
+                  id: true,
+                  fullName: true,
+                  lecturerCode: true,
+                },
+              },
+            },
+          },
+          defenseCouncils: {
+            include: {
+              topicDefense: {
+                include: {
+                  topic: {
+                    include: {
+                      topicSupervisors: {
+                        include: {
+                          lecturer: {
+                            select: {
+                              fullName: true,
+                            },
+                          },
+                        },
+                      },
+                    },
+                  },
+                },
+              },
+            },
+            orderBy: {
+              startTime: "asc",
+            },
+          },
+        },
+      },
+    },
+    orderBy: {
+      councilBoard: {
+        defenseDay: {
+          dayDate: "asc",
+        },
+      },
+    },
+  });
 };
 
 /**
