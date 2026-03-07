@@ -183,13 +183,22 @@ export const findLecturerQualifications = async (
 /**
  * Find all topics supervised by a lecturer
  */
-export const findSupervisedTopics = async (lecturerId: number): Promise<any[]> => {
-  return await prisma.topic.findMany({
-    where: {
-      topicSupervisors: {
-        some: { lecturerId },
-      },
+export const findSupervisedTopics = async (
+  lecturerId: number,
+  filters: { semesterId?: number } = {},
+): Promise<any[]> => {
+  const where: Prisma.TopicWhereInput = {
+    topicSupervisors: {
+      some: { lecturerId },
     },
+  };
+
+  if (filters.semesterId) {
+    where.semesterId = filters.semesterId;
+  }
+
+  return await prisma.topic.findMany({
+    where,
     include: {
       semester: {
         select: { name: true },
@@ -199,7 +208,12 @@ export const findSupervisedTopics = async (lecturerId: number): Promise<any[]> =
       },
       topicSupervisors: {
         include: {
-          lecturer: true,
+          lecturer: {
+            select: {
+              fullName: true,
+              lecturerCode: true,
+            },
+          },
         },
       },
     },

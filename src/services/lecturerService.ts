@@ -235,12 +235,12 @@ export const deleteLecturerQualification = async (
 /**
  * Get all topics supervised by a lecturer
  */
-export const getSupervisedTopics = async (lecturerId: number) => {
+export const getSupervisedTopics = async (lecturerId: number, filters: { semesterId?: number } = {}) => {
   const lecturer = await lecturerRepository.findById(lecturerId);
   if (!lecturer) {
     throw new Error(`Lecturer with ID ${lecturerId} not found`);
   }
-  return await lecturerRepository.findSupervisedTopics(lecturerId);
+  return await lecturerRepository.findSupervisedTopics(lecturerId, filters);
 };
 
 /**

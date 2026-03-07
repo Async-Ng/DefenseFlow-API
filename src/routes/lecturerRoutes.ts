@@ -16,11 +16,11 @@ router.get("/", lecturerController.getAllLecturers);
 // GET /api/lecturers/my-schedule - Get current lecturer's schedule
 router.get("/my-schedule", requireRole("lecturer"), lecturerDashboardController.getMySchedule);
 
+// GET /api/lecturers/my-supervised-topics - Get current lecturer's supervised topics
+router.get("/my-supervised-topics", requireRole("lecturer"), lecturerDashboardController.getMySupervisedTopics);
+
 // GET /api/lecturers/:id/dashboard - Get lecturer dashboard
 router.get("/:id/dashboard", lecturerDashboardController.getLecturerDashboard);
-
-// GET /api/lecturers/:id/supervised-topics - Get supervised topics
-router.get("/:id/supervised-topics", lecturerDashboardController.getSupervisedTopics);
 
 // GET /api/lecturers/:id/supervised-topics - Get supervised topics
 router.get("/:id/supervised-topics", lecturerDashboardController.getSupervisedTopics);
