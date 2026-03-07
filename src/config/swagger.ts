@@ -25,6 +25,22 @@ const options: swaggerJsdoc.Options = {
         description: "Development server",
       },
     ],
+    tags: [
+      { name: "Auth", description: "Authentication and Authorization" },
+      { name: "Dashboard", description: "Overview and Statistics" },
+      { name: "Defenses", description: "Defense Session Management" },
+      { name: "Schedule", description: "Defense Council Scheduling" },
+      { name: "Availability", description: "Lecturer Availability Tracking" },
+      { name: "Capacity", description: "Scheduling Capacity Calculations" },
+      { name: "Lecturers", description: "Lecturer Profiles and Assignments" },
+      { name: "Lecturer Defense Configs", description: "Lecturer Defense Configurations" },
+      { name: "Qualifications", description: "Lecturer Qualifications" },
+      { name: "Topics", description: "Thesis Topic Management" },
+      { name: "TopicTypes", description: "Topic Categorization" },
+      { name: "TopicDefense", description: "Topic Defense Assignments" },
+      { name: "Semesters", description: "Academic Semester Management" },
+      { name: "Import", description: "Data Import Utilities" },
+    ],
     components: {
       securitySchemes: {
         bearerAuth: {

@@ -16,7 +16,15 @@ app.use(express.urlencoded({ extended: true }));
 app.use(express.static("public"));
 
 // Swagger Documentation
-app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerSpec));
+app.use(
+  "/api-docs",
+  swaggerUi.serve,
+  swaggerUi.setup(swaggerSpec, {
+    swaggerOptions: {
+      operationsSorter: "method",
+    },
+  })
+);
 
 // API Info Route
 app.get("/", (_req: Request, res: Response) => {
