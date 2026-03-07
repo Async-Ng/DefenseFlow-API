@@ -13,11 +13,8 @@ const router: express.Router = express.Router();
 // GET /api/lecturers - Get all lecturers with pagination
 router.get("/", lecturerController.getAllLecturers);
 
-// GET /api/lecturers/my-schedule - Get current lecturer's schedule
-router.get("/my-schedule", requireRole("lecturer"), lecturerDashboardController.getMySchedule);
-
-// GET /api/lecturers/my-supervised-topics - Get current lecturer's supervised topics
-router.get("/my-supervised-topics", requireRole("lecturer"), lecturerDashboardController.getMySupervisedTopics);
+// GET /api/lecturers/:id/schedule - Get lecturer's schedule (Admin or self)
+router.get("/:id/schedule", lecturerDashboardController.getSchedule);
 
 // GET /api/lecturers/:id/dashboard - Get lecturer dashboard
 router.get("/:id/dashboard", lecturerDashboardController.getLecturerDashboard);

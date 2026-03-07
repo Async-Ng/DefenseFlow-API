@@ -79,7 +79,7 @@ export const getLecturerDashboard = async (req: Request, res: Response): Promise
  * @swagger
  * /api/lecturers/{id}/supervised-topics:
  *   get:
- *     summary: "[LECTURER] Get topics supervised by lecturer"
+ *     summary: "[ADMIN, LECTURER] Get topics supervised by lecturer"
  *     description: Returns a full list of topics where the specified lecturer is a supervisor.
  *     tags: [Lecturers]
  *     parameters:
@@ -89,6 +89,11 @@ export const getLecturerDashboard = async (req: Request, res: Response): Promise
  *         schema:
  *           type: integer
  *         description: Lecturer ID
+ *       - in: query
+ *         name: semesterId
+ *         schema:
+ *           type: integer
+ *         description: Optional semester ID to filter the topics.
  *     responses:
  *       200:
  *         description: List of supervised topics
@@ -124,7 +129,8 @@ export const getSupervisedTopics = async (req: Request, res: Response): Promise<
       }
     }
 
-    const topics = await lecturerService.getSupervisedTopics(id);
+    const semesterId = req.query.semesterId ? parseInt(req.query.semesterId as string) : undefined;
+    const topics = await lecturerService.getSupervisedTopics(id, { semesterId });
     return successResponse(res, topics, "Supervised topics retrieved successfully");
   } catch (error: unknown) {
     const message = getErrorMessage(error);
@@ -135,14 +141,18 @@ export const getSupervisedTopics = async (req: Request, res: Response): Promise<
 
 /**
  * @swagger
- * /api/lecturers/my-schedule:
+ * /api/lecturers/{id}/schedule:
  *   get:
- *     summary: "[LECTURER] Get personal defense schedule"
- *     description: Returns a detailed list of all defense councils the authenticated lecturer is assigned to, including dates, rooms, and topics. Requires 'lecturer' role.
+ *     summary: "[ADMIN, LECTURER] Get lecturer's defense schedule"
+ *     description: Returns a detailed list of all defense councils the lecturer is assigned to, including dates, rooms, and topics.
  *     tags: [Lecturers]
- *     security:
- *       - bearerAuth: []
  *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: integer
+ *         description: Lecturer ID
  *       - in: query
  *         name: semesterId
  *         schema:
@@ -150,7 +160,7 @@ export const getSupervisedTopics = async (req: Request, res: Response): Promise<
  *         description: Optional semester ID to filter the schedule.
  *     responses:
  *       200:
- *         description: Personal schedule retrieved successfully
+ *         description: Defense schedule retrieved successfully
  *         content:
  *           application/json:
  *             schema:
@@ -239,111 +249,28 @@ export const getSupervisedTopics = async (req: Request, res: Response): Promise<
  *       500:
  *         description: Server Error
  */
-export const getMySchedule = async (req: Request, res: Response): Promise<Response> => {
+export const getSchedule = async (req: Request, res: Response): Promise<Response> => {
   try {
-    const user = req.user;
-    if (!user) {
-      return errorResponse(res, "Unauthorized", 401);
-    }
+    const id = getIdParam(req);
 
-    const lecturerId = user.app_metadata?.lecturerId;
-    if (!lecturerId) {
-       return errorResponse(res, "Lecturer ID not found in user metadata", 403);
+    // Authorization: Lecturers can only access their own schedule
+    const user = req.user;
+    const activeRole = getActiveRole(req);
+    
+    if (user && activeRole !== "admin") {
+      if (user.app_metadata?.lecturerId !== id) {
+        return errorResponse(res, "Forbidden: You can only access your own schedule", 403);
+      }
     }
 
     const semesterId = req.query.semesterId ? parseInt(req.query.semesterId as string) : undefined;
 
-    const schedule = await lecturerService.getPersonalSchedule(lecturerId, { semesterId });
-    return successResponse(res, schedule, "Personal defense schedule retrieved successfully");
+    const schedule = await lecturerService.getPersonalSchedule(id, { semesterId });
+    return successResponse(res, schedule, "Lecturer defense schedule retrieved successfully");
   } catch (error: unknown) {
     const message = getErrorMessage(error);
+    if (message.includes("not found")) return notFoundResponse(res, message);
     return errorResponse(res, message, 500);
   }
 };
 
-/**
- * @swagger
- * /api/lecturers/my-supervised-topics:
- *   get:
- *     summary: "[LECTURER] Get my supervised topics"
- *     description: Returns a detailed list of topics directed by the authenticated lecturer. Requires 'lecturer' role.
- *     tags: [Lecturers]
- *     security:
- *       - bearerAuth: []
- *     parameters:
- *       - in: query
- *         name: semesterId
- *         schema:
- *           type: integer
- *         description: Optional semester ID to filter the topics.
- *     responses:
- *       200:
- *         description: Supervised topics retrieved successfully
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 success:
- *                   type: boolean
- *                 message:
- *                   type: string
- *                 data:
- *                   type: array
- *                   items:
- *                     type: object
- *                     properties:
- *                       topicCode:
- *                         type: string
- *                       title:
- *                         type: string
- *                       semester:
- *                         type: object
- *                         properties:
- *                           name:
- *                             type: string
- *                       topicType:
- *                         type: object
- *                         properties:
- *                           name:
- *                             type: string
- *                       topicSupervisors:
- *                         type: array
- *                         items:
- *                           type: object
- *                           properties:
- *                             lecturer:
- *                               type: object
- *                               properties:
- *                                 fullName:
- *                                   type: string
- *                                 lecturerCode:
- *                                   type: string
- *       401:
- *         description: Unauthorized
- *       403:
- *         description: Forbidden
- *       500:
- *         description: Server Error
- */
-export const getMySupervisedTopics = async (req: Request, res: Response): Promise<Response> => {
-  try {
-    const user = req.user;
-    if (!user) {
-      return errorResponse(res, "Unauthorized", 401);
-    }
-
-    const lecturerId = user.app_metadata?.lecturerId;
-    if (!lecturerId) {
-      return errorResponse(res, "Lecturer ID not found in user metadata", 403);
-    }
-
-    const semesterId = req.query.semesterId ? parseInt(req.query.semesterId as string) : undefined;
-
-    const topics = await lecturerService.getSupervisedTopics(lecturerId, { semesterId });
-    return successResponse(res, topics, "My supervised topics retrieved successfully");
-  } catch (error: unknown) {
-    const message = getErrorMessage(error);
-    return errorResponse(res, message, 500);
-  }
-};
