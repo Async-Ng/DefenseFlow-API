@@ -381,7 +381,7 @@ export class ImportService {
     const workbook = new ExcelJS.Workbook();
     await workbook.xlsx.load(buffer as any);
 
-    const validEnumValues = ["Passed", "Failed", "Pending"];
+    const validEnumValues = ["Passed", "Failed"];
 
     workbook.worksheets.forEach((worksheet) => {
       worksheet.eachRow((row, rowNum) => {
