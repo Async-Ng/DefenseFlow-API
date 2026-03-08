@@ -191,11 +191,25 @@ export class ExportService {
             commissioner1,
             commissioner2,
             commissioner3,
-            dc.topicDefense?.finalResult || "", // Kết quả
+            "", // Kết quả (luôn để trống theo yêu cầu)
           ];
 
           const row = worksheet.addRow(rowData);
           row.alignment = { wrapText: true, vertical: "middle" };
+
+          // Add dropdown validation to the result cell if there's a topic
+          if (topic?.topicCode && topic.topicCode !== "-") {
+            const resultCell = row.getCell(17);
+            resultCell.dataValidation = {
+              type: 'list',
+              allowBlank: true,
+              formulae: ['"Passed,Failed"'],
+              showErrorMessage: true,
+              errorStyle: 'stop',
+              errorTitle: 'Giá trị không hợp lệ',
+              error: 'Vui lòng chọn kết quả từ danh sách (Passed, Failed)',
+            };
+          }
         }
       }
 
