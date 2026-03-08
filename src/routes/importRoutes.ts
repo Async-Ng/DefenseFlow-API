@@ -3,6 +3,7 @@ import multer from "multer";
 import {
   importTopics,
   importLecturers,
+  importTopicResults,
   downloadTopicTemplate,
   downloadLecturerTemplate,
 } from "../controllers/importController.js";
@@ -35,8 +36,10 @@ const upload = multer({
 router.get("/topics/template", requireRole("admin"), downloadTopicTemplate);
 router.get("/lecturers/template", requireRole("admin"), downloadLecturerTemplate);
 
+
 router.post("/topics", requireRole("admin"), upload.single("file"), importTopics);
 router.post("/lecturers", requireRole("admin"), upload.single("file"), importLecturers);
+router.post("/topic-results", requireRole("admin"), upload.single("file"), importTopicResults);
 
 
 export default router;

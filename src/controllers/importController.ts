@@ -205,3 +205,57 @@ export const downloadLecturerTemplate = async (
     return errorResponse(res, message, 500);
   }
 };
+/**
+ * @swagger
+ * /api/import/topic-results:
+ *   post:
+ *     summary: "[ADMIN] Import topic results from Excel file"
+ *     tags: [Import]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         multipart/form-data:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               file:
+ *                 type: string
+ *                 format: binary
+ *               defenseId:
+ *                 type: integer
+ *     responses:
+ *       200:
+ *         description: Import successful
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ImportResultResponse'
+ *       400:
+ *         description: Bad Request
+ *       500:
+ *         description: Server Error
+ */
+export const importTopicResults = async (
+  req: Request,
+  res: Response,
+): Promise<Response> => {
+  try {
+    if (!req.file) {
+      return errorResponse(res, "No file uploaded", 400);
+    }
+
+    const defenseId = parseInt(req.body.defenseId);
+    if (isNaN(defenseId)) {
+      return errorResponse(res, "Invalid or missing defenseId", 400);
+    }
+
+    const buffer = req.file.buffer;
+    const result = await importService.processTopicResults(defenseId, buffer);
+
+    return successResponse(res, result, "Topic results import processed");
+  } catch (error: unknown) {
+    const message = getErrorMessage(error);
+    return errorResponse(res, message, 500);
+  }
+};
+

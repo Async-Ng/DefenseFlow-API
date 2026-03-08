@@ -184,3 +184,48 @@ export const updateTopicDefenseResult = async (
     data: { finalResult: result },
   });
 };
+/**
+ * Update the final result of topic defenses by topic codes for a specific defense session
+ */
+export const updateTopicDefenseResultByCodes = async (
+  defenseId: number,
+  topicResults: { topicCode: string; result: DefenseResult }[]
+): Promise<{ count: number }> => {
+  return await prisma.$transaction(async (tx) => {
+    let count = 0;
+    
+    // 1. Fetch all matching registrations in one query
+    const topicCodes = topicResults.map(r => r.topicCode);
+    const registrations = await tx.topicDefense.findMany({
+      where: {
+        defenseId,
+        topic: { topicCode: { in: topicCodes } }
+      },
+      include: { topic: true }
+    });
+
+    // 2. Map topicCode to registration id
+    const regMap = new Map<string, number>();
+    for (const reg of registrations) {
+      if (reg.topic) {
+        regMap.set(reg.topic.topicCode, reg.id);
+      }
+    }
+
+    // 3. Update sequentially but much faster since we don't query each time
+    for (const item of topicResults) {
+      const regId = regMap.get(item.topicCode);
+      if (regId) {
+        await tx.topicDefense.update({
+          where: { id: regId },
+          data: { finalResult: item.result },
+        });
+        count++;
+      }
+    }
+    
+    return { count };
+  }, {
+    timeout: 30000, // 30 seconds timeout for bulk operations
+  });
+};

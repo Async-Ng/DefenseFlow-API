@@ -119,3 +119,19 @@ export const updateTopicResult = async (
     data.result,
   );
 };
+/**
+ * Update results of multiple topics for a specific defense
+ */
+export const updateTopicResultsBulk = async (
+  defenseId: number,
+  topicResults: { topicCode: string; result: any }[]
+) => {
+  // Simple validation for result values
+  for (const item of topicResults) {
+    if (!["Pending", "Passed", "Failed"].includes(item.result)) {
+      throw new Error(`Invalid result '${item.result}' for topic ${item.topicCode}`);
+    }
+  }
+
+  return await topicRepository.updateTopicDefenseResultByCodes(defenseId, topicResults);
+};

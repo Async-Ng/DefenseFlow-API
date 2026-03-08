@@ -75,7 +75,7 @@ export class ExportService {
       const worksheet = workbook.addWorksheet(`Ngày ${dayStr}`);
 
       // 1. Header Information
-      worksheet.mergeCells("A1:H1");
+      worksheet.mergeCells("A1:Q1");
       const titleCell = worksheet.getCell("A1");
       titleCell.value = `LỊCH BẢO VỆ NGÀY ${dayStr}: ${defense.name?.toUpperCase()}`;
       titleCell.font = { bold: true, size: 14 };
@@ -99,6 +99,7 @@ export class ExportService {
         "Ủy viên 1",
         "Ủy viên 2",
         "Ủy viên 3", // Add more if needed, typically boards have 3-5 members
+        "Kết quả (Passed/Failed)",
       ];
       worksheet.addRow(headers);
 
@@ -154,6 +155,7 @@ export class ExportService {
             commissioner1,
             commissioner2,
             commissioner3,
+            "", // Kết quả
           ];
           const row = worksheet.addRow(rowData);
           row.alignment = { wrapText: true, vertical: "middle" };
@@ -189,6 +191,7 @@ export class ExportService {
             commissioner1,
             commissioner2,
             commissioner3,
+            dc.topicDefense?.finalResult || "", // Kết quả
           ];
 
           const row = worksheet.addRow(rowData);
@@ -213,6 +216,7 @@ export class ExportService {
       worksheet.getColumn(14).width = 25; // Ủy viên 1
       worksheet.getColumn(15).width = 25; // Ủy viên 2
       worksheet.getColumn(16).width = 25; // Ủy viên 3
+      worksheet.getColumn(17).width = 25; // Kết quả
     }
 
     return (await workbook.xlsx.writeBuffer()) as unknown as Buffer;

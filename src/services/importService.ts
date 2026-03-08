@@ -370,6 +370,55 @@ export class ImportService {
 
     return ((await workbook.xlsx.writeBuffer()) as unknown) as Buffer;
   }
+
+  /**
+   * Process and Import Topic Results from Excel (Multi-sheet, from exported schedule)
+   */
+  async processTopicResults(defenseId: number, buffer: Buffer) {
+    const errors: { sheet: string; row: number; message: string }[] = [];
+    const validResults: { topicCode: string; result: string }[] = [];
+
+    const workbook = new ExcelJS.Workbook();
+    await workbook.xlsx.load(buffer as any);
+
+    const validEnumValues = ["Passed", "Failed", "Pending"];
+
+    workbook.worksheets.forEach((worksheet) => {
+      worksheet.eachRow((row, rowNum) => {
+        if (rowNum <= 2) return; // Skip Header rows (Title + Columns)
+
+        // Column 5: Mã đề tài, Column 17: Kết quả
+        const topicCode = row.getCell(5).text?.toString().trim();
+        const resultText = row.getCell(17).text?.toString().trim();
+
+        if (!topicCode || topicCode === "-" || !resultText) return;
+
+        // Normalize result
+        let result = resultText.charAt(0).toUpperCase() + resultText.slice(1).toLowerCase();
+        if (result === "Pass") result = "Passed";
+        if (result === "Fail") result = "Failed";
+
+        if (!validEnumValues.includes(result)) {
+          errors.push({
+            sheet: worksheet.name,
+            row: rowNum,
+            message: `Invalid result '${resultText}' for topic ${topicCode}. Must be Passed or Failed.`,
+          });
+          return;
+        }
+
+        validResults.push({ topicCode, result });
+      });
+    });
+
+    if (validResults.length > 0) {
+      const topicService = (await import("./topicService.js"));
+      const result = await topicService.updateTopicResultsBulk(defenseId, validResults as any);
+      return { successCount: result.count, errors };
+    }
+
+    return { successCount: 0, errors };
+  }
 }
 
 export default new ImportService();
