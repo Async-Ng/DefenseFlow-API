@@ -291,6 +291,8 @@ export type CreateLecturerInput = {
   email?: string;
   /** Admin-only: seniority level. Never exposed to Lecturers. */
   seniorityLevel?: SeniorityLevel;
+  isLecturer?: boolean;
+  isAdmin?: boolean;
 };
 
 export type UpdateLecturerInput = Partial<CreateLecturerInput> & {

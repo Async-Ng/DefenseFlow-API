@@ -324,6 +324,12 @@ export const updateLecturerRoles = async (id: number, rolesInput: UpdateLecturer
   if (updateError) {
     throw new Error(`Cập nhật quyền thất bại: ${updateError.message}`);
   }
+
+  // Thêm: Cập nhật isLecturer và isAdmin trong CSDL PostgreSQL
+  await lecturerRepository.update(id, {
+    isLecturer: rolesInput.isLecturer,
+    isAdmin: rolesInput.isAdmin,
+  });
 };
 /**
  * Get detailed defense schedule for a lecturer

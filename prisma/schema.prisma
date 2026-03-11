@@ -43,6 +43,8 @@ model Lecturer {
   email                   String?                   @db.VarChar(100)
   authId                  String?                   @unique @map("auth_id") @db.Uuid
   seniorityLevel          SeniorityLevel            @default(Rookie) @map("seniority_level")
+  isLecturer              Boolean                   @default(true) @map("is_lecturer")
+  isAdmin                 Boolean                   @default(false) @map("is_admin")
   councilBoardMembers     CouncilBoardMember[]
   lecturerDayAvailability LecturerDayAvailability[]
   lecturerDefenseConfigs  LecturerDefenseConfig[]

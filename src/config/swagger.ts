@@ -431,6 +431,18 @@ const options: swaggerJsdoc.Options = {
               description: "[Admin-only] Seniority level. Not returned for Lecturer-facing endpoints.",
               example: "MidLevel",
             },
+            isLecturer: {
+              type: "boolean",
+              default: true,
+              description: "Whether this user has the Lecturer role",
+              example: true,
+            },
+            isAdmin: {
+              type: "boolean",
+              default: false,
+              description: "Whether this user has the Admin role",
+              example: false,
+            },
             lecturerQualifications: {
               type: "array",
               items: { $ref: "#/components/schemas/LecturerQualification" },
@@ -454,6 +466,14 @@ const options: swaggerJsdoc.Options = {
               description: "[Admin-only] Seniority level of the lecturer.",
               example: "Rookie",
             },
+            isLecturer: {
+              type: "boolean",
+              default: true,
+            },
+            isAdmin: {
+              type: "boolean",
+              default: false,
+            },
           },
         },
         UpdateLecturerInput: {
@@ -471,6 +491,12 @@ const options: swaggerJsdoc.Options = {
               enum: ["Senior", "MidLevel", "Junior", "Rookie"],
               description: "[Admin-only] Update seniority level. Never exposed to Lecturers.",
               example: "Senior",
+            },
+            isLecturer: {
+              type: "boolean",
+            },
+            isAdmin: {
+              type: "boolean",
             },
           },
         },
