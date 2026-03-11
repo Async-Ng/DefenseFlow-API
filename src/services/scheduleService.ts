@@ -548,6 +548,11 @@ const fetchSchedulingContext = async (defenseId: number): Promise<SchedulingCont
       },
     }),
     prisma.lecturer.findMany({
+      where: {
+        lecturerDefenseConfigs: {
+          some: { defenseId }
+        }
+      },
       include: {
         lecturerDayAvailability: true,
         lecturerQualifications: { include: { qualification: true } },

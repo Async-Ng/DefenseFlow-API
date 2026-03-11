@@ -42,6 +42,7 @@ model Lecturer {
   fullName                String?                   @map("full_name") @db.VarChar(100)
   email                   String?                   @db.VarChar(100)
   authId                  String?                   @unique @map("auth_id") @db.Uuid
+  seniorityLevel          SeniorityLevel            @default(Rookie) @map("seniority_level")
   councilBoardMembers     CouncilBoardMember[]
   lecturerDayAvailability LecturerDayAvailability[]
   lecturerDefenseConfigs  LecturerDefenseConfig[]
@@ -264,4 +265,13 @@ enum CriteriaComponent {
   Presentation
 
   @@map("criteria_component")
+}
+
+enum SeniorityLevel {
+  Senior
+  MidLevel
+  Junior
+  Rookie
+
+  @@map("seniority_level")
 }

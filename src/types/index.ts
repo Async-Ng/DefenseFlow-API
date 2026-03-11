@@ -26,6 +26,7 @@ import type {
   DefenseCouncil,
   DefenseStatus,
   CriteriaComponent,
+  SeniorityLevel,
 } from "../../generated/prisma/client.js";
 
 export type {
@@ -48,6 +49,7 @@ export type {
   DefenseCouncil,
   DefenseStatus,
   CriteriaComponent,
+  SeniorityLevel,
 };
 
 // ============================================================================
@@ -287,6 +289,8 @@ export type CreateLecturerInput = {
   lecturerCode: string;
   fullName?: string;
   email?: string;
+  /** Admin-only: seniority level. Never exposed to Lecturers. */
+  seniorityLevel?: SeniorityLevel;
 };
 
 export type UpdateLecturerInput = Partial<CreateLecturerInput> & {

@@ -55,10 +55,11 @@ export const getLecturerById = async (
     }
     const lecturer = await lecturerService.getLecturerById(id);
 
-    // Privacy rule: Only admins can see qualifications
+    // Privacy rule: Only admins can see qualifications and seniority level
     const userRoles = (req.user?.app_metadata as any)?.roles || [];
     if (!userRoles.includes("admin")) {
       delete (lecturer as any).lecturerQualifications;
+      delete (lecturer as any).seniorityLevel;
     }
 
     return successResponse(res, lecturer, "Lecturer retrieved successfully");
@@ -282,12 +283,13 @@ export const getAllLecturers = async (
     const filters = getLecturerFilters(req);
     const result = await lecturerService.getAllLecturers(page, limit, filters);
 
-    // Privacy rule: Only admins can see qualifications
+    // Privacy rule: Only admins can see qualifications and seniority level
     const userRoles = (req.user?.app_metadata as any)?.roles || [];
     if (!userRoles.includes("admin")) {
       result.data = result.data.map(lecturer => {
         const l = lecturer as any;
         delete l.lecturerQualifications;
+        delete l.seniorityLevel;
         return l;
       });
     }

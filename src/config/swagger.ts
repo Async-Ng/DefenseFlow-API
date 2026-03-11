@@ -424,7 +424,13 @@ const options: swaggerJsdoc.Options = {
               nullable: true,
               example: "nguyenvana@fpt.edu.vn",
             },
-
+            seniorityLevel: {
+              type: "string",
+              enum: ["Senior", "MidLevel", "Junior", "Rookie"],
+              default: "Rookie",
+              description: "[Admin-only] Seniority level. Not returned for Lecturer-facing endpoints.",
+              example: "MidLevel",
+            },
             lecturerQualifications: {
               type: "array",
               items: { $ref: "#/components/schemas/LecturerQualification" },
@@ -442,6 +448,12 @@ const options: swaggerJsdoc.Options = {
               maxLength: 100,
               example: "nguyenvana@fpt.edu.vn",
             },
+            seniorityLevel: {
+              type: "string",
+              enum: ["Senior", "MidLevel", "Junior", "Rookie"],
+              description: "[Admin-only] Seniority level of the lecturer.",
+              example: "Rookie",
+            },
           },
         },
         UpdateLecturerInput: {
@@ -453,6 +465,12 @@ const options: swaggerJsdoc.Options = {
               type: "string",
               maxLength: 100,
               example: "nguyenvana@fpt.edu.vn",
+            },
+            seniorityLevel: {
+              type: "string",
+              enum: ["Senior", "MidLevel", "Junior", "Rookie"],
+              description: "[Admin-only] Update seniority level. Never exposed to Lecturers.",
+              example: "Senior",
             },
           },
         },
