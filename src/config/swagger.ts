@@ -101,6 +101,7 @@ const options: swaggerJsdoc.Options = {
                   id: { type: "integer", example: 1 },
                   qualificationId: { type: "integer", example: 2 },
                   topicTypeId: { type: "integer", example: 1 },
+                  priorityWeight: { type: "number", format: "float", example: 1.0 },
                   qualification: { $ref: "#/components/schemas/Qualification" },
                 },
               },
@@ -482,9 +483,17 @@ const options: swaggerJsdoc.Options = {
             descAcceptable: { type: "string", nullable: true },
             descFail: { type: "string", nullable: true },
             evaluationGuidelines: { type: "string", nullable: true },
-            topicTypes: {
+            qualificationTopicTypes: {
               type: "array",
-              items: { $ref: "#/components/schemas/TopicType" },
+              items: {
+                type: "object",
+                properties: {
+                  id: { type: "integer", example: 1 },
+                  topicTypeId: { type: "integer", example: 1 },
+                  priorityWeight: { type: "number", format: "float", example: 1.0 },
+                  topicType: { $ref: "#/components/schemas/TopicType" },
+                }
+              }
             },
           },
         },
