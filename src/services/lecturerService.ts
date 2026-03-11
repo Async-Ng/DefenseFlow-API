@@ -140,9 +140,9 @@ export const updateLecturerQualifications = async (
 
   // Validate qualification scores
   for (const qualificationInput of data.qualifications) {
-    if (qualificationInput.score < 0 || qualificationInput.score > 5) {
+    if (qualificationInput.score < 0 || qualificationInput.score > 10) {
       throw new Error(
-        `Điểm năng lực ${qualificationInput.score} không hợp lệ cho năng lực ID ${qualificationInput.qualificationId}. Điểm phải nằm trong khoảng từ 0 đến 5.`,
+        `Điểm năng lực ${qualificationInput.score} không hợp lệ cho năng lực ID ${qualificationInput.qualificationId}. Điểm phải nằm trong khoảng từ 0 đến 10.`,
       );
     }
 
@@ -190,9 +190,9 @@ export const addLecturerQualifications = async (
 
   // Validate and Upsert
   for (const q of qualifications) {
-    if (q.score < 0 || q.score > 5) {
+    if (q.score < 0 || q.score > 10) {
       throw new Error(
-        `Điểm năng lực ${q.score} không hợp lệ cho năng lực ID ${q.qualificationId}. Điểm phải nằm trong khoảng từ 0 đến 5.`
+        `Điểm năng lực ${q.score} không hợp lệ cho năng lực ID ${q.qualificationId}. Điểm phải nằm trong khoảng từ 0 đến 10.`
       );
     }
 

@@ -14,6 +14,18 @@ export const createTopicType = async (
   if (existing) {
     throw new Error(`Loại đề tài với tên '${input.name}' đã tồn tại`);
   }
+
+  // Validate priorityWeight range (1-10)
+  if (input.qualifications) {
+    for (const q of input.qualifications) {
+      if (q.priorityWeight !== undefined) {
+        if (!Number.isInteger(q.priorityWeight) || q.priorityWeight < 1 || q.priorityWeight > 10) {
+          throw new Error(`Trọng số ưu tiên (priorityWeight) phải là số nguyên từ 1 đến 10`);
+        }
+      }
+    }
+  }
+
   return await topicTypeRepository.create(input);
 };
 
@@ -41,6 +53,17 @@ export const updateTopicType = async (
     const duplicate = await topicTypeRepository.findByName(input.name);
     if (duplicate) {
       throw new Error(`Loại đề tài với tên '${input.name}' đã tồn tại`);
+    }
+  }
+
+  // Validate priorityWeight range (1-10)
+  if (input.qualifications) {
+    for (const q of input.qualifications) {
+      if (q.priorityWeight !== undefined) {
+        if (!Number.isInteger(q.priorityWeight) || q.priorityWeight < 1 || q.priorityWeight > 10) {
+          throw new Error(`Trọng số ưu tiên (priorityWeight) phải là số nguyên từ 1 đến 10`);
+        }
+      }
     }
   }
 

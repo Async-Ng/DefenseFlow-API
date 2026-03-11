@@ -9,26 +9,17 @@ import { getErrorMessage } from "../utils/typeGuards.js";
  * @swagger
  * /api/topic-types:
  *   post:
- *     summary: "[ADMIN] Create a new topic type"
+ *     summary: "[HỆ THỐNG] Tạo loại đề tài mới"
  *     tags: [TopicTypes]
  *     requestBody:
  *       required: true
  *       content:
  *         application/json:
  *           schema:
- *             type: object
- *             required: [name]
- *             properties:
- *               name:
- *                 type: string
- *               qualificationIds:
- *                 type: array
- *                 items:
- *                   type: integer
- *                 description: Optional list of qualification IDs to link at creation
+ *             $ref: '#/components/schemas/CreateTopicTypeInput'
  *     responses:
  *       201:
- *         description: Topic type created successfully
+ *         description: Tạo loại đề tài thành công
  *         content:
  *           application/json:
  *             schema:
@@ -74,26 +65,29 @@ export const createTopicType = async (req: Request, res: Response) => {
  * @swagger
  * /api/topic-types:
  *   get:
- *     summary: "[ADMIN, LECTURER] Get all topic types"
+ *     summary: "[ADMIN, LECTURER] Lấy danh sách toàn bộ loại đề tài"
  *     tags: [TopicTypes]
  *     parameters:
  *       - in: query
  *         name: page
+ *         description: Số trang
  *         schema:
  *           type: integer
  *           default: 1
  *       - in: query
  *         name: limit
+ *         description: Số bản ghi mỗi trang
  *         schema:
  *           type: integer
  *           default: 10
  *       - in: query
  *         name: name
+ *         description: Lọc theo tên loại đề tài
  *         schema:
  *           type: string
  *     responses:
  *       200:
- *         description: List of topic types
+ *         description: Danh sách loại đề tài
  *         content:
  *           application/json:
  *             schema:
@@ -128,17 +122,18 @@ export const getTopicTypes = async (req: Request, res: Response) => {
  * @swagger
  * /api/topic-types/{id}:
  *   get:
- *     summary: "[ADMIN, LECTURER] Get topic type by ID"
+ *     summary: "[ADMIN, LECTURER] Lấy thông tin chi tiết loại đề tài"
  *     tags: [TopicTypes]
  *     parameters:
  *       - in: path
  *         name: id
  *         required: true
+ *         description: ID của loại đề tài
  *         schema:
  *           type: integer
  *     responses:
  *       200:
- *         description: Topic type details (includes linked qualifications)
+ *         description: Chi tiết loại đề tài (bao gồm danh sách năng lực chuyên môn liên quan)
  *         content:
  *           application/json:
  *             schema:
@@ -178,12 +173,14 @@ export const getTopicType = async (req: Request, res: Response) => {
  * @swagger
  * /api/topic-types/{id}:
  *   put:
- *     summary: "[ADMIN] Update topic type (name and/or qualifications)"
+ *     summary: "[HỆ THỐNG] Cập nhật loại đề tài"
+ *     description: Cập nhật tên và/hoặc danh sách năng lực chuyên môn kèm trọng số.
  *     tags: [TopicTypes]
  *     parameters:
  *       - in: path
  *         name: id
  *         required: true
+ *         description: ID của loại đề tài
  *         schema:
  *           type: integer
  *     requestBody:
@@ -191,18 +188,10 @@ export const getTopicType = async (req: Request, res: Response) => {
  *       content:
  *         application/json:
  *           schema:
- *             type: object
- *             properties:
- *               name:
- *                 type: string
- *               qualificationIds:
- *                 type: array
- *                 items:
- *                   type: integer
- *                 description: Full list of qualification IDs. Replaces all current linked qualifications.
+ *             $ref: '#/components/schemas/UpdateTopicTypeInput'
  *     responses:
  *       200:
- *         description: Topic type updated successfully
+ *         description: Cập nhật loại đề tài thành công
  *         content:
  *           application/json:
  *             schema:
@@ -251,17 +240,18 @@ export const updateTopicType = async (req: Request, res: Response) => {
  * @swagger
  * /api/topic-types/{id}:
  *   delete:
- *     summary: "[ADMIN] Delete topic type"
+ *     summary: "[HỆ THỐNG] Xóa loại đề tài"
  *     tags: [TopicTypes]
  *     parameters:
  *       - in: path
  *         name: id
  *         required: true
+ *         description: ID của loại đề tài cần xóa
  *         schema:
  *           type: integer
  *     responses:
  *       200:
- *         description: Topic type deleted successfully
+ *         description: Xóa loại đề tài thành công
  *         content:
  *           application/json:
  *             schema:

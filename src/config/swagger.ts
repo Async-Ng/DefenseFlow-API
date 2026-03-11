@@ -91,22 +91,61 @@ const options: swaggerJsdoc.Options = {
           required: ["id", "name"],
           properties: {
             id: { type: "integer", example: 1 },
-            name: { type: "string", maxLength: 100, example: "Web Application" },
+            name: { type: "string", maxLength: 100, example: "Website/Ứng dụng quản lý", description: "Tên loại đề tài" },
             qualificationTopicTypes: {
               type: "array",
-              description: "Linked qualifications via junction table",
+              description: "Danh sách các năng lực chuyên môn liên quan kèm trọng số",
               items: {
                 type: "object",
                 properties: {
                   id: { type: "integer", example: 1 },
                   qualificationId: { type: "integer", example: 2 },
                   topicTypeId: { type: "integer", example: 1 },
-                  priorityWeight: { type: "number", format: "float", example: 1.0 },
+                  priorityWeight: { 
+                    type: "integer", 
+                    example: 2,
+                    description: "Trọng số ưu tiên của năng lực này (1 - 10). 1 là mặc định. Giá trị càng cao thì thuật toán xếp lịch càng ưu tiên giảng viên có kỹ năng này cho loại đề tài."
+                  },
                   qualification: { $ref: "#/components/schemas/Qualification" },
                 },
               },
             },
           },
+        },
+        CreateTopicTypeInput: {
+          type: "object",
+          required: ["name"],
+          properties: {
+            name: { type: "string", example: "Hệ thống AI/Big Data", description: "Tên loại đề tài mới" },
+            qualifications: {
+              type: "array",
+              description: "Danh sách các năng lực chuyên môn cần liên kết",
+              items: {
+                type: "object",
+                properties: {
+                  qualificationId: { type: "integer", example: 1 },
+                  priorityWeight: { type: "integer", example: 3, description: "Trọng số ưu tiên (số nguyên từ 1 - 10, mặc định 1). Dùng để điều chỉnh độ quan trọng của kỹ năng này khi xếp lịch." }
+                }
+              }
+            }
+          }
+        },
+        UpdateTopicTypeInput: {
+          type: "object",
+          properties: {
+            name: { type: "string", example: "Ứng dụng Di động (Cập nhật)", description: "Tên loại đề tài" },
+            qualifications: {
+              type: "array",
+              description: "Danh sách năng lực mới (sẽ thay thế toàn bộ danh sách cũ)",
+              items: {
+                type: "object",
+                properties: {
+                  qualificationId: { type: "integer", example: 1 },
+                  priorityWeight: { type: "integer", example: 2, description: "Trọng số ưu tiên (số nguyên từ 1 - 10, mặc định 1)" }
+                }
+              }
+            }
+          }
         },
         UpdateTopicInput: {
           type: "object",
@@ -428,7 +467,7 @@ const options: swaggerJsdoc.Options = {
               type: "string",
               enum: ["Senior", "MidLevel", "Junior", "Rookie"],
               default: "Rookie",
-              description: "[Admin-only] Seniority level. Not returned for Lecturer-facing endpoints.",
+              description: "[Chỉ dành cho Admin] Cấp bậc kinh nghiệm của giảng viên. Không hiển thị cho giảng viên.",
               example: "MidLevel",
             },
             isLecturer: {
@@ -463,7 +502,7 @@ const options: swaggerJsdoc.Options = {
             seniorityLevel: {
               type: "string",
               enum: ["Senior", "MidLevel", "Junior", "Rookie"],
-              description: "[Admin-only] Seniority level of the lecturer.",
+              description: "[Chỉ dành cho Admin] Cấp bậc kinh nghiệm của giảng viên.",
               example: "Rookie",
             },
             isLecturer: {
@@ -489,7 +528,7 @@ const options: swaggerJsdoc.Options = {
             seniorityLevel: {
               type: "string",
               enum: ["Senior", "MidLevel", "Junior", "Rookie"],
-              description: "[Admin-only] Update seniority level. Never exposed to Lecturers.",
+              description: "[Chỉ dành cho Admin] Cập nhật cấp bậc kinh nghiệm. Không hiển thị cho giảng viên.",
               example: "Senior",
             },
             isLecturer: {
@@ -594,11 +633,11 @@ const options: swaggerJsdoc.Options = {
             score: {
               type: "integer",
               minimum: 0,
-              maximum: 5,
+              maximum: 10,
               nullable: true,
               default: 0,
-              example: 4,
-              description: "Qualification proficiency score (0-5)",
+              example: 8,
+              description: "Điểm đánh giá năng lực (0-10)",
             },
             qualification: { $ref: "#/components/schemas/Qualification" },
           },
@@ -632,14 +671,14 @@ const options: swaggerJsdoc.Options = {
             qualificationId: {
               type: "integer",
               example: 1,
-              description: "ID of the qualification",
+              description: "ID của năng lực chuyên môn",
             },
             score: {
               type: "integer",
               minimum: 0,
               maximum: 5,
               example: 4,
-              description: "Qualification proficiency score (0-5)",
+              description: "Điểm đánh giá năng lực (0-5)",
             },
           },
         },
@@ -1129,7 +1168,7 @@ const options: swaggerJsdoc.Options = {
             success: { type: "boolean", example: true },
             message: {
               type: "string",
-              example: "Lecturer retrieved successfully",
+              example: "Lấy thông tin giảng viên thành công",
             },
             data: { $ref: "#/components/schemas/Lecturer" },
           },
@@ -1140,7 +1179,7 @@ const options: swaggerJsdoc.Options = {
             success: { type: "boolean", example: true },
             message: {
               type: "string",
-              example: "Lecturers retrieved successfully",
+              example: "Lấy danh sách giảng viên thành công",
             },
             data: {
               type: "array",
@@ -1168,7 +1207,7 @@ const options: swaggerJsdoc.Options = {
           type: "object",
           properties: {
             success: { type: "boolean", example: true },
-            message: { type: "string", example: "Lecturers retrieved successfully" },
+            message: { type: "string", example: "Lấy danh sách giảng viên thành công" },
             data: {
               type: "array",
               items: { $ref: "#/components/schemas/Lecturer" },

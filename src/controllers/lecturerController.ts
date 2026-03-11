@@ -51,7 +51,7 @@ export const getLecturerById = async (
   try {
     const id = parseInt(req.params.id);
     if (isNaN(id)) {
-      return errorResponse(res, "Invalid lecturer ID", 400);
+      return errorResponse(res, "ID giảng viên không hợp lệ", 400);
     }
     const lecturer = await lecturerService.getLecturerById(id);
 
@@ -62,7 +62,7 @@ export const getLecturerById = async (
       delete (lecturer as any).seniorityLevel;
     }
 
-    return successResponse(res, lecturer, "Lecturer retrieved successfully");
+    return successResponse(res, lecturer, "Lấy thông tin giảng viên thành công");
   } catch (error: unknown) {
     const message = getErrorMessage(error);
     if (message.includes("not found")) {
@@ -112,7 +112,7 @@ export const createLecturer = async (req: Request, res: Response): Promise<Respo
     }
     
     const lecturer = await lecturerService.createLecturer(data);
-    return createdResponse(res, lecturer, "Lecturer created successfully");
+    return createdResponse(res, lecturer, "Tạo giảng viên thành công");
   } catch (error: unknown) {
     const message = getErrorMessage(error);
     if (message.includes("already exists")) {
@@ -177,7 +177,7 @@ export const updateLecturer = async (req: Request, res: Response): Promise<Respo
     const data: UpdateLecturerInput = req.body;
     
     const lecturer = await lecturerService.updateLecturer(id, data);
-    return successResponse(res, lecturer, "Lecturer updated successfully");
+    return successResponse(res, lecturer, "Cập nhật giảng viên thành công");
   } catch (error: unknown) {
     const message = getErrorMessage(error);
     if (message.includes("not found")) return notFoundResponse(res, message);
@@ -223,7 +223,7 @@ export const deleteLecturer = async (req: Request, res: Response): Promise<Respo
     const id = getIdParam(req);
     
     await lecturerService.deleteLecturer(id);
-    return successResponse(res, null, "Lecturer deleted successfully");
+    return successResponse(res, null, "Xóa giảng viên thành công");
   } catch (error: unknown) {
     const message = getErrorMessage(error);
     if (message.includes("not found")) return notFoundResponse(res, message);
@@ -305,7 +305,7 @@ export const getAllLecturers = async (
       page,
       limit,
       result.total,
-      "Lecturers retrieved successfully",
+      "Lấy danh sách giảng viên thành công",
     );
   } catch (error: unknown) {
     const message = getErrorMessage(error);
@@ -377,7 +377,7 @@ export const updateLecturerQualifications = async (
   try {
     const id = parseInt(req.params.id);
     if (isNaN(id)) {
-      return errorResponse(res, "Invalid lecturer ID", 400);
+      return errorResponse(res, "ID giảng viên không hợp lệ", 400);
     }
 
     const lecturer = await lecturerService.updateLecturerQualifications(
@@ -387,7 +387,7 @@ export const updateLecturerQualifications = async (
     return successResponse(
       res,
       lecturer,
-      "Lecturer qualifications updated successfully",
+      "Cập nhật chuyên môn giảng viên thành công",
     );
   } catch (error: unknown) {
     const message = getErrorMessage(error);
@@ -453,7 +453,7 @@ export const addLecturerQualifications = async (
   try {
     const id = parseInt(req.params.id);
     if (isNaN(id)) {
-      return errorResponse(res, "Invalid lecturer ID", 400);
+      return errorResponse(res, "ID giảng viên không hợp lệ", 400);
     }
 
     // We reuse UpdateLecturerQualificationsInput as structure is same { qualifications: [...] }
@@ -464,7 +464,7 @@ export const addLecturerQualifications = async (
     return successResponse(
       res,
       lecturer,
-      "Lecturer qualifications added successfully",
+      "Thêm chuyên môn giảng viên thành công",
       201
     );
   } catch (error: unknown) {
@@ -531,11 +531,11 @@ export const deleteLecturerQualification = async (
     const qualificationId = parseInt(req.params.qualificationId);
     
     if (isNaN(id) || isNaN(qualificationId)) {
-      return errorResponse(res, "Invalid ID(s)", 400);
+      return errorResponse(res, "ID không hợp lệ", 400);
     }
 
     await lecturerService.deleteLecturerQualification(id, qualificationId);
-    return successResponse(res, null, "Qualification removed successfully");
+    return successResponse(res, null, "Xóa chuyên môn thành công");
   } catch (error: unknown) {
     const message = getErrorMessage(error);
     if (message.includes("not found") || message.includes("not assigned")) {

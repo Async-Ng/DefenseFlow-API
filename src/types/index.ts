@@ -254,12 +254,20 @@ export type QualificationFilters = {
 
 export type CreateTopicTypeInput = {
   name: string;
-  qualificationIds?: number[]; // Optional: link qualifications at creation time
+  /** Optional: link qualifications with custom priority weights at creation */
+  qualifications?: {
+    qualificationId: number;
+    priorityWeight?: number;
+  }[];
 };
 
 export type UpdateTopicTypeInput = {
   name?: string;
-  qualificationIds?: number[]; // If provided, syncs (replaces) the linked qualifications
+  /** If provided, syncs (replaces) the linked qualifications with their weights */
+  qualifications?: {
+    qualificationId: number;
+    priorityWeight?: number;
+  }[];
 };
 
 export type TopicTypeFilterQuery = {

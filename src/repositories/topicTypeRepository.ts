@@ -20,6 +20,7 @@ export type QualificationTopicTypeRow = {
   id: number;
   qualificationId: number;
   topicTypeId: number;
+  priorityWeight: number;
   qualification: NestedQualification;
 };
 
@@ -44,11 +45,13 @@ export const create = async (data: CreateTopicTypeInput): Promise<TopicTypeWithQ
   });
 
   // Link qualifications if provided
-  if (data.qualificationIds?.length) {
+  if (data.qualifications?.length) {
     await prisma.qualificationTopicType.createMany({
-      data: data.qualificationIds.map((qualificationId) => ({
-        qualificationId,
+      data: data.qualifications.map((q) => ({
+        qualificationId: q.qualificationId,
         topicTypeId: topicType.id,
+        priorityWeight: q.priorityWeight ?? 1,
+
       })),
       skipDuplicates: true,
     });
@@ -119,11 +122,16 @@ export const update = async (
   }
 
   // Sync qualifications if provided (replace all)
-  if (data.qualificationIds !== undefined) {
+  if (data.qualifications !== undefined) {
     await prisma.qualificationTopicType.deleteMany({ where: { topicTypeId: id } });
-    if (data.qualificationIds.length > 0) {
+    if (data.qualifications.length > 0) {
       await prisma.qualificationTopicType.createMany({
-        data: data.qualificationIds.map((qualificationId) => ({ qualificationId, topicTypeId: id })),
+        data: data.qualifications.map((q) => ({
+          qualificationId: q.qualificationId,
+          topicTypeId: id,
+          priorityWeight: q.priorityWeight ?? 1,
+
+        })),
         skipDuplicates: true,
       });
     }

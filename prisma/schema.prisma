@@ -83,7 +83,8 @@ model QualificationTopicType {
   id              Int           @id @default(autoincrement())
   qualificationId Int           @map("qualification_id")
   topicTypeId     Int           @map("topic_type_id")
-  priorityWeight  Float         @default(1.0) @map("priority_weight")
+  priorityWeight  Int           @default(1) @map("priority_weight")
+
   qualification   Qualification @relation(fields: [qualificationId], references: [id])
   topicType       TopicType     @relation(fields: [topicTypeId], references: [id])
 
