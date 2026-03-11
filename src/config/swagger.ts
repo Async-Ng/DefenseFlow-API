@@ -467,15 +467,21 @@ const options: swaggerJsdoc.Options = {
             },
             name: {
               type: "string",
-              maxLength: 100,
+              maxLength: 255,
               nullable: true,
-              example: "Java Programming",
+              example: "Scope: Coverage of objectives",
             },
-            isCommon: {
-              type: "boolean",
-              default: false,
-              description: "Indicates if this is a common qualification required for all councils",
+            component: {
+              type: "string",
+              enum: ["Product", "Document", "Presentation"],
+              nullable: true,
+              example: "Product"
             },
+            descHigh: { type: "string", nullable: true },
+            descGood: { type: "string", nullable: true },
+            descAcceptable: { type: "string", nullable: true },
+            descFail: { type: "string", nullable: true },
+            evaluationGuidelines: { type: "string", nullable: true },
             topicTypes: {
               type: "array",
               items: { $ref: "#/components/schemas/TopicType" },
@@ -486,23 +492,43 @@ const options: swaggerJsdoc.Options = {
           type: "object",
           required: ["qualificationCode", "name"],
           properties: {
-            qualificationCode: { type: "string", maxLength: 50, example: "JAVA" },
+            qualificationCode: { type: "string", maxLength: 50, example: "P1" },
             name: {
               type: "string",
-              maxLength: 100,
-              example: "Java Programming",
+              maxLength: 255,
+              example: "Scope: Coverage of objectives",
             },
+            component: {
+              type: "string",
+              enum: ["Product", "Document", "Presentation"],
+              example: "Product"
+            },
+            descHigh: { type: "string" },
+            descGood: { type: "string" },
+            descAcceptable: { type: "string" },
+            descFail: { type: "string" },
+            evaluationGuidelines: { type: "string" },
           },
         },
         UpdateQualificationInput: {
           type: "object",
           properties: {
-            qualificationCode: { type: "string", maxLength: 50, example: "JAVA" },
+            qualificationCode: { type: "string", maxLength: 50, example: "P1" },
             name: {
               type: "string",
-              maxLength: 100,
-              example: "Java Programming",
+              maxLength: 255,
+              example: "Scope: Coverage of objectives",
             },
+            component: {
+              type: "string",
+              enum: ["Product", "Document", "Presentation"],
+              example: "Product"
+            },
+            descHigh: { type: "string" },
+            descGood: { type: "string" },
+            descAcceptable: { type: "string" },
+            descFail: { type: "string" },
+            evaluationGuidelines: { type: "string" },
           },
         },
         LecturerQualification: {

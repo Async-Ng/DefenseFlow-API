@@ -25,6 +25,7 @@ import type {
   TopicSupervisor,
   DefenseCouncil,
   DefenseStatus,
+  CriteriaComponent,
 } from "../../generated/prisma/client.js";
 
 export type {
@@ -46,6 +47,7 @@ export type {
   TopicSupervisor,
   DefenseCouncil,
   DefenseStatus,
+  CriteriaComponent,
 };
 
 // ============================================================================
@@ -226,8 +228,12 @@ export type TopicFilters = {
 export type CreateQualificationInput = {
   qualificationCode: string;
   name: string;
-  isCommon?: boolean;
-  description?: string;
+  component?: CriteriaComponent;
+  descHigh?: string;
+  descGood?: string;
+  descAcceptable?: string;
+  descFail?: string;
+  evaluationGuidelines?: string;
 };
 
 export type UpdateQualificationInput = Partial<CreateQualificationInput>;

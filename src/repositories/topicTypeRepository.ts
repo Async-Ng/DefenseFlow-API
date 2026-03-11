@@ -13,7 +13,6 @@ export type NestedQualification = {
   id: number;
   qualificationCode: string;
   name: string;
-  isCommon: boolean;
 };
 
 // Junction row shape

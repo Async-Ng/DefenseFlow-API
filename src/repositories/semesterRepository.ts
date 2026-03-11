@@ -227,11 +227,7 @@ export const deleteSemesterCascade = async (id: number): Promise<Semester> => {
       where: { topicId: { in: topicIds } },
     });
 
-    // TopicQualification — FK → Topic
-    await tx.topicQualification.deleteMany({
-      where: { topicId: { in: topicIds } },
-    });
-
+    // TopicSupervisors already deleted
     // Topic — FK → Semester
     await tx.topic.deleteMany({
       where: { semesterId: id },

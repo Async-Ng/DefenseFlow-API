@@ -16,7 +16,12 @@ export const create = async (data: CreateQualificationInput): Promise<Qualificat
     data: {
       qualificationCode: data.qualificationCode,
       name: data.name,
-      isCommon: data.isCommon ?? false,
+      component: data.component,
+      descHigh: data.descHigh,
+      descGood: data.descGood,
+      descAcceptable: data.descAcceptable,
+      descFail: data.descFail,
+      evaluationGuidelines: data.evaluationGuidelines,
     },
   });
 };
@@ -90,8 +95,12 @@ export const update = async (
 
   if (data.qualificationCode !== undefined) updateData.qualificationCode = data.qualificationCode;
   if (data.name !== undefined) updateData.name = data.name;
-  if (data.isCommon !== undefined) updateData.isCommon = data.isCommon;
-
+  if (data.component !== undefined) updateData.component = data.component;
+  if (data.descHigh !== undefined) updateData.descHigh = data.descHigh;
+  if (data.descGood !== undefined) updateData.descGood = data.descGood;
+  if (data.descAcceptable !== undefined) updateData.descAcceptable = data.descAcceptable;
+  if (data.descFail !== undefined) updateData.descFail = data.descFail;
+  if (data.evaluationGuidelines !== undefined) updateData.evaluationGuidelines = data.evaluationGuidelines;
   return await prisma.qualification.update({
     where: { id },
     data: updateData,

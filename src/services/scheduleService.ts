@@ -537,7 +537,7 @@ const fetchSchedulingContext = async (defenseId: number): Promise<SchedulingCont
       where: { defenseId },
       orderBy: { dayDate: "asc" },
     }),
-    prisma.qualification.findMany({ where: { isCommon: true } }),
+    prisma.qualification.findMany({ where: { id: -1 } }), // Removed isCommon logic from schema
     prisma.lecturerDefenseConfig.findMany({ where: { defenseId } }),
   ]);
 
