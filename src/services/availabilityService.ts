@@ -64,6 +64,9 @@ export const getDefenseDaysWithAvailability = async (
     throw new Error(`Lecturer with ID ${lecturerId} not found`);
   }
 
+  // Check if lecturer is configured for this defense
+  await validateLecturerConfigured(lecturerId, defenseId);
+
   return await availabilityRepository.getDefenseDaysWithAvailability(
     defenseId,
     lecturerId,
@@ -94,6 +97,10 @@ export const getLecturerStatus = async (
     lecturerId,
     defenseId,
   );
+
+  if (!defenseConfig) {
+    throw new Error("Bạn không có tên trong danh sách tham gia đợt bảo vệ này.");
+  }
 
   // Get lecturer's availability records
   const availabilities = await availabilityRepository.getLecturerAvailability(
@@ -151,6 +158,7 @@ export const updateAvailability = async (
   }
 
   validateAvailabilityWindow(defense);
+  await validateLecturerConfigured(lecturerId, defenseDay.defenseId);
 
   // Upsert the availability record
   return await availabilityRepository.upsertAvailability(
@@ -207,6 +215,7 @@ export const batchUpdateAvailability = async (
     }
 
     validateAvailabilityWindow(defense);
+    await validateLecturerConfigured(lecturerId, defenseId);
   }
 
   // Perform batch update
@@ -253,6 +262,7 @@ export const removeAvailability = async (
   }
 
   validateAvailabilityWindow(defense);
+  await validateLecturerConfigured(lecturerId, defenseDay.defenseId);
 
   // Delete the availability record
   await availabilityRepository.deleteAvailability(lecturerId, defenseDayId);
@@ -281,6 +291,13 @@ const validateAvailabilityWindow = (defense: any) => {
       const dateStr = end.toLocaleDateString("vi-VN");
       throw new Error(`Availability registration period has ended (closed on ${dateStr}).`);
     }
+  }
+};
+
+const validateLecturerConfigured = async (lecturerId: number, defenseId: number) => {
+  const config = await availabilityRepository.getLecturerDefenseConfig(lecturerId, defenseId);
+  if (!config) {
+    throw new Error("Bạn không có tên trong danh sách tham gia đợt bảo vệ này.");
   }
 };
 /**
