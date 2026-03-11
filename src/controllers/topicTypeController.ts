@@ -57,11 +57,11 @@ export const createTopicType = async (req: Request, res: Response) => {
     const input: CreateTopicTypeInput = req.body;
 
     if (!input.name) {
-      return errorResponse(res, "Missing required field: name", 400);
+      return errorResponse(res, "Thiếu trường bắt buộc: name", 400);
     }
 
     const topicType = await topicTypeService.createTopicType(input);
-    return successResponse(res, topicType, "Topic type created successfully", 201);
+    return successResponse(res, topicType, "Tạo loại đề tài thành công", 201);
   } catch (error: any) {
     if (error.message.includes("already exists")) {
       return errorResponse(res, error.message, 409);
@@ -117,7 +117,7 @@ export const getTopicTypes = async (req: Request, res: Response) => {
       page,
       limit,
       result.total,
-      "Topic types retrieved successfully",
+      "Lấy danh sách loại đề tài thành công",
     );
   } catch (error: any) {
     return errorResponse(res, getErrorMessage(error), 500);
@@ -160,15 +160,15 @@ export const getTopicType = async (req: Request, res: Response) => {
   try {
     const id = parseInt(req.params.id as string);
     if (isNaN(id)) {
-      return errorResponse(res, "Invalid ID", 400);
+      return errorResponse(res, "ID không hợp lệ", 400);
     }
 
     const topicType = await topicTypeService.getTopicTypeById(id);
     if (!topicType) {
-      return errorResponse(res, "Topic type not found", 404);
+      return errorResponse(res, "Không tìm thấy loại đề tài", 404);
     }
 
-    return successResponse(res, topicType, "Topic type retrieved successfully");
+    return successResponse(res, topicType, "Lấy thông tin loại đề tài thành công");
   } catch (error: any) {
     return errorResponse(res, error.message, 500);
   }
@@ -235,7 +235,7 @@ export const updateTopicType = async (req: Request, res: Response) => {
 
     const input: UpdateTopicTypeInput = req.body;
     const topicType = await topicTypeService.updateTopicType(id, input);
-    return successResponse(res, topicType, "Topic type updated successfully");
+    return successResponse(res, topicType, "Cập nhật loại đề tài thành công");
   } catch (error: any) {
     if (error.message.includes("not found")) {
       return errorResponse(res, error.message, 404);
@@ -293,7 +293,7 @@ export const deleteTopicType = async (req: Request, res: Response) => {
     }
 
     await topicTypeService.deleteTopicType(id);
-    return successResponse(res, null, "Topic type deleted successfully");
+    return successResponse(res, null, "Xóa loại đề tài thành công");
   } catch (error: any) {
     if (error.message.includes("not found")) {
       return errorResponse(res, error.message, 404);
@@ -301,7 +301,7 @@ export const deleteTopicType = async (req: Request, res: Response) => {
     if (error.code === "P2003") {
       return errorResponse(
         res,
-        "Cannot delete topic type because it is being used by topics",
+        "Không thể xóa loại đề tài này vì đang được sử dụng bởi các đề tài",
         400,
       );
     }

@@ -1181,7 +1181,7 @@ const options: swaggerJsdoc.Options = {
             success: { type: "boolean", example: true },
             message: {
               type: "string",
-              example: "Qualification retrieved successfully",
+              example: "Lấy thông tin năng lực thành công",
             },
             data: { $ref: "#/components/schemas/Qualification" },
           },
@@ -1192,7 +1192,7 @@ const options: swaggerJsdoc.Options = {
             success: { type: "boolean", example: true },
             message: {
               type: "string",
-              example: "Qualifications retrieved successfully",
+              example: "Lấy danh sách năng lực thành công",
             },
             data: {
               type: "array",
@@ -1220,7 +1220,7 @@ const options: swaggerJsdoc.Options = {
           type: "object",
           properties: {
             success: { type: "boolean", example: true },
-            message: { type: "string", example: "Topic type retrieved successfully" },
+            message: { type: "string", example: "Lấy thông tin loại đề tài thành công" },
             data: { $ref: "#/components/schemas/TopicType" },
           },
         },
@@ -1228,7 +1228,7 @@ const options: swaggerJsdoc.Options = {
           type: "object",
           properties: {
             success: { type: "boolean", example: true },
-            message: { type: "string", example: "Topic types retrieved successfully" },
+            message: { type: "string", example: "Lấy danh sách loại đề tài thành công" },
             data: {
               type: "array",
               items: { $ref: "#/components/schemas/TopicType" },

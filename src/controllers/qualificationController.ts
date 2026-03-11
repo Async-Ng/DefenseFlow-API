@@ -51,13 +51,13 @@ export const createQualification = async (req: Request, res: Response) => {
     if (!input.qualificationCode || !input.name) {
       return errorResponse(
         res,
-        "Missing required fields: qualificationCode, name",
+        "Thiếu các trường bắt buộc: qualificationCode, name",
         400,
       );
     }
 
     const qualification = await qualificationService.createQualification(input);
-    return successResponse(res, qualification, "Qualification created successfully", 201);
+    return successResponse(res, qualification, "Tạo năng lực thành công", 201);
   } catch (error: any) {
     if (error.message.includes("already exists")) {
       return errorResponse(res, error.message, 409);
@@ -117,7 +117,7 @@ export const getQualifications = async (req: Request, res: Response) => {
       page,
       limit,
       result.total,
-      "Qualifications retrieved successfully",
+      "Lấy danh sách năng lực thành công",
     );
   } catch (error: any) {
     return errorResponse(res, getErrorMessage(error), 500);
@@ -160,15 +160,16 @@ export const getQualification = async (req: Request, res: Response) => {
   try {
     const id = parseInt(req.params.id as string);
     if (isNaN(id)) {
-      return errorResponse(res, "Invalid ID", 400);
+      return errorResponse(res, "ID không hợp lệ", 400);
     }
 
     const qualification = await qualificationService.getQualificationById(id);
     if (!qualification) {
-      return errorResponse(res, "Qualification not found", 404);
+      return errorResponse(res, "Không tìm thấy năng lực", 404);
     }
 
-    return successResponse(res, qualification, "Qualification retrieved successfully");
+    return successResponse(res, qualification, "Lấy thông tin năng lực thành công");
+
   } catch (error: any) {
     return errorResponse(res, error.message, 500);
   }
@@ -222,18 +223,18 @@ export const updateQualification = async (req: Request, res: Response) => {
   try {
     const id = parseInt(req.params.id as string);
     if (isNaN(id)) {
-      return errorResponse(res, "Invalid ID", 400);
+      return errorResponse(res, "ID không hợp lệ", 400);
     }
 
     const input: UpdateQualificationInput = req.body;
     const qualification = await qualificationService.updateQualification(id, input);
-    return successResponse(res, qualification, "Qualification updated successfully");
+    return successResponse(res, qualification, "Cập nhật năng lực thành công");
   } catch (error: any) {
     if (error.message.includes("not found")) {
-      return errorResponse(res, error.message, 404);
+      return errorResponse(res, "Không tìm thấy năng lực", 404);
     }
     if (error.message.includes("already exists")) {
-      return errorResponse(res, error.message, 409);
+      return errorResponse(res, "Mã năng lực đã tồn tại", 409);
     }
     return errorResponse(res, error.message, 500);
   }
@@ -281,20 +282,20 @@ export const deleteQualification = async (req: Request, res: Response) => {
   try {
     const id = parseInt(req.params.id as string);
     if (isNaN(id)) {
-      return errorResponse(res, "Invalid ID", 400);
+      return errorResponse(res, "ID không hợp lệ", 400);
     }
 
     await qualificationService.deleteQualification(id);
-    return successResponse(res, null, "Qualification deleted successfully");
+    return successResponse(res, null, "Xóa năng lực thành công");
   } catch (error: any) {
     if (error.message.includes("not found")) {
-      return errorResponse(res, error.message, 404);
+      return errorResponse(res, "Không tìm thấy năng lực", 404);
     }
     // Check foreign key constraint error from Prisma (roughly)
     if (error.code === "P2003") {
       return errorResponse(
         res,
-        "Cannot delete qualification because it is being used",
+        "Không thể xóa năng lực này vì đang được sử dụng",
         400,
       );
     }
