@@ -126,7 +126,12 @@ export const createLecturer = async (req: Request, res: Response): Promise<Respo
  * @swagger
  * /api/lecturers/{id}:
  *   patch:
- *     summary: "[ADMIN, LECTURER] Update basic lecturer information"
+ *     summary: "[ADMIN] Update basic lecturer information"
+ *     description: |
+ *       Update one or more fields for a lecturer. All fields are optional.
+ *
+ *       > **`seniorityLevel` is Admin-only.** Accepted values: `Senior`, `MidLevel`, `Junior`, `Rookie`.
+ *       > Lecturers will **not** see this field in any response — it is used internally by the auto-scheduling algorithm.
  *     tags: [Lecturers]
  *     parameters:
  *       - in: path

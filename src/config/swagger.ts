@@ -905,6 +905,12 @@ const options: swaggerJsdoc.Options = {
               items: { type: "string" },
               example: [],
             },
+            warnings: {
+              type: "array",
+              items: { type: "string" },
+              description: "Councils that did not meet seniority requirements",
+              example: ["CouncilBoard CB-001: No Senior or MidLevel lecturer available. Scheduled with best available."],
+            },
           },
         },
         // Response Wrappers for specific endpoints
@@ -1198,15 +1204,23 @@ const options: swaggerJsdoc.Options = {
             success: { type: "boolean", example: true },
             message: { type: "string", example: "Topic types retrieved successfully" },
             data: {
+              type: "array",
+              items: { $ref: "#/components/schemas/TopicType" },
+            },
+            meta: {
               type: "object",
               properties: {
-                data: {
-                  type: "array",
-                  items: { $ref: "#/components/schemas/TopicType" },
+                pagination: {
+                  type: "object",
+                  properties: {
+                    currentPage: { type: "integer", example: 1 },
+                    pageSize: { type: "integer", example: 10 },
+                    totalItems: { type: "integer", example: 10 },
+                    totalPages: { type: "integer", example: 1 },
+                    hasNextPage: { type: "boolean", example: false },
+                    hasPreviousPage: { type: "boolean", example: false },
+                  },
                 },
-                total: { type: "integer", example: 10 },
-                page: { type: "integer", example: 1 },
-                limit: { type: "integer", example: 10 },
               },
             },
           },

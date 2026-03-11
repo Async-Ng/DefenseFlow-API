@@ -68,6 +68,12 @@ import { z } from "zod";
  *                       items:
  *                         type: string
  *                       example: ["TOPIC_001", "TOPIC_002"]
+ *                     warnings:
+ *                       type: array
+ *                       items:
+ *                         type: string
+ *                       description: Councils that did not meet seniority requirements
+ *                       example: ["CouncilBoard CB-001: No Senior or MidLevel available. Best-effort used."]
  *       400:
  *         description: Validation error
  *         content:
