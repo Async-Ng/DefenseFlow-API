@@ -93,11 +93,11 @@ export const changePassword = async (req: Request, res: Response): Promise<Respo
  *                 type: string
  *                 format: email
  *                 description: The user's registered email address.
- *                 example: lecturer@fpt.edu.vn
+ *                 example: phuonglhk@fe.edu.vn
  *               password:
  *                 type: string
  *                 description: The user's password.
- *                 example: password123
+ *                 example: 000000
  *     responses:
  *       200:
  *         description: Login successful. Returns the JWT token and user info.
