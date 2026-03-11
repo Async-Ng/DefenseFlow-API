@@ -46,7 +46,7 @@ export const createTopic = async (
     const data: CreateTopicInput = req.body;
     if (!data.topicCode || !data.semesterId) {
       return validationErrorResponse(res, {
-        message: "topicCode and semesterId are required",
+        message: "topicCode và semesterId là bắt buộc",
       });
     }
     const topic = await topicService.createTopic(data);
@@ -364,7 +364,7 @@ export const updateTopicResult = async (
       !["Pending", "Passed", "Failed"].includes(data.result)
     ) {
       return validationErrorResponse(res, {
-        message: "Result must be one of: Pending, Passed, Failed",
+        message: "Kết quả (Result) phải là một trong các giá trị: Pending, Passed, Failed",
       });
     }
 

@@ -16,7 +16,7 @@ export const createLecturerDefenseConfig = async (
   // Check existence
   const existing = await lecturerDefenseConfigRepo.getByLecturerAndDefense(lecturerId, defenseId);
   if (existing) {
-    throw new Error("Configuration already exists for this lecturer and defense");
+    throw new Error("Cấu hình cho giảng viên và đợt bảo vệ này đã tồn tại");
   }
 
   // Determine effective values (defaults)
@@ -24,10 +24,10 @@ export const createLecturerDefenseConfig = async (
   const effectiveMax = maxTopics ?? 20;
 
   // Validate
-  if (effectiveMin < 0) throw new Error("Minimum topics cannot be negative");
-  if (effectiveMax < 0) throw new Error("Maximum topics cannot be negative");
+  if (effectiveMin < 0) throw new Error("Số đề tài tối thiểu không được âm");
+  if (effectiveMax < 0) throw new Error("Số đề tài tối đa không được âm");
   if (effectiveMin > effectiveMax) {
-    throw new Error(`Minimum topics (${effectiveMin}) cannot be greater than Maximum topics (${effectiveMax})`);
+    throw new Error(`Số lượng đề tài tối thiểu (${effectiveMin}) không được lớn hơn số lượng tối đa (${effectiveMax})`);
   }
 
   return await lecturerDefenseConfigRepo.create(input);
@@ -42,7 +42,7 @@ export const updateLecturerDefenseConfig = async (
   // Check existence
   const existing = await lecturerDefenseConfigRepo.getById(id);
   if (!existing) {
-    throw new Error("Configuration not found");
+    throw new Error("Không tìm thấy cấu hình");
   }
 
   // Determine effective values (merging)
@@ -50,11 +50,11 @@ export const updateLecturerDefenseConfig = async (
   const effectiveMax = maxTopics !== undefined ? maxTopics : existing.maxTopics;
 
   // Validate
-  if (effectiveMin !== undefined && effectiveMin !== null && effectiveMin < 0) {
-    throw new Error("Minimum topics cannot be negative");
+  if (input.minTopics !== undefined && input.minTopics < 0) {
+    throw new Error("Số đề tài tối thiểu không được âm");
   }
-  if (effectiveMax !== undefined && effectiveMax !== null && effectiveMax < 0) {
-    throw new Error("Maximum topics cannot be negative");
+  if (input.maxTopics !== undefined && input.maxTopics < 0) {
+    throw new Error("Số đề tài tối đa không được âm");
   }
 
   if (
@@ -62,7 +62,7 @@ export const updateLecturerDefenseConfig = async (
     effectiveMax !== undefined && effectiveMax !== null &&
     effectiveMin > effectiveMax
   ) {
-    throw new Error(`Minimum topics (${effectiveMin}) cannot be greater than Maximum topics (${effectiveMax})`);
+    throw new Error(`Số lượng đề tài tối thiểu (${effectiveMin}) không được lớn hơn số lượng tối đa (${effectiveMax})`);
   }
 
   return await lecturerDefenseConfigRepo.update(id, input);
@@ -90,12 +90,12 @@ export const getAllLecturerDefenseConfigs = async (
 
 export const getLecturerDefenseConfigById = async (id: number): Promise<LecturerDefenseConfig> => {
   const config = await lecturerDefenseConfigRepo.getById(id);
-  if (!config) throw new Error("Configuration not found");
+  if (!config) throw new Error("Không tìm thấy cấu hình");
   return config;
 };
 
 export const deleteLecturerDefenseConfig = async (id: number): Promise<void> => {
   const config = await lecturerDefenseConfigRepo.getById(id);
-  if (!config) throw new Error("Configuration not found");
+  if (!config) throw new Error("Không tìm thấy cấu hình");
   await lecturerDefenseConfigRepo.deleteById(id);
 };

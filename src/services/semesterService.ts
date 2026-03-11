@@ -33,7 +33,7 @@ export const createSemester = async (
   // Check if semester code already exists
   const existing = await semesterRepository.findByCode(data.semesterCode);
   if (existing) {
-    throw new Error(`Semester with code '${data.semesterCode}' already exists`);
+    throw new Error(`Học kỳ với mã '${data.semesterCode}' đã tồn tại`);
   }
 
   // Create semester
@@ -60,7 +60,7 @@ export const getSemesterById = async (
 ): Promise<Semester> => {
   const semester = await semesterRepository.findById(id, include);
   if (!semester) {
-    throw new Error(`Semester with ID ${id} not found`);
+    throw new Error(`Không tìm thấy học kỳ với ID ${id}`);
   }
   return semester;
 };
@@ -75,7 +75,7 @@ export const updateSemester = async (
   // Check if semester exists
   const existing = await semesterRepository.findById(id);
   if (!existing) {
-    throw new Error(`Semester with ID ${id} not found`);
+    throw new Error(`Không tìm thấy học kỳ với ID ${id}`);
   }
 
   // If updating semester code, check for duplicates
@@ -83,7 +83,7 @@ export const updateSemester = async (
     const duplicate = await semesterRepository.findByCode(data.semesterCode);
     if (duplicate) {
       throw new Error(
-        `Semester with code '${data.semesterCode}' already exists`,
+        `Học kỳ với mã '${data.semesterCode}' đã tồn tại`,
       );
     }
   }
@@ -115,7 +115,7 @@ export const deleteSemester = async (id: number): Promise<Semester> => {
   // Check if semester exists
   const existing = await semesterRepository.findById(id);
   if (!existing) {
-    throw new Error(`Semester with ID ${id} not found`);
+    throw new Error(`Không tìm thấy học kỳ với ID ${id}`);
   }
 
   // Cascade-delete semester and all associated data in a single transaction
@@ -157,8 +157,8 @@ const checkDefenseConflicts = async (
 
     if (!validation.isValid) {
       throw new Error(
-        `Cannot update semester dates: ${validation.error}. ` +
-          `Conflicting dates: ${validation.details?.invalidDates.map((d) => d.date).join(", ")}`,
+        `Không thể cập nhật ngày của học kỳ: ${validation.error}. ` +
+          `Các ngày bị xung đột: ${validation.details?.invalidDates.map((d) => d.date).join(", ")}`,
       );
     }
   }

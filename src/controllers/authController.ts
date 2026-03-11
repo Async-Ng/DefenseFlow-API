@@ -151,13 +151,13 @@ export const login = async (req: Request, res: Response): Promise<Response> => {
   const { email, password } = req.body;
 
   if (!email || !password) {
-    return validationErrorResponse(res, { message: "Email and password are required." });
+    return validationErrorResponse(res, { message: "Email và password là bắt buộc." });
   }
 
   const result = await loginWithPassword(email, password);
 
   if (!result) {
-    return res.status(401).json({ success: false, message: "Invalid email or password." });
+    return res.status(401).json({ success: false, message: "Email hoặc mật khẩu không chính xác." });
   }
 
   return successResponse(res, result, "Login successful");
@@ -402,7 +402,7 @@ export const googleCallback = async (req: Request, res: Response): Promise<Respo
   const code = req.query.code as string;
 
   if (!code) {
-    return res.status(400).json({ success: false, message: "Missing authorization code from Google." });
+    return res.status(400).json({ success: false, message: "Thiếu mã xác thực (authorization code) từ Google." });
   }
 
   try {
@@ -411,7 +411,7 @@ export const googleCallback = async (req: Request, res: Response): Promise<Respo
     if (result.kind === "access_denied") {
       return res.status(403).json({
         success: false,
-        message: `Access denied. The email "${result.email}" is not registered in the system. Please contact your administrator.`,
+        message: `Truy cập bị từ chối. Email "${result.email}" chưa được đăng ký trong hệ thống giảng viên. Vui lòng liên hệ Admin.`,
       });
     }
 
@@ -488,7 +488,7 @@ export const googleNativeSignIn = async (req: Request, res: Response): Promise<R
   const { idToken } = req.body;
 
   if (!idToken) {
-    return validationErrorResponse(res, { message: "Missing idToken." });
+    return validationErrorResponse(res, { message: "Thiếu idToken." });
   }
 
   try {
@@ -497,7 +497,7 @@ export const googleNativeSignIn = async (req: Request, res: Response): Promise<R
     if (result.kind === "access_denied") {
       return res.status(403).json({
         success: false,
-        message: `Access denied. The email "${result.email}" is not registered in the system.`,
+        message: `Truy cập bị từ chối. Email "${result.email}" chưa được đăng ký trong hệ thống.`,
       });
     }
 
@@ -636,7 +636,7 @@ export const refreshToken = async (req: Request, res: Response): Promise<Respons
   const { refreshToken: token } = req.body;
 
   if (!token) {
-    return validationErrorResponse(res, { message: "Refresh token is required." });
+    return validationErrorResponse(res, { message: "Refresh token là bắt buộc." });
   }
 
   try {

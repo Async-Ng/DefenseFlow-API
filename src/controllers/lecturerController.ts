@@ -108,7 +108,7 @@ export const createLecturer = async (req: Request, res: Response): Promise<Respo
   try {
     const data: CreateLecturerInput = req.body;
     if (!data.lecturerCode) {
-      return validationErrorResponse(res, { message: "lecturerCode is required" });
+      return validationErrorResponse(res, { message: "Mã giảng viên (lecturerCode) là bắt buộc" });
     }
     
     const lecturer = await lecturerService.createLecturer(data);
@@ -637,7 +637,7 @@ export const updateLecturerRoles = async (req: Request, res: Response): Promise<
     const data: UpdateLecturerRolesInput = req.body;
     
     if (typeof data.isLecturer !== "boolean" || typeof data.isAdmin !== "boolean") {
-       return validationErrorResponse(res, { message: "isLecturer and isAdmin must be boolean values" });
+       return validationErrorResponse(res, { message: "isLecturer và isAdmin phải là kiểu boolean" });
     }
 
     await lecturerService.updateLecturerRoles(id, data);

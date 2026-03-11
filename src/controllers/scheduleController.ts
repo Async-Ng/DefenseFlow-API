@@ -94,7 +94,7 @@ export const generateSchedule = async (
 ) => {
   try {
     const schema = z.object({
-      defenseId: z.number({ required_error: "Defense ID is required" }).int(),
+      defenseId: z.number({ required_error: "ID đợt bảo vệ là bắt buộc" }).int(),
     });
 
     const validation = schema.safeParse(req.body);
@@ -201,7 +201,7 @@ export const getSchedule = async (
     const defenseId = parseInt(req.params.defenseId as string);
 
     if (isNaN(defenseId)) {
-      throw new AppError(400, "Invalid defense ID");
+      throw new AppError(400, "ID đợt bảo vệ không hợp lệ");
     }
 
     const filters = getCouncilBoardFilters(req);
@@ -275,7 +275,7 @@ export const getCouncilBoardById = async (
     const id = parseInt(req.params.id as string);
 
     if (isNaN(id)) {
-      throw new AppError(400, "Invalid council board ID");
+      throw new AppError(400, "ID Hội đồng bảo vệ không hợp lệ");
     }
 
     const result = await scheduleService.getCouncilBoardById(id);
@@ -292,7 +292,7 @@ export const getCouncilBoardById = async (
       );
       
       if (!isMember) {
-        throw new AppError(403, "Forbidden: You can only view council boards you are assigned to");
+        throw new AppError(403, "Từ chối truy cập: Bạn chỉ có thể xem hội đồng bảo vệ mà bạn được phân công");
       }
     }
 
@@ -431,7 +431,7 @@ export const updateDefenseCouncil = async (
 ) => {
   try {
     const defenseCouncilId = parseInt(req.params.defenseCouncilId as string);
-    if (isNaN(defenseCouncilId)) throw new AppError(400, "Invalid defense council ID");
+    if (isNaN(defenseCouncilId)) throw new AppError(400, "ID lịch bảo vệ (Defense Council) không hợp lệ");
 
     const schema = z.object({
       startTime: z.string().datetime().optional(),
@@ -517,7 +517,7 @@ export const updateCouncilBoard = async (
 ) => {
   try {
     const councilBoardId = parseInt(req.params.councilBoardId as string);
-    if (isNaN(councilBoardId)) throw new AppError(400, "Invalid council board ID");
+    if (isNaN(councilBoardId)) throw new AppError(400, "ID Hội đồng bảo vệ không hợp lệ");
 
     const schema = z.object({
       presidentId: z.number().int().nullable().optional(),
@@ -572,7 +572,7 @@ export const exportSchedule = async (
     const defenseId = parseInt(req.params.defenseId as string);
 
     if (isNaN(defenseId)) {
-      throw new AppError(400, "Invalid defense ID");
+      throw new AppError(400, "ID đợt bảo vệ không hợp lệ");
     }
 
     // We'll import it dynamically or at the top. Let's add it to imports.

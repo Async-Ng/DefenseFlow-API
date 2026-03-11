@@ -34,11 +34,11 @@ const isString = (value: unknown): value is string => {
 export const getIdParam = (req: Request): number => {
   const idParam = req.params.id;
   if (!isString(idParam)) {
-    throw new Error("ID parameter must be a string");
+    throw new Error("Tham số ID phải là chuỗi");
   }
   const id = parseInt(idParam, 10);
   if (isNaN(id)) {
-    throw new Error("Invalid ID parameter");
+    throw new Error("Tham số ID không hợp lệ");
   }
   return id;
 };
@@ -262,7 +262,7 @@ export const getActiveRole = (req: Request): string | null => {
   // 1. If header is provided, strictly validate it
   if (activeRoleHeader) {
     if (!userRoles.includes(activeRoleHeader)) {
-      throw new Error(`Forbidden: User does not have the requested role '${activeRoleHeader}'`);
+      throw new Error(`Từ chối truy cập: Người dùng không có quyền yêu cầu '${activeRoleHeader}'`);
     }
     return activeRoleHeader;
   }

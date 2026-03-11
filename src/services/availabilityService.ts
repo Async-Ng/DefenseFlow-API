@@ -22,12 +22,12 @@ export const getDefenseDays = async (
   // Verify defense exists
   const defense = await availabilityRepository.getDefenseById(defenseId);
   if (!defense) {
-    throw new Error(`Defense with ID ${defenseId} not found`);
+    throw new Error(`Không tìm thấy đợt bảo vệ với ID ${defenseId}`);
   }
 
   // Check if availability has been published by admin
   if (!defense.isAvailabilityPublished) {
-    throw new Error("Defense days have not been published yet. Please wait for the admin to open the availability registration.");
+    throw new Error("Lịch bảo vệ chưa được công bố. Vui lòng chờ admin mở đợt đăng ký.");
   }
 
   // Check if current time is within the availability registration window
@@ -47,12 +47,12 @@ export const getDefenseDaysWithAvailability = async (
   // Verify defense exists
   const defense = await availabilityRepository.getDefenseById(defenseId);
   if (!defense) {
-    throw new Error(`Defense with ID ${defenseId} not found`);
+    throw new Error(`Không tìm thấy đợt bảo vệ với ID ${defenseId}`);
   }
 
   // Check if availability has been published by admin
   if (!defense.isAvailabilityPublished) {
-    throw new Error("Defense days have not been published yet. Please wait for the admin to open the availability registration.");
+    throw new Error("Lịch bảo vệ chưa được công bố. Vui lòng chờ admin mở đợt đăng ký.");
   }
 
   // Check if current time is within the availability registration window
@@ -61,7 +61,7 @@ export const getDefenseDaysWithAvailability = async (
   // Verify lecturer exists
   const lecturer = await availabilityRepository.getLecturerById(lecturerId);
   if (!lecturer) {
-    throw new Error(`Lecturer with ID ${lecturerId} not found`);
+    throw new Error(`Không tìm thấy giảng viên với ID ${lecturerId}`);
   }
 
   // Check if lecturer is configured for this defense
@@ -83,13 +83,13 @@ export const getLecturerStatus = async (
   // Verify defense exists
   const defense = await availabilityRepository.getDefenseById(defenseId);
   if (!defense) {
-    throw new Error(`Defense with ID ${defenseId} not found`);
+    throw new Error(`Không tìm thấy đợt bảo vệ với ID ${defenseId}`);
   }
 
   // Verify lecturer exists
   const lecturer = await availabilityRepository.getLecturerById(lecturerId);
   if (!lecturer) {
-    throw new Error(`Lecturer with ID ${lecturerId} not found`);
+    throw new Error(`Không tìm thấy giảng viên với ID ${lecturerId}`);
   }
 
   // Get lecturer's defense configuration
@@ -131,14 +131,14 @@ export const updateAvailability = async (
   // Verify lecturer exists
   const lecturer = await availabilityRepository.getLecturerById(lecturerId);
   if (!lecturer) {
-    throw new Error(`Lecturer with ID ${lecturerId} not found`);
+    throw new Error(`Không tìm thấy giảng viên với ID ${lecturerId}`);
   }
 
   // Verify defense day exists
   const defenseDay =
     await availabilityRepository.getDefenseDayById(defenseDayId);
   if (!defenseDay) {
-    throw new Error(`Defense day with ID ${defenseDayId} not found`);
+    throw new Error(`Không tìm thấy ngày bảo vệ với ID ${defenseDayId}`);
   }
 
   // Get the defense to check if it's published and not locked
@@ -146,15 +146,15 @@ export const updateAvailability = async (
     defenseDay.defenseId,
   );
   if (!defense) {
-    throw new Error(`Defense not found`);
+    throw new Error(`Không tìm thấy đợt bảo vệ`);
   }
 
   if (!defense.isAvailabilityPublished) {
-    throw new Error("Defense days have not been published yet. Please wait for the admin to open the availability registration.");
+    throw new Error("Lịch bảo vệ chưa được công bố. Vui lòng chờ admin mở đợt đăng ký.");
   }
 
   if (defense.status === "Locked") {
-    throw new Error("Registration is closed for scheduling processing");
+    throw new Error("Đợt đăng ký đã đóng để tiến hành xếp lịch");
   }
 
   validateAvailabilityWindow(defense);
@@ -178,7 +178,7 @@ export const batchUpdateAvailability = async (
   // Verify lecturer exists
   const lecturer = await availabilityRepository.getLecturerById(lecturerId);
   if (!lecturer) {
-    throw new Error(`Lecturer with ID ${lecturerId} not found`);
+    throw new Error(`Không tìm thấy giảng viên với ID ${lecturerId}`);
   }
 
   // Validate all defense days exist and belong to the same defense
@@ -189,13 +189,13 @@ export const batchUpdateAvailability = async (
     const defenseDay =
       await availabilityRepository.getDefenseDayById(defenseDayId);
     if (!defenseDay) {
-      throw new Error(`Defense day with ID ${defenseDayId} not found`);
+      throw new Error(`Không tìm thấy ngày bảo vệ với ID ${defenseDayId}`);
     }
 
     if (defenseId === null) {
       defenseId = defenseDay.defenseId;
     } else if (defenseId !== defenseDay.defenseId) {
-      throw new Error("All defense days must belong to the same defense");
+      throw new Error("Tất cả các ngày đăng ký phải thuộc cùng một đợt bảo vệ");
     }
   }
 
@@ -203,15 +203,15 @@ export const batchUpdateAvailability = async (
   if (defenseId) {
     const defense = await availabilityRepository.getDefenseById(defenseId);
     if (!defense) {
-      throw new Error(`Defense not found`);
+      throw new Error(`Không tìm thấy đợt bảo vệ`);
     }
 
     if (!defense.isAvailabilityPublished) {
-      throw new Error("Defense days have not been published yet. Please wait for the admin to open the availability registration.");
+      throw new Error("Lịch bảo vệ chưa được công bố. Vui lòng chờ admin mở đợt đăng ký.");
     }
 
     if (defense.status === "Locked") {
-      throw new Error("Registration is closed for scheduling processing");
+      throw new Error("Đợt đăng ký đã đóng để tiến hành xếp lịch");
     }
 
     validateAvailabilityWindow(defense);
@@ -235,14 +235,14 @@ export const removeAvailability = async (
   // Verify lecturer exists
   const lecturer = await availabilityRepository.getLecturerById(lecturerId);
   if (!lecturer) {
-    throw new Error(`Lecturer with ID ${lecturerId} not found`);
+    throw new Error(`Không tìm thấy giảng viên với ID ${lecturerId}`);
   }
 
   // Verify defense day exists
   const defenseDay =
     await availabilityRepository.getDefenseDayById(defenseDayId);
   if (!defenseDay) {
-    throw new Error(`Defense day with ID ${defenseDayId} not found`);
+    throw new Error(`Không tìm thấy ngày bảo vệ với ID ${defenseDayId}`);
   }
 
   // Check if defense is published and not locked
@@ -250,15 +250,15 @@ export const removeAvailability = async (
     defenseDay.defenseId,
   );
   if (!defense) {
-    throw new Error(`Defense not found`);
+    throw new Error(`Không tìm thấy đợt bảo vệ`);
   }
 
   if (!defense.isAvailabilityPublished) {
-    throw new Error("Defense days have not been published yet. Please wait for the admin to open the availability registration.");
+    throw new Error("Lịch bảo vệ chưa được công bố. Vui lòng chờ admin mở đợt đăng ký.");
   }
 
   if (defense.status === "Locked") {
-    throw new Error("Registration is closed for scheduling processing");
+    throw new Error("Đợt đăng ký đã đóng để tiến hành xếp lịch");
   }
 
   validateAvailabilityWindow(defense);
@@ -281,7 +281,7 @@ const validateAvailabilityWindow = (defense: any) => {
     start.setHours(0, 0, 0, 0);
     if (now < start) {
       const dateStr = start.toLocaleDateString("vi-VN");
-      throw new Error(`Availability registration has not started yet. Registration opens on ${dateStr}.`);
+      throw new Error(`Thời gian đăng ký nguyện vọng chưa bắt đầu. Hệ thống sẽ mở vào ${dateStr}.`);
     }
   }
 
@@ -289,7 +289,7 @@ const validateAvailabilityWindow = (defense: any) => {
     end.setHours(23, 59, 59, 999);
     if (now > end) {
       const dateStr = end.toLocaleDateString("vi-VN");
-      throw new Error(`Availability registration period has ended (closed on ${dateStr}).`);
+      throw new Error(`Thời gian đăng ký nguyện vọng đã kết thúc (đóng vào ngày ${dateStr}).`);
     }
   }
 };
@@ -307,7 +307,7 @@ export const getAvailableLecturers = async (defenseDayId: number) => {
   // Verify defense day exists
   const defenseDay = await availabilityRepository.getDefenseDayById(defenseDayId);
   if (!defenseDay) {
-    throw new Error(`Defense day with ID ${defenseDayId} not found`);
+    throw new Error(`Không tìm thấy ngày bảo vệ với ID ${defenseDayId}`);
   }
 
   return await availabilityRepository.getAvailableLecturersForDay(defenseDayId);

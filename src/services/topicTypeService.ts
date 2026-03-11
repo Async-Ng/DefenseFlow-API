@@ -12,7 +12,7 @@ export const createTopicType = async (
 ): Promise<TopicTypeWithQualifications> => {
   const existing = await topicTypeRepository.findByName(input.name);
   if (existing) {
-    throw new Error(`Topic type with name '${input.name}' already exists`);
+    throw new Error(`Loại đề tài với tên '${input.name}' đã tồn tại`);
   }
   return await topicTypeRepository.create(input);
 };
@@ -34,13 +34,13 @@ export const updateTopicType = async (
 ): Promise<TopicTypeWithQualifications> => {
   const existing = await topicTypeRepository.findById(id);
   if (!existing) {
-    throw new Error(`Topic type with id ${id} not found`);
+    throw new Error(`Không tìm thấy loại đề tài với ID ${id}`);
   }
 
   if (input.name && input.name !== existing.name) {
     const duplicate = await topicTypeRepository.findByName(input.name);
     if (duplicate) {
-      throw new Error(`Topic type with name '${input.name}' already exists`);
+      throw new Error(`Loại đề tài với tên '${input.name}' đã tồn tại`);
     }
   }
 
@@ -50,7 +50,7 @@ export const updateTopicType = async (
 export const deleteTopicType = async (id: number): Promise<void> => {
   const existing = await topicTypeRepository.findById(id);
   if (!existing) {
-    throw new Error(`Topic type with id ${id} not found`);
+    throw new Error(`Không tìm thấy loại đề tài với ID ${id}`);
   }
   await topicTypeRepository.deleteTopicType(id);
 };

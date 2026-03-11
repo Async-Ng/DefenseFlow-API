@@ -34,13 +34,13 @@ export const createDefense = async (data: CreateDefenseInput): Promise<any> => {
   // Check if defense code already exists
   const existing = await defenseRepository.findByCode(data.defenseCode);
   if (existing) {
-    throw new Error(`Defense with code '${data.defenseCode}' already exists`);
+    throw new Error(`Đợt bảo vệ với mã '${data.defenseCode}' đã tồn tại`);
   }
 
   // Verify semester exists
   const semester = await semesterRepository.findById(data.semesterId);
   if (!semester) {
-    throw new Error(`Semester with ID ${data.semesterId} not found`);
+    throw new Error(`Không tìm thấy học kỳ với ID ${data.semesterId}`);
   }
 
   // Check if a Main defense already exists for this semester
@@ -116,7 +116,7 @@ export const getDefenseById = async (
 ): Promise<any> => {
   const defense = await defenseRepository.findById(id, include);
   if (!defense) {
-    throw new Error(`Defense with ID ${id} not found`);
+    throw new Error(`Không tìm thấy đợt bảo vệ với ID ${id}`);
   }
   return defense;
 };
@@ -131,7 +131,7 @@ export const updateDefense = async (
   // Check if defense exists
   const existing = await defenseRepository.findById(id);
   if (!existing) {
-    throw new Error(`Defense with ID ${id} not found`);
+    throw new Error(`Không tìm thấy đợt bảo vệ với ID ${id}`);
   }
 
   // If updating defense code, check for duplicates
@@ -157,14 +157,14 @@ export const updateDefense = async (
   // Validate timePerTopic if provided
   if (data.timePerTopic !== undefined && data.timePerTopic !== null) {
     if (typeof data.timePerTopic !== "number" || data.timePerTopic <= 0) {
-      throw new Error("Time per topic must be a positive number");
+      throw new Error("Thời gian mỗi đề tài phải là số dương");
     }
   }
 
   // Validate maxCouncilsPerDay if provided
   if (data.maxCouncilsPerDay !== undefined && data.maxCouncilsPerDay !== null) {
     if (typeof data.maxCouncilsPerDay !== "number" || data.maxCouncilsPerDay <= 0) {
-      throw new Error("Max councils per day must be a positive number");
+      throw new Error("Số hội đồng tối đa mỗi ngày phải là số dương");
     }
   }
 
@@ -242,7 +242,7 @@ export const publishAvailability = async (
   // Validate dates if provided
   if (startDate && endDate) {
     if (new Date(startDate) > new Date(endDate)) {
-      throw new Error("Start date cannot be after end date");
+      throw new Error("Ngày bắt đầu không được sau ngày kết thúc");
     }
   }
 
@@ -294,7 +294,7 @@ export const importFailedTopics = async (resitDefenseId: number): Promise<{ impo
     .map(td => td.topicId as number);
 
   if (newFailedTopicIds.length === 0) {
-    throw new Error("All failed topics have already been imported to this Resit defense");
+    throw new Error("Tất cả các đề tài không đạt (Failed) đã được thêm vào đợt Bảo vệ lại này");
   }
 
   // 7. Clone/register these topics into the Resit defense

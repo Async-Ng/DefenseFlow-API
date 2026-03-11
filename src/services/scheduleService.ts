@@ -574,7 +574,7 @@ const runScheduler = (ctx: SchedulingContext): { boards: PlannedBoard[]; unsched
 
 const fetchSchedulingContext = async (defenseId: number): Promise<SchedulingContext> => {
   const defense = await prisma.defense.findUnique({ where: { id: defenseId } });
-  if (!defense) throw new AppError(404, "Defense not found");
+  if (!defense) throw new AppError(404, "Không tìm thấy đợt bảo vệ");
 
   const [topics, lecturers, defenseDays, lecturerDefenseConfigs] = await Promise.all([
     prisma.topic.findMany({
@@ -627,7 +627,7 @@ const fetchSchedulingContext = async (defenseId: number): Promise<SchedulingCont
 
 const validateDefenseReadiness = (ctx: SchedulingContext): void => {
   if (ctx.defenseDays.length === 0) {
-    throw new AppError(400, "No defense days defined for this defense.");
+    throw new AppError(400, "Không có ngày bảo vệ nào được định nghĩa cho đợt bảo vệ này.");
   }
 };
 
@@ -640,7 +640,7 @@ const validateCapacity = (ctx: SchedulingContext): void => {
   if (totalMinutesNeeded > totalMinutesAvailable) {
     throw new AppError(
       400,
-      `Insufficient capacity: need ${totalMinutesNeeded} min, have ${totalMinutesAvailable} min across ${ctx.defenseDays.length} day(s) with ${maxCouncilsPerDay} councils/day.`
+      `Không đủ thời gian: Cần ${totalMinutesNeeded} phút, nhưng chỉ có ${totalMinutesAvailable} phút trong ${ctx.defenseDays.length} ngày (với ${maxCouncilsPerDay} hội đồng/ngày).`
     );
   }
 };
@@ -651,7 +651,7 @@ const validateCapacity = (ctx: SchedulingContext): void => {
 
 const persistSchedule = async (defenseId: number, boards: PlannedBoard[]): Promise<void> => {
   const defense = await prisma.defense.findUnique({ where: { id: defenseId } });
-  if (!defense) throw new AppError(404, "Defense not found");
+  if (!defense) throw new AppError(404, "Không tìm thấy đợt bảo vệ");
 
   const timePerTopic = defense.timePerTopic ?? 45;
   const [startH, startM] = (defense.workStartTime ?? "07:30").split(":").map(Number);
@@ -814,7 +814,7 @@ export const getSchedule = async (
 export const getCouncilBoardById = async (id: number): Promise<CouncilBoard> => {
   const board = await councilBoardRepository.findById(id);
   if (!board) {
-    throw new AppError(404, "Council Board not found");
+    throw new AppError(404, "Không tìm thấy Hội đồng bảo vệ");
   }
   return board;
 };
@@ -831,7 +831,7 @@ export const publishSchedule = async (defenseId: number) => {
 
   if (unscheduledTopics.length > 0) {
     const codes = unscheduledTopics.map((t) => t.topic?.topicCode || t.id).join(", ");
-    throw new AppError(400, `Cannot publish: The following topics are not scheduled: ${codes}`);
+    throw new AppError(400, `Không thể công bố lịch: Các đề tài sau chưa được xếp lịch: ${codes}`);
   }
 
   // 2. Validation: Ensure all council boards for this defense have exactly 5 members
@@ -852,7 +852,7 @@ export const publishSchedule = async (defenseId: number) => {
 
   if (invalidBoards.length > 0) {
     const codes = invalidBoards.map((b) => b.boardCode).join(", ");
-    throw new AppError(400, `Cannot publish: The following council boards do not have exactly 5 members: ${codes}`);
+    throw new AppError(400, `Không thể công bố lịch: Các hội đồng sau không đủ 5 thành viên: ${codes}`);
   }
 
   return prisma.defense.update({
@@ -866,11 +866,11 @@ export const updateDefenseCouncil = async (
   data: { startTime?: Date; endTime?: Date; councilBoardId?: number | null }
 ) => {
   const dc = await prisma.defenseCouncil.findUnique({ where: { id: defenseCouncilId } });
-  if (!dc) throw new AppError(404, "Defense Council not found");
+  if (!dc) throw new AppError(404, "Không tìm thấy lịch bảo vệ (Defense Council)");
 
   if (data.councilBoardId && data.councilBoardId !== dc.councilBoardId) {
     const board = await prisma.councilBoard.findUnique({ where: { id: data.councilBoardId } });
-    if (!board) throw new AppError(404, "Target council board not found");
+    if (!board) throw new AppError(404, "Không tìm thấy Hội đồng bảo vệ mục tiêu");
   }
 
   return prisma.defenseCouncil.update({
@@ -890,7 +890,7 @@ export const updateCouncilBoard = async (
     include: { councilBoardMembers: true },
   });
 
-  if (!board) throw new AppError(404, "Council board not found");
+  if (!board) throw new AppError(404, "Không tìm thấy Hội đồng bảo vệ");
 
   // 1. Gather all new IDs (explicitly provided or from current state if not provided)
   const current = board.councilBoardMembers;
@@ -903,7 +903,7 @@ export const updateCouncilBoard = async (
   // 2. Intra-board uniqueness check
   const uniqueIds = new Set(allIds);
   if (uniqueIds.size !== allIds.length) {
-    throw new AppError(400, "Duplicate lecturers in the same board");
+    throw new AppError(400, "Phát hiện giảng viên bị trùng lặp trong cùng một hội đồng");
   }
 
   // 3. Cross-board conflict check
@@ -925,7 +925,7 @@ export const updateCouncilBoard = async (
     const conflict = conflictingAssignments[0];
     throw new AppError(
       400,
-      `Lecturer ${conflict.lecturer?.fullName || conflict.lecturerId} is already assigned to board ${conflict.councilBoard?.boardCode} on this day.`
+      `Giảng viên ${conflict.lecturer?.fullName || conflict.lecturerId} đã được phân công vào hội đồng ${conflict.councilBoard?.boardCode} trong ngày này.`
     );
   }
 
@@ -946,7 +946,7 @@ export const updateCouncilBoard = async (
      // Soft check: Warn if they have NO qualifications at all (can be refined based on actual schema rules)
      if (presidentQuals.length === 0) {
         // According to US: "system prevents the action or shows a warning". We will throw a 400.
-        throw new AppError(400, "Role Eligibility Warning: This lecturer is not qualified for the President role.");
+        throw new AppError(400, "Cảnh báo Điều kiện Vai trò: Giảng viên này không đủ điều kiện cho vai trò Chủ tịch hội đồng.");
      }
   }
   */
@@ -978,7 +978,7 @@ export const updateCouncilBoard = async (
   if (conflictingSupervisors.length > 0) {
       throw new AppError(
           409, // 409 Conflict implies it can be forced later if we add a bypass flag, but for now block it.
-          "Conflict of Interest Detected: Lecturer is the Supervisor of a topic assigned to this council. Do you want to force this assignment?"
+          "Phát hiện Xung đột: Giảng viên là người hướng dẫn của một đề tài được phân công cho hội đồng này."
       );
   }
 
@@ -1046,9 +1046,9 @@ export const createDefenseCouncil = async (data: {
       },
     });
 
-    if (!board) throw new AppError(404, "Council board not found");
+    if (!board) throw new AppError(404, "Không tìm thấy Hội đồng bảo vệ");
     const defense = board.defenseDay?.defense;
-    if (!defense) throw new AppError(404, "Defense configuration not found");
+    if (!defense) throw new AppError(404, "Không tìm thấy cấu hình đợt bảo vệ");
 
     const timePerTopic = defense.timePerTopic ?? 45;
 

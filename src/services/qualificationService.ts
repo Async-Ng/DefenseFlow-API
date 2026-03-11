@@ -16,7 +16,7 @@ export const createQualification = async (
   // Check if qualification code already exists
   const existingQualification = await qualificationRepository.findByCode(data.qualificationCode);
   if (existingQualification) {
-    throw new Error(`Qualification with code ${data.qualificationCode} already exists`);
+    throw new Error(`Năng lực với mã ${data.qualificationCode} đã tồn tại`);
   }
 
   return await qualificationRepository.create(data);
@@ -48,14 +48,14 @@ export const updateQualification = async (
 ): Promise<Qualification> => {
   const qualification = await qualificationRepository.findById(id);
   if (!qualification) {
-    throw new Error(`Qualification with ID ${id} not found`);
+    throw new Error(`Không tìm thấy năng lực với ID ${id}`);
   }
 
   // If updating qualification code, check if it already exists
   if (data.qualificationCode && data.qualificationCode !== qualification.qualificationCode) {
     const existingQualification = await qualificationRepository.findByCode(data.qualificationCode);
     if (existingQualification) {
-      throw new Error(`Qualification with code ${data.qualificationCode} already exists`);
+      throw new Error(`Năng lực với mã ${data.qualificationCode} đã tồn tại`);
     }
   }
 
@@ -68,7 +68,7 @@ export const updateQualification = async (
 export const deleteQualification = async (id: number): Promise<Qualification> => {
   const qualification = await qualificationRepository.findById(id);
   if (!qualification) {
-    throw new Error(`Qualification with ID ${id} not found`);
+    throw new Error(`Không tìm thấy năng lực với ID ${id}`);
   }
 
   return await qualificationRepository.deleteQualification(id);

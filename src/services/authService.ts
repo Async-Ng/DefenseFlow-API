@@ -81,7 +81,7 @@ export async function loginWithPassword(
 export async function logoutUser(): Promise<void> {
   const { error } = await supabase.auth.signOut();
   if (error) {
-    throw new Error("Logout failed");
+    throw new Error("Đăng xuất thất bại");
   }
 }
 
@@ -108,7 +108,7 @@ export async function generateGoogleOAuthUrl(
   });
 
   if (error || !data.url) {
-    throw new Error("Failed to generate Google OAuth URL.");
+    throw new Error("Tạo URL Google OAuth thất bại.");
   }
 
   return { url: data.url };
@@ -176,7 +176,7 @@ export async function handleGoogleCallback(
   const { data, error } = await supabase.auth.exchangeCodeForSession(code);
 
   if (error || !data.session) {
-    throw new Error("Failed to exchange code for session. Please try again.");
+    throw new Error("Quy trình xác thực thất bại. Vui lòng thử lại.");
   }
 
   const metaResult = await syncUserMetadata(data.user);

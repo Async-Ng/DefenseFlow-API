@@ -27,7 +27,7 @@ const upload = multer({
     ) {
       cb(null, true);
     } else {
-      cb(new Error("Only .xlsx files are allowed"));
+      cb(new Error("Chỉ hỗ trợ file .xlsx"));
     }
   },
 });

@@ -24,7 +24,7 @@ export const getLecturerById = async (
 ): Promise<LecturerWithQualifications> => {
   const lecturer = await lecturerRepository.findById(id, true);
   if (!lecturer) {
-    throw new Error(`Lecturer with ID ${id} not found`);
+    throw new Error(`Không tìm thấy giảng viên với ID ${id}`);
   }
 
   return lecturer as LecturerWithQualifications;
@@ -52,7 +52,7 @@ export const getAllLecturers = async (
 export const createLecturer = async (data: CreateLecturerInput): Promise<Lecturer> => {
   const existing = await lecturerRepository.findByCode(data.lecturerCode);
   if (existing) {
-    throw new Error(`Lecturer with code ${data.lecturerCode} already exists`);
+    throw new Error(`Giảng viên với mã ${data.lecturerCode} đã tồn tại`);
   }
 
   // 1. Create in Database first to get the local ID
@@ -100,13 +100,13 @@ export const createLecturer = async (data: CreateLecturerInput): Promise<Lecture
 export const updateLecturer = async (id: number, data: UpdateLecturerInput): Promise<Lecturer> => {
   const lecturer = await lecturerRepository.findById(id);
   if (!lecturer) {
-    throw new Error(`Lecturer with ID ${id} not found`);
+    throw new Error(`Không tìm thấy giảng viên với ID ${id}`);
   }
   
   if (data.lecturerCode && data.lecturerCode !== lecturer.lecturerCode) {
     const existing = await lecturerRepository.findByCode(data.lecturerCode);
     if (existing) {
-      throw new Error(`Lecturer with code ${data.lecturerCode} already exists`);
+      throw new Error(`Giảng viên với mã ${data.lecturerCode} đã tồn tại`);
     }
   }
   
@@ -119,7 +119,7 @@ export const updateLecturer = async (id: number, data: UpdateLecturerInput): Pro
 export const deleteLecturer = async (id: number): Promise<void> => {
   const lecturer = await lecturerRepository.findById(id);
   if (!lecturer) {
-    throw new Error(`Lecturer with ID ${id} not found`);
+    throw new Error(`Không tìm thấy giảng viên với ID ${id}`);
   }
 
   await lecturerRepository.deleteLecturer(id);
@@ -135,14 +135,14 @@ export const updateLecturerQualifications = async (
   // Check if lecturer exists
   const existing = await lecturerRepository.findById(id);
   if (!existing) {
-    throw new Error(`Lecturer with ID ${id} not found`);
+    throw new Error(`Không tìm thấy giảng viên với ID ${id}`);
   }
 
   // Validate qualification scores
   for (const qualificationInput of data.qualifications) {
     if (qualificationInput.score < 0 || qualificationInput.score > 5) {
       throw new Error(
-        `Invalid qualification score ${qualificationInput.score} for qualification ID ${qualificationInput.qualificationId}. Score must be between 0 and 5.`,
+        `Điểm năng lực ${qualificationInput.score} không hợp lệ cho năng lực ID ${qualificationInput.qualificationId}. Điểm phải nằm trong khoảng từ 0 đến 5.`,
       );
     }
 
@@ -151,7 +151,7 @@ export const updateLecturerQualifications = async (
       qualificationInput.qualificationId,
     );
     if (!qualificationExists) {
-      throw new Error(`Qualification with ID ${qualificationInput.qualificationId} not found`);
+      throw new Error(`Không tìm thấy năng lực với ID ${qualificationInput.qualificationId}`);
     }
   }
 
@@ -169,7 +169,7 @@ export const updateLecturerQualifications = async (
   // Return updated lecturer with qualifications
   const updated = await lecturerRepository.findById(id, true);
   if (!updated) {
-    throw new Error(`Failed to retrieve updated lecturer`);
+    throw new Error(`Cập nhật thông tin giảng viên thất bại`);
   }
 
   return updated as LecturerWithQualifications;
@@ -185,20 +185,20 @@ export const addLecturerQualifications = async (
   // Check if lecturer exists
   const existing = await lecturerRepository.findById(id);
   if (!existing) {
-    throw new Error(`Lecturer with ID ${id} not found`);
+    throw new Error(`Không tìm thấy giảng viên với ID ${id}`);
   }
 
   // Validate and Upsert
   for (const q of qualifications) {
     if (q.score < 0 || q.score > 5) {
       throw new Error(
-        `Invalid qualification score ${q.score} for qualification ID ${q.qualificationId}. Score must be between 0 and 5.`
+        `Điểm năng lực ${q.score} không hợp lệ cho năng lực ID ${q.qualificationId}. Điểm phải nằm trong khoảng từ 0 đến 5.`
       );
     }
 
     const exists = await lecturerRepository.qualificationExists(q.qualificationId);
     if (!exists) {
-      throw new Error(`Qualification with ID ${q.qualificationId} not found`);
+      throw new Error(`Không tìm thấy năng lực với ID ${q.qualificationId}`);
     }
 
     await lecturerRepository.upsertLecturerQualification(id, q.qualificationId, q.score);
@@ -219,14 +219,14 @@ export const deleteLecturerQualification = async (
    // Check if lecturer exists
    const existingLecturer = await lecturerRepository.findById(lecturerId);
    if (!existingLecturer) {
-     throw new Error(`Lecturer with ID ${lecturerId} not found`);
+     throw new Error(`Không tìm thấy giảng viên với ID ${lecturerId}`);
    }
  
   try {
     await lecturerRepository.deleteLecturerQualification(lecturerId, qualificationId);
   } catch (error: any) {
     if (error.code === "P2025") {
-       throw new Error(`Qualification with ID ${qualificationId} not assigned to lecturer ${lecturerId}`);
+       throw new Error(`Năng lực với ID ${qualificationId} chưa được phân công cho giảng viên ${lecturerId}`);
     }
     throw error;
   }
@@ -238,7 +238,7 @@ export const deleteLecturerQualification = async (
 export const getSupervisedTopics = async (lecturerId: number, filters: { semesterId?: number } = {}) => {
   const lecturer = await lecturerRepository.findById(lecturerId);
   if (!lecturer) {
-    throw new Error(`Lecturer with ID ${lecturerId} not found`);
+    throw new Error(`Không tìm thấy giảng viên với ID ${lecturerId}`);
   }
   return await lecturerRepository.findSupervisedTopics(lecturerId, filters);
 };
@@ -249,7 +249,7 @@ export const getSupervisedTopics = async (lecturerId: number, filters: { semeste
 export const getLecturerDashboard = async (lecturerId: number) => {
   const lecturer = await lecturerRepository.findById(lecturerId);
   if (!lecturer) {
-    throw new Error(`Lecturer with ID ${lecturerId} not found`);
+    throw new Error(`Không tìm thấy giảng viên với ID ${lecturerId}`);
   }
   return await lecturerRepository.getLecturerDashboardStats(lecturerId);
 };
@@ -261,7 +261,7 @@ export const getLecturerDashboard = async (lecturerId: number) => {
 export const resetLecturerPassword = async (id: number): Promise<void> => {
   const lecturer = await lecturerRepository.findById(id);
   if (!lecturer) {
-    throw new Error(`Lecturer with ID ${id} not found`);
+    throw new Error(`Không tìm thấy giảng viên với ID ${id}`);
   }
 
   if (!lecturer.authId) {
@@ -287,7 +287,7 @@ export const resetLecturerPassword = async (id: number): Promise<void> => {
 export const updateLecturerRoles = async (id: number, rolesInput: UpdateLecturerRolesInput): Promise<void> => {
   const lecturer = await lecturerRepository.findById(id);
   if (!lecturer) {
-    throw new Error(`Lecturer with ID ${id} not found`);
+    throw new Error(`Không tìm thấy giảng viên với ID ${id}`);
   }
 
   if (!lecturer.authId) {
@@ -340,7 +340,7 @@ export const getPersonalSchedule = async (
 ) => {
   const lecturer = await lecturerRepository.findById(lecturerId);
   if (!lecturer) {
-    throw new Error(`Lecturer with ID ${lecturerId} not found`);
+    throw new Error(`Không tìm thấy giảng viên với ID ${lecturerId}`);
   }
   return await lecturerRepository.findPersonalSchedule(lecturerId, filters);
 };

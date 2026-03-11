@@ -20,7 +20,7 @@ export const authenticate = async (
   if (!authHeader || !authHeader.startsWith("Bearer ")) {
     return res.status(401).json({
       success: false,
-      message: "No token provided. Please include a Bearer token.",
+      message: "Không có token. Vui lòng cung cấp Bearer token.",
     });
   }
 
@@ -34,7 +34,7 @@ export const authenticate = async (
   if (error || !user) {
     return res.status(401).json({
       success: false,
-      message: "Invalid or expired token.",
+      message: "Token không hợp lệ hoặc đã hết hạn.",
     });
   }
 
@@ -64,7 +64,7 @@ export const requireRole = (...allowedRoles: string[]) => {
       if (!activeRole || !allowedRoles.includes(activeRole)) {
         return res.status(403).json({
           success: false,
-          message: `Forbidden. Required role(s): ${allowedRoles.join(", ")}. Your active role is '${activeRole}'.`,
+          message: `Từ chối truy cập. Yêu cầu quyền: ${allowedRoles.join(", ")}. Quyền hiện tại của bạn: '${activeRole}'.`,
         });
       }
 
@@ -72,7 +72,7 @@ export const requireRole = (...allowedRoles: string[]) => {
     } catch (error: any) {
       return res.status(403).json({
         success: false,
-        message: error.message || "Forbidden",
+        message: error.message || "Từ chối truy cập",
       });
     }
   };

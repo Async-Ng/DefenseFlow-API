@@ -13,7 +13,7 @@ export class ExportService {
     });
 
     if (!defense) {
-      throw new AppError(404, "Defense round not found");
+      throw new AppError(404, "Không tìm thấy đợt bảo vệ");
     }
 
     const councilBoards = await prisma.councilBoard.findMany({

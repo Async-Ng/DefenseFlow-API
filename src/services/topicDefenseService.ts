@@ -8,11 +8,11 @@ import { CreateTopicDefenseInput, TopicDefenseFilters } from "../types/index.js"
 export const createTopicDefense = async (data: CreateTopicDefenseInput) => {
   // Validate defense exists
   const defense = await prisma.defense.findUnique({ where: { id: data.defenseId } });
-  if (!defense) throw new Error(`Defense with id ${data.defenseId} not found`);
+  if (!defense) throw new Error(`Không tìm thấy đợt bảo vệ với ID ${data.defenseId}`);
 
   // Validate defense is open
   if (defense.status !== "Open") {
-    throw new Error(`Defense is not open for registration (status: ${defense.status})`);
+    throw new Error(`Đợt bảo vệ này chưa mở đăng ký đề tài (trạng thái: ${defense.status})`);
   }
 
   // Validate topics exist
@@ -23,7 +23,7 @@ export const createTopicDefense = async (data: CreateTopicDefenseInput) => {
   if (topics.length !== data.topicIds.length) {
     const foundIds = topics.map(t => t.id);
     const missingIds = data.topicIds.filter(id => !foundIds.includes(id));
-    throw new Error(`The following topic IDs were not found: ${missingIds.join(", ")}`);
+    throw new Error(`Không tìm thấy các mã đề tài sau: ${missingIds.join(", ")}`);
   }
 
   // Validate topics are not already registered in this defense
@@ -37,7 +37,7 @@ export const createTopicDefense = async (data: CreateTopicDefenseInput) => {
   if (existingRegistrations.length > 0) {
     const alreadyRegisteredIds = existingRegistrations.map(r => r.topicId);
     throw new Error(
-      `The following topics are already registered in defense ${data.defenseId}: ${alreadyRegisteredIds.join(", ")}`
+      `Các nhóm đề tài sau đã được đăng ký trong đợt bảo vệ ${data.defenseId}: ${alreadyRegisteredIds.join(", ")}`
     );
   }
 
@@ -73,7 +73,7 @@ export const getTopicDefenses = async (
  */
 export const getTopicDefenseById = async (id: number) => {
   const record = await topicDefenseRepository.findById(id);
-  if (!record) throw new Error("TopicDefense not found");
+  if (!record) throw new Error("Không tìm thấy thông tin đăng ký đề tài");
   return record;
 };
 
@@ -82,11 +82,11 @@ export const getTopicDefenseById = async (id: number) => {
  */
 export const deleteTopicDefense = async (id: number) => {
   const record = await topicDefenseRepository.findById(id);
-  if (!record) throw new Error("TopicDefense not found");
+  if (!record) throw new Error("Không tìm thấy thông tin đăng ký đề tài");
   
   // Optional: Add logic to prevent deletion if schedule is already published, etc.
   if (record.defense?.isSchedulePublished) {
-    throw new Error("Cannot remove registration from a defense that has published its schedule");
+    throw new Error("Không thể xóa đăng ký khi lịch bảo vệ đã được công bố");
   }
 
   return await topicDefenseRepository.remove(id);

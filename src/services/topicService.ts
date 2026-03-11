@@ -14,13 +14,13 @@ export const createTopic = async (data: CreateTopicInput) => {
   // Validate semesterId exists
   const semester = await prisma.semester.findUnique({ where: { id: data.semesterId } });
   if (!semester) {
-    throw new Error(`Semester with id ${data.semesterId} not found`);
+    throw new Error(`Không tìm thấy học kỳ với ID ${data.semesterId}`);
   }
 
   // Validate unique topicCode
   const existing = await topicRepository.findByCode(data.topicCode);
   if (existing) {
-    throw new Error(`Topic with code ${data.topicCode} already exists`);
+    throw new Error(`Đề tài với mã ${data.topicCode} đã tồn tại`);
   }
 
   return await topicRepository.create(data);
@@ -43,7 +43,7 @@ export const getAllTopics = async (
 export const getTopicById = async (id: number) => {
   const topic = await topicRepository.findById(id);
   if (!topic) {
-    throw new Error("Topic not found");
+    throw new Error("Không tìm thấy đề tài");
   }
   return topic;
 };
@@ -54,21 +54,21 @@ export const getTopicById = async (id: number) => {
 export const updateTopic = async (id: number, data: UpdateTopicInput) => {
   const topic = await topicRepository.findById(id);
   if (!topic) {
-    throw new Error("Topic not found");
+    throw new Error("Không tìm thấy đề tài");
   }
 
   // Check unique constraints if topicCode is being updated
   if (data.topicCode && data.topicCode !== topic.topicCode) {
     const existing = await topicRepository.findByCode(data.topicCode);
     if (existing) {
-      throw new Error(`Topic with code ${data.topicCode} already exists`);
+      throw new Error(`Đề tài với mã ${data.topicCode} đã tồn tại`);
     }
   }
 
   // Update supervisors if provided
   if (data.supervisorIds !== undefined) {
     if (data.supervisorIds.length === 0) {
-      throw new Error("Topic must have at least one supervisor");
+      throw new Error("Đề tài phải có ít nhất một giảng viên hướng dẫn");
     }
     await topicRepository.updateSupervisors(id, data.supervisorIds);
     delete (data as any).supervisorIds; // Remove from data object to avoid Prisma error
@@ -83,7 +83,7 @@ export const updateTopic = async (id: number, data: UpdateTopicInput) => {
 export const deleteTopic = async (id: number) => {
   const topic = await topicRepository.findById(id);
   if (!topic) {
-    throw new Error("Topic not found");
+    throw new Error("Không tìm thấy đề tài");
   }
 
   // Check for dependencies (simplified: relying on foreign key constraints for now or check registration)
@@ -106,12 +106,12 @@ export const updateTopicResult = async (
 ) => {
   const topic = await topicRepository.findById(id);
   if (!topic) {
-    throw new Error("Topic not found");
+    throw new Error("Không tìm thấy đề tài");
   }
 
   const topicDefense = await topicRepository.findLatestTopicDefense(id);
   if (!topicDefense) {
-    throw new Error("Topic is not registered in any defense");
+    throw new Error("Đề tài chưa được đăng ký vào đợt bảo vệ nào");
   }
 
   return await topicRepository.updateTopicDefenseResult(
@@ -129,7 +129,7 @@ export const updateTopicResultsBulk = async (
   // Simple validation for result values
   for (const item of topicResults) {
     if (!["Pending", "Passed", "Failed"].includes(item.result)) {
-      throw new Error(`Invalid result '${item.result}' for topic ${item.topicCode}`);
+      throw new Error(`Kết quả '${item.result}' không hợp lệ cho đề tài ${item.topicCode}`);
     }
   }
 

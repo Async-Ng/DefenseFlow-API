@@ -72,7 +72,7 @@ export const createTopicDefense = async (
     const data: CreateTopicDefenseInput = req.body;
     if (!data.topicIds || !Array.isArray(data.topicIds) || data.topicIds.length === 0 || !data.defenseId) {
       return validationErrorResponse(res, {
-        message: "topicIds (array) and defenseId are required",
+        message: "topicIds (mảng) và defenseId là bắt buộc",
       });
     }
 
