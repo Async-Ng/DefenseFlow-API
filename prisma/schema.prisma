@@ -23,11 +23,15 @@ model Semester {
 model Qualification {
   id                      Int                      @id @default(autoincrement())
   qualificationCode       String                   @unique @map("qualification_code") @db.VarChar(50)
-  name                    String                   @db.VarChar(100)
-  isCommon                Boolean                  @default(false) @map("is_common")
+  name                    String                   @db.VarChar(255)
+  component               CriteriaComponent?
+  descHigh                String?                  @map("desc_high") @db.Text
+  descGood                String?                  @map("desc_good") @db.Text
+  descAcceptable          String?                  @map("desc_acceptable") @db.Text
+  descFail                String?                  @map("desc_fail") @db.Text
+  evaluationGuidelines    String?                  @map("evaluation_guidelines") @db.Text
   lecturerQualifications  LecturerQualification[]
   qualificationTopicTypes QualificationTopicType[]
-  topicQualifications     TopicQualification[]
 
   @@map("Qualifications")
 }
@@ -48,18 +52,17 @@ model Lecturer {
 }
 
 model Topic {
-  id                  Int                  @id @default(autoincrement())
-  topicCode           String               @unique @map("topic_code") @db.VarChar(50)
-  groupCode           String?              @map("group_code") @db.VarChar(50)
-  title               String?              @db.VarChar(255)
-  vietnameseTitle     String?              @map("vietnamese_title") @db.VarChar(255)
-  semesterId          Int                  @map("semester_id")
-  topicTypeId         Int?                 @map("topic_type_id")
-  topicDefenses       TopicDefense[]
-  topicQualifications TopicQualification[]
-  topicSupervisors    TopicSupervisor[]
-  semester            Semester             @relation(fields: [semesterId], references: [id])
-  topicType           TopicType?           @relation(fields: [topicTypeId], references: [id])
+  id               Int               @id @default(autoincrement())
+  topicCode        String            @unique @map("topic_code") @db.VarChar(50)
+  groupCode        String?           @map("group_code") @db.VarChar(50)
+  title            String?           @db.VarChar(255)
+  vietnameseTitle  String?           @map("vietnamese_title") @db.VarChar(255)
+  semesterId       Int               @map("semester_id")
+  topicTypeId      Int?              @map("topic_type_id")
+  topicDefenses    TopicDefense[]
+  topicSupervisors TopicSupervisor[]
+  semester         Semester          @relation(fields: [semesterId], references: [id])
+  topicType        TopicType?        @relation(fields: [topicTypeId], references: [id])
 
   @@map("Topics")
 }
@@ -77,6 +80,7 @@ model QualificationTopicType {
   id              Int           @id @default(autoincrement())
   qualificationId Int           @map("qualification_id")
   topicTypeId     Int           @map("topic_type_id")
+  priorityWeight  Float         @default(1.0) @map("priority_weight")
   qualification   Qualification @relation(fields: [qualificationId], references: [id])
   topicType       TopicType     @relation(fields: [topicTypeId], references: [id])
 
@@ -85,19 +89,19 @@ model QualificationTopicType {
 }
 
 model Defense {
-  id                    Int            @id @default(autoincrement())
-  defenseCode           String         @unique @map("defense_code") @db.VarChar(50)
-  semesterId            Int            @map("semester_id")
-  name                  String?        @db.VarChar(100)
-  type                  DefenseType?   @default(Main)
-  status                DefenseStatus? @default(Open)
-  timePerTopic          Int?           @map("time_per_topic")
-  workStartTime         String?        @map("work_start_time") @db.VarChar(10)
-  isAvailabilityPublished Boolean       @default(false) @map("is_availability_published")
-  isSchedulePublished   Boolean        @default(false) @map("is_schedule_published")
-  availabilityStartDate DateTime?      @map("availability_start_date") @db.Date
-  availabilityEndDate   DateTime?      @map("availability_end_date") @db.Date
-  maxCouncilsPerDay     Int?           @default(1) @map("max_councils_per_day")
+  id                      Int            @id @default(autoincrement())
+  defenseCode             String         @unique @map("defense_code") @db.VarChar(50)
+  semesterId              Int            @map("semester_id")
+  name                    String?        @db.VarChar(100)
+  type                    DefenseType?   @default(Main)
+  status                  DefenseStatus? @default(Open)
+  timePerTopic            Int?           @map("time_per_topic")
+  workStartTime           String?        @map("work_start_time") @db.VarChar(10)
+  isAvailabilityPublished Boolean        @default(false) @map("is_availability_published")
+  isSchedulePublished     Boolean        @default(false) @map("is_schedule_published")
+  availabilityStartDate   DateTime?      @map("availability_start_date") @db.Date
+  availabilityEndDate     DateTime?      @map("availability_end_date") @db.Date
+  maxCouncilsPerDay       Int?           @default(1) @map("max_councils_per_day")
 
   defenseDays            DefenseDay[]
   semester               Semester                @relation(fields: [semesterId], references: [id])
@@ -135,14 +139,14 @@ model CouncilBoard {
 }
 
 model DefenseCouncil {
-  id                 Int          @id @default(autoincrement())
-  defenseCouncilCode String       @unique @map("defense_council_code") @db.VarChar(50)
-  registrationId     Int          @map("registration_id")
-  councilBoardId     Int?         @map("council_board_id")
-  startTime          DateTime?    @map("start_time") @db.Time(6)
-  endTime            DateTime?    @map("end_time") @db.Time(6)
+  id                 Int           @id @default(autoincrement())
+  defenseCouncilCode String        @unique @map("defense_council_code") @db.VarChar(50)
+  registrationId     Int           @map("registration_id")
+  councilBoardId     Int?          @map("council_board_id")
+  startTime          DateTime?     @map("start_time") @db.Time(6)
+  endTime            DateTime?     @map("end_time") @db.Time(6)
   councilBoard       CouncilBoard? @relation(fields: [councilBoardId], references: [id])
-  topicDefense       TopicDefense @relation(fields: [registrationId], references: [id])
+  topicDefense       TopicDefense  @relation(fields: [registrationId], references: [id])
 
   @@map("Defense_Councils")
 }
@@ -204,17 +208,6 @@ model TopicSupervisor {
   @@map("Topic_Supervisors")
 }
 
-model TopicQualification {
-  id              Int           @id @default(autoincrement())
-  topicId         Int           @map("topic_id")
-  qualificationId Int           @map("qualification_id")
-  qualification   Qualification @relation(fields: [qualificationId], references: [id])
-  topic           Topic         @relation(fields: [topicId], references: [id])
-
-  @@unique([topicId, qualificationId])
-  @@map("Topic_Qualifications")
-}
-
 model TopicDefense {
   id               Int              @id @default(autoincrement())
   topicDefenseCode String           @unique @map("registration_code") @db.VarChar(50)
@@ -263,4 +256,12 @@ enum DefenseType {
   Resit
 
   @@map("defense_type")
+}
+
+enum CriteriaComponent {
+  Product
+  Document
+  Presentation
+
+  @@map("criteria_component")
 }
