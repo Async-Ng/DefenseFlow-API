@@ -561,9 +561,45 @@ const runScheduler = (ctx: SchedulingContext): { boards: PlannedBoard[]; unsched
     }
   }
 
+  const unscheduled = topics.filter(t => !state.scheduledTopicIds.has(t.id));
+
+  // Per-topic warnings with specific diagnosis reason
+  for (const topic of unscheduled) {
+    const supervisorIds = new Set(topic.topicSupervisors.map(ts => ts.lecturerId));
+
+    // How many lecturers are completely blocked because they supervise this topic?
+    const supervisorBlocked = lecturers.filter(l => supervisorIds.has(l.id)).length;
+
+    // How many remain after removing supervisor-blocked ones?
+    const eligible = lecturers.filter(l =>
+      !supervisorIds.has(l.id) &&
+      defenseDays.some(day =>
+        l.lecturerDayAvailability.some(
+          a => a.defenseDayId === day.id && (a.status as string) === 'Available'
+        )
+      )
+    ).length;
+
+    let reason: string;
+    if (lecturers.length < 5) {
+      reason = `Không đủ giảng viên (đang có ${lecturers.length}/5 cần thiết)`;
+    } else if (eligible < 5) {
+      if (supervisorBlocked > 0) {
+        reason = `Chỉ có ${eligible} giảng viên hợp lệ sau khi loại ${supervisorBlocked} người hướng dẫn và $
+{lecturers.length - eligible - supervisorBlocked} giảng viên không có lịch rảnh (cần ít nhất 5)`;
+      } else {
+        reason = `Chỉ có ${eligible} giảng viên có lịch rảnh phù hợp (cần ít nhất 5)`;
+      }
+    } else {
+      reason = `Không tìm được hội đồng phù hợp sau 2 lượt xếp lịch (có thể do vượt giới hạn hội đồng/ngày hoặc không đủ năng lực phù hợp)`;
+    }
+
+    warnings.push(`⚠️ [${topic.topicCode}] "${topic.title?.slice(0, 60)}..." — ${reason}`);
+  }
+
   return {
     boards,
-    unscheduled: topics.filter(t => !state.scheduledTopicIds.has(t.id)),
+    unscheduled,
     warnings,
   };
 };
@@ -641,6 +677,15 @@ const validateCapacity = (ctx: SchedulingContext): void => {
     throw new AppError(
       400,
       `Không đủ thời gian: Cần ${totalMinutesNeeded} phút, nhưng chỉ có ${totalMinutesAvailable} phút trong ${ctx.defenseDays.length} ngày (với ${maxCouncilsPerDay} hội đồng/ngày).`
+    );
+  }
+
+  // Validate: Need at least 5 lecturers to form one council board
+  const MIN_LECTURERS_PER_BOARD = 5;
+  if (ctx.lecturers.length < MIN_LECTURERS_PER_BOARD) {
+    throw new AppError(
+      400,
+      `Không đủ giảng viên để xếp lịch: Hiện có ${ctx.lecturers.length} giảng viên được cấu hình, nhưng cần ít nhất ${MIN_LECTURERS_PER_BOARD} giảng viên để thành lập 1 hội đồng. Vui lòng thêm giảng viên vào cấu hình đợt bảo vệ.`
     );
   }
 };
