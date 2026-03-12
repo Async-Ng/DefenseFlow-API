@@ -11,8 +11,9 @@ import type {
   BatchUpdateAvailabilityInput,
   AvailabilityStatus,
   EnhancedDefenseDay,
-  DefenseDayStatus,
+  DefenseDayWithRelations,
 } from "../types/index.js";
+import { calculateEnhancedDefenseDay } from "../utils/defenseDayStatus.js";
 
 /**
  * Get all defense days for a specific defense (for active defense)
@@ -29,47 +30,7 @@ export const getDefenseDays = async (
   // Get enhanced defense days with counts
   const days = await availabilityRepository.getEnhancedDefenseDaysByDefenseId(defenseId);
 
-  const now = new Date();
-
-  return days.map((day) => {
-    const def = day.defense;
-    let status: DefenseDayStatus = "Chờ mở đăng ký";
-
-    if (!def.isAvailabilityPublished) {
-      status = "Chờ mở đăng ký";
-    } else if (def.isSchedulePublished) {
-      status = "Đã công bố lịch";
-    } else if (day.councilBoards.length > 0) {
-      status = "Đã xếp lịch nháp";
-    } else if (def.status === "Locked") {
-      status = "Đã khóa đăng ký";
-    } else {
-      // Check for expired status
-      const endDate = def.availabilityEndDate ? new Date(def.availabilityEndDate) : null;
-      if (endDate) {
-        endDate.setHours(23, 59, 59, 999);
-      }
-      
-      if (endDate && now > endDate) {
-        status = "Hết hạn đăng ký";
-      } else {
-        status = "Đang nhận đăng ký";
-      }
-    }
-
-    return {
-      id: day.id,
-      defenseDayCode: day.defenseDayCode,
-      defenseId: day.defenseId,
-      dayDate: day.dayDate,
-      note: day.note,
-      status,
-      boardCount: day.councilBoards.length,
-      availableLecturerCount: day.lecturerDayAvailability.filter((a: any) => a.status === "Available").length,
-      busyLecturerCount: day.lecturerDayAvailability.filter((a: any) => a.status === "Busy").length,
-      totalConfiguredLecturers: def.lecturerDefenseConfigs.length,
-    };
-  });
+  return days.map((day) => calculateEnhancedDefenseDay(day));
 };
 
 /**
@@ -102,10 +63,20 @@ export const getDefenseDaysWithAvailability = async (
   // Check if lecturer is configured for this defense
   await validateLecturerConfigured(lecturerId, defenseId);
 
-  return await availabilityRepository.getDefenseDaysWithAvailability(
+  // Get defense days with availability
+  const dayData = await availabilityRepository.getDefenseDaysWithAvailability(
     defenseId,
-    lecturerId,
   );
+
+  return dayData.map((day: DefenseDayWithRelations) => {
+    const enhanced = calculateEnhancedDefenseDay(day);
+    return {
+      ...enhanced,
+      lecturerDayAvailability: (day.lecturerDayAvailability || []).filter(
+        (a) => a.lecturerId === lecturerId,
+      ),
+    } as DefenseDayWithAvailability;
+  });
 };
 
 /**

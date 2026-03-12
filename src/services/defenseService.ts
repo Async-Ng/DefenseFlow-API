@@ -19,12 +19,16 @@ import type {
   PaginatedResult,
   DefenseFilters,
   IncludeOptions,
+  DefenseWithRawRelations,
+  DefenseWithRelations,
+  DefenseDayWithRelations,
 } from "../types/index.js";
+import { calculateEnhancedDefenseDay } from "../utils/defenseDayStatus.js";
 
 /**
  * Create a new defense with defense days
  */
-export const createDefense = async (data: CreateDefenseInput): Promise<any> => {
+export const createDefense = async (data: CreateDefenseInput): Promise<Defense> => {
   // Validate defense data
   const validation = validateDefenseData(data as Record<string, unknown>);
   if (!validation.isValid) {
@@ -103,8 +107,23 @@ export const getAllDefenses = async (
   limit: number = 10,
   filters: DefenseFilters = {},
   include: IncludeOptions = {},
-): Promise<PaginatedResult<any>> => {
-  return await defenseRepository.findAll(page, limit, filters, include);
+): Promise<PaginatedResult<DefenseWithRelations>> => {
+  const result = await defenseRepository.findAll(page, limit, filters, include);
+  
+  // Enrich defense days with status and counts
+  const enrichedData: DefenseWithRelations[] = (result.data as DefenseWithRawRelations[]).map((defense) => {
+    if (defense.defenseDays && Array.isArray(defense.defenseDays)) {
+      return {
+        ...defense,
+        defenseDays: defense.defenseDays.map((day: DefenseDayWithRelations) => 
+          calculateEnhancedDefenseDay(day)
+        ),
+      };
+    }
+    return defense as DefenseWithRelations;
+  });
+
+  return { ...result, data: enrichedData };
 };
 
 /**
@@ -113,12 +132,23 @@ export const getAllDefenses = async (
 export const getDefenseById = async (
   id: number,
   include: IncludeOptions = {},
-): Promise<any> => {
+): Promise<DefenseWithRelations> => {
   const defense = await defenseRepository.findById(id, include);
   if (!defense) {
     throw new Error(`Không tìm thấy đợt bảo vệ với ID ${id}`);
   }
-  return defense;
+
+  // Enrich defense days with status and counts
+  if (defense.defenseDays && Array.isArray(defense.defenseDays)) {
+    return {
+      ...defense,
+      defenseDays: defense.defenseDays.map((day: DefenseDayWithRelations) => 
+        calculateEnhancedDefenseDay(day)
+      ),
+    } as DefenseWithRelations;
+  }
+
+  return defense as DefenseWithRelations;
 };
 
 /**

@@ -64,6 +64,27 @@ export type DefenseDayStatus =
   | "Đã công bố lịch";
 
 /**
+ * Raw data interface for calculating defense day status
+ * Matches the Prisma include structure used in repositories
+ */
+export interface DefenseDayWithRelations extends DefenseDay {
+  councilBoards?: { id: number }[];
+  lecturerDayAvailability?: { 
+    id: number;
+    lecturerId: number | null; 
+    status: AvailabilityStatus | null;
+    defenseDayId: number | null;
+  }[];
+  defense?: {
+    isAvailabilityPublished: boolean;
+    isSchedulePublished: boolean;
+    status: DefenseStatus | null;
+    availabilityEndDate: Date | null;
+    lecturerDefenseConfigs: { id: number }[];
+  };
+}
+
+/**
  * Enhanced DefenseDay with calculated fields
  */
 export type EnhancedDefenseDay = DefenseDay & {
@@ -72,6 +93,22 @@ export type EnhancedDefenseDay = DefenseDay & {
   availableLecturerCount: number;
   busyLecturerCount: number;
   totalConfiguredLecturers: number;
+};
+
+/**
+ * Defense with its raw days (as returned by repository before enrichment)
+ */
+export type DefenseWithRawRelations = Defense & {
+  semester?: Semester;
+  defenseDays?: DefenseDayWithRelations[];
+};
+
+/**
+ * Defense with its enhanced days and semester info (after service enrichment)
+ */
+export type DefenseWithRelations = Defense & {
+  semester?: Semester;
+  defenseDays?: EnhancedDefenseDay[];
 };
 
 // ============================================================================
@@ -373,10 +410,15 @@ export type LecturerWithQualifications = Lecturer & {
 // ============================================================================
 
 /**
- * Defense day with availability status
+ * Defense day with availability status and granular info (Enriched)
  */
-export type DefenseDayWithAvailability = DefenseDay & {
-  lecturerDayAvailability?: LecturerDayAvailability[];
+export type DefenseDayWithAvailability = EnhancedDefenseDay & {
+  lecturerDayAvailability: {
+    id: number;
+    lecturerId: number | null;
+    status: AvailabilityStatus | null;
+    defenseDayId: number | null;
+  }[];
 };
 
 /**

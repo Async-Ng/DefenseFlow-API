@@ -6,10 +6,10 @@
 import { prisma } from "../config/prisma.js";
 import type {
   DefenseDay,
-  DefenseDayWithAvailability,
   LecturerDayAvailability,
   LecturerDefenseConfig,
   AvailabilityStatus,
+  DefenseDayWithRelations,
 } from "../types/index.js";
 
 /**
@@ -17,7 +17,7 @@ import type {
  */
 export const getEnhancedDefenseDaysByDefenseId = async (
   defenseId: number,
-): Promise<any[]> => {
+): Promise<DefenseDayWithRelations[]> => {
   return await prisma.defenseDay.findMany({
     where: {
       defenseId,
@@ -27,7 +27,12 @@ export const getEnhancedDefenseDaysByDefenseId = async (
         select: { id: true },
       },
       lecturerDayAvailability: {
-        select: { status: true },
+        select: { 
+          id: true,
+          lecturerId: true,
+          status: true,
+          defenseDayId: true
+        },
       },
       defense: {
         select: {
@@ -52,18 +57,38 @@ export const getEnhancedDefenseDaysByDefenseId = async (
  */
 export const getDefenseDaysWithAvailability = async (
   defenseId: number,
-  lecturerId: number,
-): Promise<DefenseDayWithAvailability[]> => {
+): Promise<DefenseDayWithRelations[]> => {
   return await prisma.defenseDay.findMany({
     where: {
       defenseId,
     },
     include: {
+      // Include ALL registrations for this day to calculate counts correctly in the utility
       lecturerDayAvailability: {
-        where: {
-          lecturerId,
+        select: { 
+          id: true,
+          lecturerId: true,
+          status: true,
+          defenseDayId: true
         },
       },
+      councilBoards: {
+        select: { id: true },
+      },
+      defense: {
+        select: {
+          isAvailabilityPublished: true,
+          isSchedulePublished: true,
+          status: true,
+          availabilityEndDate: true,
+          lecturerDefenseConfigs: {
+            select: { id: true },
+          },
+        },
+      },
+      // To get all registrations for counts correctly, we might need more than _count if we want status-specific counts
+      // But for lecturer's view, maybe just simple info is enough? 
+      // Actually, the plan says "Update getDefenseDaysWithAvailability to include required data for enrichment"
     },
     orderBy: {
       dayDate: "asc",

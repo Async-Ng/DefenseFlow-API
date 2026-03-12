@@ -9,6 +9,7 @@ import type {
   DefenseFilters,
   IncludeOptions,
   DefenseDependencies,
+  DefenseWithRawRelations,
 } from "../types/index.js";
 
 /**
@@ -119,6 +120,30 @@ export const findAll = async (
   const includeOptions: Prisma.DefenseInclude = {
     semester: true,
     defenseDays: {
+      include: {
+        councilBoards: {
+          select: { id: true },
+        },
+        lecturerDayAvailability: {
+          select: { 
+            id: true,
+            lecturerId: true,
+            status: true,
+            defenseDayId: true
+          },
+        },
+        defense: {
+          select: {
+            isAvailabilityPublished: true,
+            isSchedulePublished: true,
+            status: true,
+            availabilityEndDate: true,
+            lecturerDefenseConfigs: {
+              select: { id: true },
+            },
+          },
+        },
+      },
       orderBy: { dayDate: "asc" },
     },
   };
@@ -147,17 +172,38 @@ export const findAll = async (
 export const findById = async (
   id: number,
   include: IncludeOptions = {},
-): Promise<any | null> => {
+): Promise<DefenseWithRawRelations | null> => {
   const includeOptions: Prisma.DefenseInclude = {
     semester: true,
   };
 
-  if (include.defenseDays) {
-    includeOptions.defenseDays = true;
-  }
-  if (include.councilBoards) {
+  if (include.defenseDays || include.councilBoards) {
     includeOptions.defenseDays = {
-      include: { councilBoards: true },
+      include: {
+        councilBoards: {
+          select: { id: true },
+        },
+        lecturerDayAvailability: {
+          select: { 
+            id: true,
+            lecturerId: true,
+            status: true,
+            defenseDayId: true
+          },
+        },
+        defense: {
+          select: {
+            isAvailabilityPublished: true,
+            isSchedulePublished: true,
+            status: true,
+            availabilityEndDate: true,
+            lecturerDefenseConfigs: {
+              select: { id: true },
+            },
+          },
+        },
+      },
+      orderBy: { dayDate: "asc" },
     };
   }
 
