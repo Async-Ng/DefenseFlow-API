@@ -22,6 +22,7 @@ export const create = async (data: CreateQualificationInput): Promise<Qualificat
       descAcceptable: data.descAcceptable,
       descFail: data.descFail,
       evaluationGuidelines: data.evaluationGuidelines,
+      groupId: data.groupId,
     },
   });
 };
@@ -101,6 +102,15 @@ export const update = async (
   if (data.descAcceptable !== undefined) updateData.descAcceptable = data.descAcceptable;
   if (data.descFail !== undefined) updateData.descFail = data.descFail;
   if (data.evaluationGuidelines !== undefined) updateData.evaluationGuidelines = data.evaluationGuidelines;
+  
+  if (data.groupId !== undefined) {
+    if (data.groupId === null) {
+      updateData.group = { disconnect: true };
+    } else {
+      updateData.group = { connect: { id: data.groupId } };
+    }
+  }
+
   return await prisma.qualification.update({
     where: { id },
     data: updateData,

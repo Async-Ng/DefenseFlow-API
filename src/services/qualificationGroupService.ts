@@ -5,6 +5,7 @@ export const createGroup = async (data: {
   code: string;
   name: string;
   description?: string;
+  qualificationIds?: number[];
 }): Promise<QualificationGroupWithQualifications> => {
   const existingCode = await qualificationGroupRepository.findByCode(data.code);
   if (existingCode) throw new Error(`Nhóm chuyên môn với mã '${data.code}' đã tồn tại`);
@@ -30,7 +31,7 @@ export const getGroupById = async (id: number): Promise<QualificationGroupWithQu
 
 export const updateGroup = async (
   id: number,
-  data: { name?: string; code?: string; description?: string }
+  data: { name?: string; code?: string; description?: string; qualificationIds?: number[] }
 ): Promise<QualificationGroupWithQualifications> => {
   const existing = await qualificationGroupRepository.findById(id);
   if (!existing) throw new Error(`Không tìm thấy nhóm chuyên môn với ID ${id}`);

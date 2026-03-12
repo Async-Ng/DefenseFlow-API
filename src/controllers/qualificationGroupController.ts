@@ -169,11 +169,11 @@ export const getGroupById = async (req: Request, res: Response): Promise<Respons
  */
 export const createGroup = async (req: Request, res: Response): Promise<Response> => {
   try {
-    const { code, name, description } = req.body;
+    const { code, name, description, qualificationIds } = req.body;
     if (!code || !name) {
       return validationErrorResponse(res, { message: "Mã nhóm (code) và Tên nhóm (name) là bắt buộc" });
     }
-    const group = await qualificationGroupService.createGroup({ code, name, description });
+    const group = await qualificationGroupService.createGroup({ code, name, description, qualificationIds });
     return createdResponse(res, group, "Tạo nhóm chuyên môn thành công");
   } catch (error) {
     const message = getErrorMessage(error);
@@ -234,8 +234,8 @@ export const createGroup = async (req: Request, res: Response): Promise<Response
 export const updateGroup = async (req: Request, res: Response): Promise<Response> => {
   try {
     const id = getIdParam(req);
-    const { code, name, description } = req.body;
-    const group = await qualificationGroupService.updateGroup(id, { code, name, description });
+    const { code, name, description, qualificationIds } = req.body;
+    const group = await qualificationGroupService.updateGroup(id, { code, name, description, qualificationIds });
     return successResponse(res, group, "Cập nhật nhóm chuyên môn thành công");
   } catch (error) {
     const message = getErrorMessage(error);

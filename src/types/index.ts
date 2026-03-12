@@ -286,6 +286,16 @@ export type TopicFilters = {
   search?: string;
 };
 
+export type CreateQualificationGroupInput = {
+  code: string;
+  name: string;
+  description?: string;
+  /** List of qualification IDs to link to this group */
+  qualificationIds?: number[];
+};
+
+export type UpdateQualificationGroupInput = Partial<CreateQualificationGroupInput>;
+
 export type CreateQualificationInput = {
   qualificationCode: string;
   name: string;
@@ -295,9 +305,14 @@ export type CreateQualificationInput = {
   descAcceptable?: string;
   descFail?: string;
   evaluationGuidelines?: string;
+  /** Group ID to link this qualification to */
+  groupId?: number;
 };
 
-export type UpdateQualificationInput = Partial<CreateQualificationInput>;
+export type UpdateQualificationInput = Partial<CreateQualificationInput> & {
+  /** Explicitly set to null to remove from group */
+  groupId?: number | null;
+};
 
 export type QualificationFilterQuery = {
   qualificationCode?: string | string[];

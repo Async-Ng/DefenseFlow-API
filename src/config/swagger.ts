@@ -157,6 +157,12 @@ const options: swaggerJsdoc.Options = {
               nullable: true,
               example: "Nhóm kỹ năng về AI, ML, Deep Learning, Computer Vision",
             },
+            qualificationIds: {
+              type: "array",
+              description: "Danh sách ID các kỹ năng để liên kết vào nhóm",
+              items: { type: "integer" },
+              example: [1, 2, 5],
+            },
           },
         },
         UpdateQualificationGroupInput: {
@@ -178,6 +184,12 @@ const options: swaggerJsdoc.Options = {
               type: "string",
               nullable: true,
               example: "Mô tả được cập nhật",
+            },
+            qualificationIds: {
+              type: "array",
+              description: "Danh sách ID các kỹ năng mới (sẽ thay thế toàn bộ danh sách cũ của nhóm)",
+              items: { type: "integer" },
+              example: [1, 3],
             },
           },
         },
@@ -770,6 +782,11 @@ const options: swaggerJsdoc.Options = {
             descAcceptable: { type: "string" },
             descFail: { type: "string" },
             evaluationGuidelines: { type: "string" },
+            groupId: {
+              type: "integer",
+              example: 1,
+              description: "ID của nhóm chuyên môn để gán kỹ năng này vào",
+            },
           },
         },
         UpdateQualificationInput: {
@@ -791,6 +808,12 @@ const options: swaggerJsdoc.Options = {
             descAcceptable: { type: "string" },
             descFail: { type: "string" },
             evaluationGuidelines: { type: "string" },
+            groupId: {
+              type: "integer",
+              nullable: true,
+              example: 1,
+              description: "ID của nhóm chuyên môn (Gửi null nếu muốn gỡ khỏi nhóm)",
+            },
           },
         },
         LecturerQualification: {

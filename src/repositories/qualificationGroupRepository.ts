@@ -26,9 +26,17 @@ export const create = async (data: {
   code: string;
   name: string;
   description?: string;
+  qualificationIds?: number[];
 }): Promise<QualificationGroupWithQualifications> => {
   return await prisma.qualificationGroup.create({
-    data: { code: data.code, name: data.name, description: data.description },
+    data: {
+      code: data.code,
+      name: data.name,
+      description: data.description,
+      qualifications: data.qualificationIds
+        ? { connect: data.qualificationIds.map((id) => ({ id })) }
+        : undefined,
+    },
     include: qualificationInclude,
   });
 };
@@ -69,11 +77,28 @@ export const findByName = async (name: string): Promise<QualificationGroupWithQu
 
 export const update = async (
   id: number,
-  data: { name?: string; code?: string; description?: string }
+  data: {
+    name?: string;
+    code?: string;
+    description?: string;
+    qualificationIds?: number[];
+  },
 ): Promise<QualificationGroupWithQualifications> => {
+  const updateData: Prisma.QualificationGroupUpdateInput = {
+    name: data.name,
+    code: data.code,
+    description: data.description,
+  };
+
+  if (data.qualificationIds) {
+    updateData.qualifications = {
+      set: data.qualificationIds.map((id) => ({ id })),
+    };
+  }
+
   return await prisma.qualificationGroup.update({
     where: { id },
-    data,
+    data: updateData,
     include: qualificationInclude,
   });
 };
