@@ -17,6 +17,11 @@ import { getErrorMessage } from "../utils/typeGuards.js";
  *         application/json:
  *           schema:
  *             $ref: '#/components/schemas/CreateQualificationInput'
+ *           example:
+ *             qualificationCode: "AI_01"
+ *             name: "Computer Vision Basics"
+ *             component: "Product"
+ *             groupId: 1
  *     responses:
  *       201:
  *         description: Qualification created successfully
@@ -193,6 +198,9 @@ export const getQualification = async (req: Request, res: Response) => {
  *         application/json:
  *           schema:
  *             $ref: '#/components/schemas/UpdateQualificationInput'
+ *           example:
+ *             name: "Computer Vision Advanced"
+ *             groupId: 2
  *     responses:
  *       200:
  *         description: Qualification updated successfully

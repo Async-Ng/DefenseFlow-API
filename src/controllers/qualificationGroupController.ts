@@ -126,7 +126,7 @@ export const getGroupById = async (req: Request, res: Response): Promise<Respons
  *       Tạo một nhóm chuyên môn mới để nhóm các kỹ năng liên quan lại với nhau.
  *       Nhóm chuyên môn sẽ được sử dụng khi thiết lập yêu cầu chuyên môn cho loại đề tài (TopicType).
  *       - `code` và `name` phải là duy nhất trong hệ thống.
- *       - Sau khi tạo nhóm, có thể gán từng kỹ năng (Qualification) vào nhóm thông qua endpoint cập nhật Qualification.
+ *       - Có thể liên kết danh sách các kỹ năng ngay khi tạo bằng `qualificationIds`.
  *     tags: [Qualifications]
  *     security:
  *       - bearerAuth: []
@@ -140,6 +140,7 @@ export const getGroupById = async (req: Request, res: Response): Promise<Respons
  *             code: "AI"
  *             name: "Trí tuệ Nhân tạo"
  *             description: "Nhóm kỹ năng về AI, ML, Deep Learning, Computer Vision, NLP"
+ *             qualificationIds: [1, 2, 5]
  *     responses:
  *       201:
  *         description: Tạo nhóm chuyên môn thành công
@@ -188,9 +189,10 @@ export const createGroup = async (req: Request, res: Response): Promise<Response
  *   patch:
  *     summary: "[ADMIN] Cập nhật nhóm chuyên môn"
  *     description: |
- *       Cập nhật thông tin của nhóm chuyên môn (code, name, description).
+ *       Cập nhật thông tin của nhóm chuyên môn (code, name, description, qualificationIds).
  *       - Tất cả trường đều tùy chọn — chỉ các trường được gửi mới bị cập nhật.
  *       - `code` và `name` nếu thay đổi phải vẫn duy nhất trong hệ thống.
+ *       - `qualificationIds`: Gửi danh sách ID các kỹ năng mới để cập nhật thành viên nhóm (sẽ thay thế toàn bộ danh sách cũ).
  *     tags: [Qualifications]
  *     security:
  *       - bearerAuth: []
@@ -209,6 +211,7 @@ export const createGroup = async (req: Request, res: Response): Promise<Response
  *           example:
  *             name: "Trí tuệ Nhân tạo & Machine Learning"
  *             description: "Nhóm kỹ năng mở rộng về AI, ML, DL, NLP, CV, GenAI"
+ *             qualificationIds: [1, 3, 7]
  *     responses:
  *       200:
  *         description: Cập nhật nhóm chuyên môn thành công
