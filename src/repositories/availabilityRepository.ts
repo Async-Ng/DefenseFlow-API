@@ -261,7 +261,7 @@ export const getLecturerById = async (lecturerId: number) => {
 export const getAvailableLecturersForDay = async (defenseDayId: number) => {
   const defenseDay = await prisma.defenseDay.findUnique({
     where: { id: defenseDayId },
-    select: { dayDate: true },
+    select: { defenseId: true, dayDate: true },
   });
 
   if (!defenseDay) return [];
@@ -281,10 +281,14 @@ export const getAvailableLecturersForDay = async (defenseDayId: number) => {
     .filter((id): id is number => id !== null);
 
   // 2. Find lecturers who:
-  // - Are NOT in excludedIds
+  // - Are configured for THIS defense (Lecturer_Defense_Configs.defenseId)
+  // - Are NOT in excludedIds (not already assigned to a board on this day)
   // - Do NOT have a 'Busy' status for this day in lecturerDayAvailability
   return await prisma.lecturer.findMany({
     where: {
+      lecturerDefenseConfigs: {
+        some: { defenseId: defenseDay.defenseId },
+      },
       id: {
         notIn: excludedIds,
       },
@@ -307,3 +311,4 @@ export const getAvailableLecturersForDay = async (defenseDayId: number) => {
     },
   });
 };
+
