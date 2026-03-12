@@ -102,9 +102,11 @@ const options: swaggerJsdoc.Options = {
                   qualificationId: { type: "integer", example: 2 },
                   topicTypeId: { type: "integer", example: 1 },
                   priorityWeight: { 
-                    type: "integer", 
-                    example: 2,
-                    description: "Trọng số ưu tiên của năng lực này (1 - 10). 1 là mặc định. Giá trị càng cao thì thuật toán xếp lịch càng ưu tiên giảng viên có kỹ năng này cho loại đề tài."
+                    type: "integer",
+                    minimum: 1,
+                    maximum: 100,
+                    example: 40,
+                    description: "Trọng số ưu tiên của kỹ năng cho loại đề tài này (số nguyên 1-100). Tổng các trọng số của tất cả kỹ năng trong cùng một loại đề tài phải bằng đúng 100."
                   },
                   qualification: { $ref: "#/components/schemas/Qualification" },
                 },
@@ -124,7 +126,7 @@ const options: swaggerJsdoc.Options = {
                 type: "object",
                 properties: {
                   qualificationId: { type: "integer", example: 1 },
-                  priorityWeight: { type: "integer", example: 3, description: "Trọng số ưu tiên (số nguyên từ 1 - 10, mặc định 1). Dùng để điều chỉnh độ quan trọng của kỹ năng này khi xếp lịch." }
+                  priorityWeight: { type: "integer", minimum: 1, maximum: 100, example: 40, description: "Trọng số ưu tiên (số nguyên 1-100). Tổng các trọng số của tất cả kỹ năng trong cùng loại đề tài phải bằng 100." }
                 }
               }
             }
@@ -141,7 +143,7 @@ const options: swaggerJsdoc.Options = {
                 type: "object",
                 properties: {
                   qualificationId: { type: "integer", example: 1 },
-                  priorityWeight: { type: "integer", example: 2, description: "Trọng số ưu tiên (số nguyên từ 1 - 10, mặc định 1)" }
+                  priorityWeight: { type: "integer", minimum: 1, maximum: 100, example: 40, description: "Trọng số ưu tiên (số nguyên 1-100). Tổng các trọng số của tất cả kỹ năng trong cùng loại đề tài phải bằng 100." }
                 }
               }
             }
