@@ -127,16 +127,21 @@ export type GoogleCallbackResult =
 export async function syncUserMetadata(user: User): Promise<AppMeta | "access_denied"> {
   const appMeta = user.app_metadata as AppMeta;
 
-  // If already has roles AND fullName, no need to sync
-  if (appMeta.roles && appMeta.roles.length > 0 && appMeta.fullName) {
-    return appMeta;
-  }
-
   // Find lecturer info
   const lecturer = await prisma.lecturer.findFirst({
     where: { email: user.email ?? "" },
     select: { id: true, fullName: true },
   });
+
+  // If already has roles AND correct lecturerId AND correct fullName, no need to sync
+  if (
+    appMeta.roles &&
+    appMeta.roles.length > 0 &&
+    appMeta.lecturerId === lecturer?.id &&
+    appMeta.fullName === lecturer?.fullName
+  ) {
+    return appMeta;
+  }
 
   if (!lecturer) {
     // Only delete if it's a completely unknown user (no roles)
