@@ -567,6 +567,33 @@ const options: swaggerJsdoc.Options = {
             },
           },
         },
+        DefenseDayStatus: {
+          type: "string",
+          enum: [
+            "Chờ mở đăng ký",
+            "Đang nhận đăng ký",
+            "Hết hạn đăng ký",
+            "Đã khóa đăng ký",
+            "Đã xếp lịch nháp",
+            "Đã công bố lịch"
+          ],
+          example: "Đang nhận đăng ký"
+        },
+        EnhancedDefenseDay: {
+          allOf: [
+            { $ref: "#/components/schemas/DefenseDay" },
+            {
+              type: "object",
+              properties: {
+                status: { $ref: "#/components/schemas/DefenseDayStatus" },
+                boardCount: { type: "integer", example: 2 },
+                availableLecturerCount: { type: "integer", example: 15 },
+                busyLecturerCount: { type: "integer", example: 5 },
+                totalConfiguredLecturers: { type: "integer", example: 30 },
+              }
+            }
+          ]
+        },
         CreateDefenseDayInput: {
           type: "object",
           required: ["defenseDayCode", "dayDate"],
@@ -1222,7 +1249,7 @@ const options: swaggerJsdoc.Options = {
             message: { type: "string", example: "Defense days retrieved successfully" },
             data: {
               type: "array",
-              items: { $ref: "#/components/schemas/DefenseDay" },
+              items: { $ref: "#/components/schemas/EnhancedDefenseDay" },
             },
           },
         },

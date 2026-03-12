@@ -13,14 +13,33 @@ import type {
 } from "../types/index.js";
 
 /**
- * Get all defense days for a specific defense
+ * Get all defense days for a specific defense with status and counts
  */
-export const getDefenseDaysByDefenseId = async (
+export const getEnhancedDefenseDaysByDefenseId = async (
   defenseId: number,
-): Promise<DefenseDay[]> => {
+): Promise<any[]> => {
   return await prisma.defenseDay.findMany({
     where: {
       defenseId,
+    },
+    include: {
+      councilBoards: {
+        select: { id: true },
+      },
+      lecturerDayAvailability: {
+        select: { status: true },
+      },
+      defense: {
+        select: {
+          isAvailabilityPublished: true,
+          isSchedulePublished: true,
+          status: true,
+          availabilityEndDate: true,
+          lecturerDefenseConfigs: {
+            select: { id: true },
+          },
+        },
+      },
     },
     orderBy: {
       dayDate: "asc",

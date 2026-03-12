@@ -5,12 +5,13 @@
 
 import * as availabilityRepository from "../repositories/availabilityRepository.js";
 import type {
-  DefenseDay,
   DefenseDayWithAvailability,
   LecturerDayAvailability,
   LecturerStatusResponse,
   BatchUpdateAvailabilityInput,
   AvailabilityStatus,
+  EnhancedDefenseDay,
+  DefenseDayStatus,
 } from "../types/index.js";
 
 /**
@@ -18,23 +19,57 @@ import type {
  */
 export const getDefenseDays = async (
   defenseId: number,
-): Promise<DefenseDay[]> => {
+): Promise<EnhancedDefenseDay[]> => {
   // Verify defense exists
   const defense = await availabilityRepository.getDefenseById(defenseId);
   if (!defense) {
     throw new Error(`Không tìm thấy đợt bảo vệ với ID ${defenseId}`);
   }
 
-  // Check if availability has been published by admin
-  if (!defense.isAvailabilityPublished) {
-    throw new Error("Lịch bảo vệ chưa được công bố. Vui lòng chờ admin mở đợt đăng ký.");
-  }
+  // Get enhanced defense days with counts
+  const days = await availabilityRepository.getEnhancedDefenseDaysByDefenseId(defenseId);
 
-  // Check if current time is within the availability registration window
-  validateAvailabilityWindow(defense);
+  const now = new Date();
 
-  // Get all defense days for this defense
-  return await availabilityRepository.getDefenseDaysByDefenseId(defenseId);
+  return days.map((day) => {
+    const def = day.defense;
+    let status: DefenseDayStatus = "Chờ mở đăng ký";
+
+    if (!def.isAvailabilityPublished) {
+      status = "Chờ mở đăng ký";
+    } else if (def.isSchedulePublished) {
+      status = "Đã công bố lịch";
+    } else if (day.councilBoards.length > 0) {
+      status = "Đã xếp lịch nháp";
+    } else if (def.status === "Locked") {
+      status = "Đã khóa đăng ký";
+    } else {
+      // Check for expired status
+      const endDate = def.availabilityEndDate ? new Date(def.availabilityEndDate) : null;
+      if (endDate) {
+        endDate.setHours(23, 59, 59, 999);
+      }
+      
+      if (endDate && now > endDate) {
+        status = "Hết hạn đăng ký";
+      } else {
+        status = "Đang nhận đăng ký";
+      }
+    }
+
+    return {
+      id: day.id,
+      defenseDayCode: day.defenseDayCode,
+      defenseId: day.defenseId,
+      dayDate: day.dayDate,
+      note: day.note,
+      status,
+      boardCount: day.councilBoards.length,
+      availableLecturerCount: day.lecturerDayAvailability.filter((a: any) => a.status === "Available").length,
+      busyLecturerCount: day.lecturerDayAvailability.filter((a: any) => a.status === "Busy").length,
+      totalConfiguredLecturers: def.lecturerDefenseConfigs.length,
+    };
+  });
 };
 
 /**

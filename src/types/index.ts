@@ -52,6 +52,28 @@ export type {
   SeniorityLevel,
 };
 
+/**
+ * Status of a specific defense day
+ */
+export type DefenseDayStatus = 
+  | "Chờ mở đăng ký" 
+  | "Đang nhận đăng ký" 
+  | "Hết hạn đăng ký" 
+  | "Đã khóa đăng ký" 
+  | "Đã xếp lịch nháp" 
+  | "Đã công bố lịch";
+
+/**
+ * Enhanced DefenseDay with calculated fields
+ */
+export type EnhancedDefenseDay = DefenseDay & {
+  status: DefenseDayStatus;
+  boardCount: number;
+  availableLecturerCount: number;
+  busyLecturerCount: number;
+  totalConfiguredLecturers: number;
+};
+
 // ============================================================================
 // Enum Types
 // ============================================================================
