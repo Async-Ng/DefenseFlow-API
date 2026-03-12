@@ -34,7 +34,7 @@ const options: swaggerJsdoc.Options = {
       { name: "Capacity", description: "Scheduling Capacity Calculations" },
       { name: "Lecturers", description: "Lecturer Profiles and Assignments" },
       { name: "Lecturer Defense Configs", description: "Lecturer Defense Configurations" },
-      { name: "Qualifications", description: "Lecturer Qualifications" },
+      { name: "Qualifications", description: "Lecturer Qualifications and Qualification Groups" },
       { name: "Topics", description: "Thesis Topic Management" },
       { name: "TopicTypes", description: "Topic Categorization" },
       { name: "TopicDefense", description: "Topic Defense Assignments" },
@@ -86,31 +86,134 @@ const options: swaggerJsdoc.Options = {
             topicType: { $ref: "#/components/schemas/TopicType" },
           },
         },
+        // ─── QualificationGroup schemas ───────────────────────────────────────
+        QualificationGroup: {
+          type: "object",
+          required: ["id", "code", "name"],
+          properties: {
+            id: { type: "integer", example: 1 },
+            code: {
+              type: "string",
+              maxLength: 50,
+              example: "AI",
+              description: "Mã nhóm chuyên môn (duy nhất, viết hoa, không dấu)",
+            },
+            name: {
+              type: "string",
+              maxLength: 100,
+              example: "Trí tuệ Nhân tạo",
+              description: "Tên đầy đủ của nhóm chuyên môn (duy nhất)",
+            },
+            description: {
+              type: "string",
+              nullable: true,
+              example: "Nhóm kỹ năng về AI, ML, Deep Learning, Computer Vision",
+              description: "Mô tả chi tiết về nhóm",
+            },
+            qualifications: {
+              type: "array",
+              description: "Danh sách các kỹ năng (chuyên môn cá nhân) thuộc nhóm này",
+              items: {
+                type: "object",
+                properties: {
+                  id: { type: "integer", example: 3 },
+                  name: { type: "string", example: "Machine Learning" },
+                  qualificationCode: { type: "string", example: "ML" },
+                },
+              },
+            },
+            createdAt: {
+              type: "string",
+              format: "date-time",
+              nullable: true,
+              example: "2026-03-12T10:00:00.000Z",
+            },
+            updatedAt: {
+              type: "string",
+              format: "date-time",
+              nullable: true,
+              example: "2026-03-12T10:00:00.000Z",
+            },
+          },
+        },
+        CreateQualificationGroupInput: {
+          type: "object",
+          required: ["code", "name"],
+          properties: {
+            code: {
+              type: "string",
+              maxLength: 50,
+              example: "AI",
+              description: "Mã nhóm (viết hoa, không dấu, duy nhất trong hệ thống)",
+            },
+            name: {
+              type: "string",
+              maxLength: 100,
+              example: "Trí tuệ Nhân tạo",
+              description: "Tên đầy đủ của nhóm chuyên môn (duy nhất)",
+            },
+            description: {
+              type: "string",
+              nullable: true,
+              example: "Nhóm kỹ năng về AI, ML, Deep Learning, Computer Vision",
+            },
+          },
+        },
+        UpdateQualificationGroupInput: {
+          type: "object",
+          properties: {
+            code: {
+              type: "string",
+              maxLength: 50,
+              example: "AI",
+              description: "Mã nhóm mới (duy nhất)",
+            },
+            name: {
+              type: "string",
+              maxLength: 100,
+              example: "Trí tuệ Nhân tạo (Cập nhật)",
+              description: "Tên nhóm mới (duy nhất)",
+            },
+            description: {
+              type: "string",
+              nullable: true,
+              example: "Mô tả được cập nhật",
+            },
+          },
+        },
+        QualificationGroupTopicType: {
+          type: "object",
+          description: "Liên kết giữa loại đề tài và nhóm chuyên môn, kèm trọng số ưu tiên",
+          properties: {
+            id: { type: "integer", example: 1 },
+            qualificationGroupId: { type: "integer", example: 2 },
+            topicTypeId: { type: "integer", example: 1 },
+            priorityWeight: {
+              type: "integer",
+              minimum: 1,
+              maximum: 100,
+              example: 60,
+              description: "Trọng số ưu tiên của nhóm cho loại đề tài này (số nguyên 1-100). Tổng tất cả trọng số của một loại đề tài phải bằng đúng 100.",
+            },
+            qualificationGroup: { $ref: "#/components/schemas/QualificationGroup" },
+          },
+        },
+        // ─── TopicType schemas ────────────────────────────────────────────────
         TopicType: {
           type: "object",
           required: ["id", "name"],
           properties: {
             id: { type: "integer", example: 1 },
-            name: { type: "string", maxLength: 100, example: "Website/Ứng dụng quản lý", description: "Tên loại đề tài" },
-            qualificationTopicTypes: {
+            name: {
+              type: "string",
+              maxLength: 100,
+              example: "AI Mobile App",
+              description: "Tên loại đề tài",
+            },
+            qualificationGroupTopicTypes: {
               type: "array",
-              description: "Danh sách các năng lực chuyên môn liên quan kèm trọng số",
-              items: {
-                type: "object",
-                properties: {
-                  id: { type: "integer", example: 1 },
-                  qualificationId: { type: "integer", example: 2 },
-                  topicTypeId: { type: "integer", example: 1 },
-                  priorityWeight: { 
-                    type: "integer",
-                    minimum: 1,
-                    maximum: 100,
-                    example: 40,
-                    description: "Trọng số ưu tiên của kỹ năng cho loại đề tài này (số nguyên 1-100). Tổng các trọng số của tất cả kỹ năng trong cùng một loại đề tài phải bằng đúng 100."
-                  },
-                  qualification: { $ref: "#/components/schemas/Qualification" },
-                },
-              },
+              description: "Danh sách các nhóm chuyên môn yêu cầu kèm trọng số ưu tiên. Tổng tất cả trọng số phải bằng 100.",
+              items: { $ref: "#/components/schemas/QualificationGroupTopicType" },
             },
           },
         },
@@ -118,36 +221,74 @@ const options: swaggerJsdoc.Options = {
           type: "object",
           required: ["name"],
           properties: {
-            name: { type: "string", example: "Hệ thống AI/Big Data", description: "Tên loại đề tài mới" },
-            qualifications: {
+            name: {
+              type: "string",
+              example: "AI Mobile App",
+              description: "Tên loại đề tài mới",
+            },
+            groups: {
               type: "array",
-              description: "Danh sách các năng lực chuyên môn cần liên kết",
+              description: "Danh sách nhóm chuyên môn cần liên kết. Nếu cung cấp, tổng priorityWeight phải bằng đúng 100.",
               items: {
                 type: "object",
+                required: ["groupId", "priorityWeight"],
                 properties: {
-                  qualificationId: { type: "integer", example: 1 },
-                  priorityWeight: { type: "integer", minimum: 1, maximum: 100, example: 40, description: "Trọng số ưu tiên (số nguyên 1-100). Tổng các trọng số của tất cả kỹ năng trong cùng loại đề tài phải bằng 100." }
-                }
-              }
-            }
-          }
+                  groupId: {
+                    type: "integer",
+                    example: 1,
+                    description: "ID của nhóm chuyên môn (QualificationGroup.id)",
+                  },
+                  priorityWeight: {
+                    type: "integer",
+                    minimum: 1,
+                    maximum: 100,
+                    example: 60,
+                    description: "Trọng số ưu tiên (số nguyên 1-100). Tổng tất cả trọng số phải bằng 100.",
+                  },
+                },
+              },
+              example: [
+                { groupId: 1, priorityWeight: 60 },
+                { groupId: 2, priorityWeight: 40 },
+              ],
+            },
+          },
         },
         UpdateTopicTypeInput: {
           type: "object",
           properties: {
-            name: { type: "string", example: "Ứng dụng Di động (Cập nhật)", description: "Tên loại đề tài" },
-            qualifications: {
+            name: {
+              type: "string",
+              example: "AI Mobile App (Cập nhật)",
+              description: "Tên loại đề tài",
+            },
+            groups: {
               type: "array",
-              description: "Danh sách năng lực mới (sẽ thay thế toàn bộ danh sách cũ)",
+              description: "Danh sách nhóm chuyên môn mới (sẽ thay thế TOÀN BỘ danh sách cũ). Tổng priorityWeight phải bằng đúng 100.",
               items: {
                 type: "object",
+                required: ["groupId", "priorityWeight"],
                 properties: {
-                  qualificationId: { type: "integer", example: 1 },
-                  priorityWeight: { type: "integer", minimum: 1, maximum: 100, example: 40, description: "Trọng số ưu tiên (số nguyên 1-100). Tổng các trọng số của tất cả kỹ năng trong cùng loại đề tài phải bằng 100." }
-                }
-              }
-            }
-          }
+                  groupId: {
+                    type: "integer",
+                    example: 2,
+                    description: "ID của nhóm chuyên môn",
+                  },
+                  priorityWeight: {
+                    type: "integer",
+                    minimum: 1,
+                    maximum: 100,
+                    example: 70,
+                    description: "Trọng số ưu tiên (1-100). Tổng phải bằng 100.",
+                  },
+                },
+              },
+              example: [
+                { groupId: 1, priorityWeight: 70 },
+                { groupId: 3, priorityWeight: 30 },
+              ],
+            },
+          },
         },
         UpdateTopicInput: {
           type: "object",
