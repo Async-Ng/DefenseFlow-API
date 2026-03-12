@@ -94,7 +94,7 @@ export const createTopicDefense = async (
  * @swagger
  * /api/topic-defenses:
  *   get:
- *     summary: "[ADMIN, LECTURER] Get topic defense registrations"
+ *     summary: "[ADMIN] Get topic defense registrations"
  *     tags: [TopicDefense]
  *     parameters:
  *       - in: query
@@ -218,7 +218,7 @@ export const getTopicDefenses = async (
  * @swagger
  * /api/topic-defenses/{id}:
  *   get:
- *     summary: "[ADMIN, LECTURER] Get topic defense details by ID"
+ *     summary: "[ADMIN] Get topic defense details by ID"
  *     tags: [TopicDefense]
  *     parameters:
  *       - in: path

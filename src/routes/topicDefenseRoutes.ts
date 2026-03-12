@@ -5,8 +5,8 @@ import { requireRole } from "../middleware/auth.js";
 const router: express.Router = express.Router();
 
 router.post("/", requireRole("admin"), topicDefenseController.createTopicDefense);
-router.get("/", topicDefenseController.getTopicDefenses);
-router.get("/:id", topicDefenseController.getTopicDefenseById);
+router.get("/", requireRole("admin"), topicDefenseController.getTopicDefenses);
+router.get("/:id", requireRole("admin"), topicDefenseController.getTopicDefenseById);
 router.delete("/:id", requireRole("admin"), topicDefenseController.deleteTopicDefense);
 
 export default router;

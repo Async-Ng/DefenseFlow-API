@@ -5,6 +5,7 @@
 
 import express from "express";
 import * as availabilityController from "../controllers/availabilityController.js";
+import { requireRole } from "../middleware/auth.js";
 
 const router: express.Router = express.Router();
 
@@ -27,6 +28,7 @@ router.get(
  */
 router.get(
   "/defense-days/:defenseDayId/available-lecturers",
+  requireRole("admin"),
   availabilityController.getAvailableLecturers,
 );
 

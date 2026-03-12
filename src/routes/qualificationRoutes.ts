@@ -7,9 +7,9 @@ const router: express.Router = express.Router();
 
 router.post("/", requireRole("admin"), qualificationController.createQualification);
 
-router.get("/", qualificationController.getQualifications);
+router.get("/", requireRole("admin"), qualificationController.getQualifications);
 
-router.get("/:id", qualificationController.getQualification);
+router.get("/:id", requireRole("admin"), qualificationController.getQualification);
 
 router.put("/:id", requireRole("admin"), qualificationController.updateQualification);
 

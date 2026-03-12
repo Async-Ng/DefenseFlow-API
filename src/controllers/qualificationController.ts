@@ -70,7 +70,7 @@ export const createQualification = async (req: Request, res: Response) => {
  * @swagger
  * /api/qualifications:
  *   get:
- *     summary: "[ADMIN, LECTURER] Get all qualifications"
+ *     summary: "[ADMIN] Get all qualifications"
  *     tags: [Qualifications]
  *     parameters:
  *       - in: query
@@ -128,7 +128,7 @@ export const getQualifications = async (req: Request, res: Response) => {
  * @swagger
  * /api/qualifications/{id}:
  *   get:
- *     summary: "[ADMIN, LECTURER] Get qualification by ID"
+ *     summary: "[ADMIN] Get qualification by ID"
  *     tags: [Qualifications]
  *     parameters:
  *       - in: path

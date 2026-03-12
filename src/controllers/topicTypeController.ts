@@ -90,7 +90,7 @@ export const createTopicType = async (req: Request, res: Response) => {
  * @swagger
  * /api/topic-types:
  *   get:
- *     summary: "[ADMIN, LECTURER] Lấy danh sách toàn bộ loại đề tài"
+ *     summary: "[ADMIN] Lấy danh sách toàn bộ loại đề tài"
  *     description: Trả về danh sách phân trang tất cả loại đề tài, kèm danh sách nhóm chuyên môn liên kết và trọng số ưu tiên.
  *     tags: [TopicTypes]
  *     security:
@@ -155,7 +155,7 @@ export const getTopicTypes = async (req: Request, res: Response) => {
  * @swagger
  * /api/topic-types/{id}:
  *   get:
- *     summary: "[ADMIN, LECTURER] Lấy thông tin chi tiết loại đề tài"
+ *     summary: "[ADMIN] Lấy thông tin chi tiết loại đề tài"
  *     description: Trả về chi tiết loại đề tài kèm danh sách nhóm chuyên môn liên kết, thông tin từng nhóm, và các kỹ năng thuộc nhóm đó.
  *     tags: [TopicTypes]
  *     security:

@@ -15,7 +15,7 @@ import { getIdParam, getPaginationParams } from "../utils/requestHelpers.js";
  * @swagger
  * /api/qualification-groups:
  *   get:
- *     summary: "[ADMIN, LECTURER] Lấy danh sách nhóm chuyên môn"
+ *     summary: "[ADMIN] Lấy danh sách nhóm chuyên môn"
  *     description: Trả về danh sách phân trang tất cả nhóm chuyên môn. Mỗi nhóm bao gồm các kỹ năng (Qualification) thuộc về nhóm đó.
  *     tags: [Qualifications]
  *     security:
@@ -69,7 +69,7 @@ export const getAllGroups = async (req: Request, res: Response): Promise<Respons
  * @swagger
  * /api/qualification-groups/{id}:
  *   get:
- *     summary: "[ADMIN, LECTURER] Lấy chi tiết nhóm chuyên môn"
+ *     summary: "[ADMIN] Lấy chi tiết nhóm chuyên môn"
  *     description: Trả về thông tin chi tiết của một nhóm chuyên môn, bao gồm danh sách các kỹ năng (Qualification) thuộc nhóm.
  *     tags: [Qualifications]
  *     security:
