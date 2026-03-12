@@ -855,10 +855,25 @@ export const publishSchedule = async (defenseId: number) => {
     throw new AppError(400, `Không thể công bố lịch: Các hội đồng sau không đủ 5 thành viên: ${codes}`);
   }
 
-  return prisma.defense.update({
+  const updatedDefense = await prisma.defense.update({
     where: { id: defenseId },
     data: { isSchedulePublished: true },
   });
+
+  // 3. Dispatch Notification
+  try {
+    const notificationService = await import("./notificationService.js");
+    await notificationService.dispatchNotificationToDefenseMembers(
+      defenseId,
+      "Thông báo: Lịch bảo vệ chính thức",
+      `Lịch hội đồng cho đợt bảo vệ đã được công bố. Vui lòng kiểm tra hội đồng của bạn.`,
+      "SCHEDULE_PUBLISHED"
+    );
+  } catch (error) {
+    console.error("Failed to send SCHEDULE_PUBLISHED notifications", error);
+  }
+
+  return updatedDefense;
 };
 
 export const updateDefenseCouncil = async (

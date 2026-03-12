@@ -18,6 +18,7 @@ import qualificationRoutes from "./qualificationRoutes.js";
 import topicTypeRoutes from "./topicTypeRoutes.js";
 import topicDefenseRoutes from "./topicDefenseRoutes.js";
 import dashboardRoutes from "./dashboardRoutes.js";
+import notificationRoutes from "./notificationRoutes.js";
 
 const router: express.Router = express.Router();
 
@@ -44,5 +45,6 @@ router.use("/qualifications", qualificationRoutes);
 router.use("/topic-types", topicTypeRoutes);
 router.use("/topic-defenses", topicDefenseRoutes);
 router.use("/dashboard", dashboardRoutes);
+router.use("/notifications", notificationRoutes);
 
 export default router;

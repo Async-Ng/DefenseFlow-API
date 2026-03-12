@@ -246,7 +246,18 @@ export const publishAvailability = async (
     }
   }
 
-  return await defenseRepository.publishAvailability(id, startDate, endDate);
+  const result = await defenseRepository.publishAvailability(id, startDate, endDate);
+  
+  // Dispatch notification
+  const notificationService = await import("./notificationService.js");
+  await notificationService.dispatchNotificationToConfiguredLecturers(
+    id,
+    "Thông báo: Đăng ký lịch rảnh",
+    `Đợt bảo vệ ${existing.defenseCode} đã mở đăng ký lịch rảnh. Vui lòng cập nhật sớm nhất!`,
+    "AVAILABILITY_PUBLISHED"
+  );
+  
+  return result;
 };
 
 /**

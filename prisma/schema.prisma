@@ -278,3 +278,15 @@ enum SeniorityLevel {
 
   @@map("seniority_level")
 }
+
+model Notification {
+  id          Int      @id @default(autoincrement())
+  authId      String   @map("auth_id") @db.Uuid
+  title       String   @db.VarChar(255)
+  message     String   @db.Text
+  type        String?  @db.VarChar(50)
+  isRead      Boolean  @default(false) @map("is_read")
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  @@map("Notifications")
+}
