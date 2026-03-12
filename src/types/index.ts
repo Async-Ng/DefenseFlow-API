@@ -254,18 +254,18 @@ export type QualificationFilters = {
 
 export type CreateTopicTypeInput = {
   name: string;
-  /** Optional: link qualifications with custom priority weights at creation */
-  qualifications?: {
-    qualificationId: number;
+  /** Link qualification groups with priority weights */
+  groups?: {
+    groupId: number;
     priorityWeight?: number;
   }[];
 };
 
 export type UpdateTopicTypeInput = {
   name?: string;
-  /** If provided, syncs (replaces) the linked qualifications with their weights */
-  qualifications?: {
-    qualificationId: number;
+  /** If provided, syncs (replaces) the linked groups with their weights */
+  groups?: {
+    groupId: number;
     priorityWeight?: number;
   }[];
 };

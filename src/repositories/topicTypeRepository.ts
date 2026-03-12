@@ -8,50 +8,56 @@ import type {
   TopicTypeFilters,
 } from "../types/index.js";
 
-// Shape of a qualification nested inside the junction row
-export type NestedQualification = {
+// Shape of a qualification group nested in the junction row
+export type NestedQualificationGroup = {
   id: number;
-  qualificationCode: string;
+  code: string;
   name: string;
+  description: string | null;
+  qualifications: { id: number; name: string; qualificationCode: string }[];
 };
 
-// Junction row shape
-export type QualificationTopicTypeRow = {
+// Junction row shape (Group ↔ TopicType)
+export type QualificationGroupTopicTypeRow = {
   id: number;
-  qualificationId: number;
+  qualificationGroupId: number;
   topicTypeId: number;
   priorityWeight: number;
-  qualification: NestedQualification;
+  qualificationGroup: NestedQualificationGroup;
 };
 
-// Full TopicType including linked qualifications via junction table
-export type TopicTypeWithQualifications = TopicType & {
-  qualificationTopicTypes: QualificationTopicTypeRow[];
+// Full TopicType including linked qualification groups
+export type TopicTypeWithGroups = TopicType & {
+  qualificationGroupTopicTypes: QualificationGroupTopicTypeRow[];
 };
 
-const qualificationInclude = {
-  qualificationTopicTypes: {
-    include: { qualification: true },
-    orderBy: { qualification: { name: "asc" as const } },
+const groupInclude = {
+  qualificationGroupTopicTypes: {
+    include: {
+      qualificationGroup: {
+        include: {
+          qualifications: { select: { id: true, name: true, qualificationCode: true } },
+        },
+      },
+    },
+    orderBy: { qualificationGroup: { name: "asc" as const } },
   },
 } satisfies Prisma.TopicTypeInclude;
 
 // ─── Create ──────────────────────────────────────────────────────────────────
 
-export const create = async (data: CreateTopicTypeInput): Promise<TopicTypeWithQualifications> => {
+export const create = async (data: CreateTopicTypeInput): Promise<TopicTypeWithGroups> => {
   const topicType = await prisma.topicType.create({
     data: { name: data.name },
-    include: qualificationInclude,
+    include: groupInclude,
   });
 
-  // Link qualifications if provided
-  if (data.qualifications?.length) {
-    await prisma.qualificationTopicType.createMany({
-      data: data.qualifications.map((q) => ({
-        qualificationId: q.qualificationId,
+  if (data.groups?.length) {
+    await prisma.qualificationGroupTopicType.createMany({
+      data: data.groups.map((g) => ({
+        qualificationGroupId: g.groupId,
         topicTypeId: topicType.id,
-        priorityWeight: q.priorityWeight ?? 1,
-
+        priorityWeight: g.priorityWeight ?? 1,
       })),
       skipDuplicates: true,
     });
@@ -67,70 +73,45 @@ export const findAll = async (
   page: number = 1,
   limit: number = 10,
   filters: TopicTypeFilters = {},
-): Promise<PaginatedResult<TopicTypeWithQualifications>> => {
+): Promise<PaginatedResult<TopicTypeWithGroups>> => {
   const skip = (page - 1) * limit;
   const where: Prisma.TopicTypeWhereInput = {};
 
-  if (filters.search) {
-    where.name = { contains: filters.search, mode: "insensitive" };
-  }
-
-  if (filters.name) {
-    where.name = { contains: filters.name, mode: "insensitive" };
-  }
+  if (filters.search) where.name = { contains: filters.search, mode: "insensitive" };
+  if (filters.name) where.name = { contains: filters.name, mode: "insensitive" };
 
   const [data, total] = await Promise.all([
-    prisma.topicType.findMany({
-      where,
-      skip,
-      take: limit,
-      orderBy: { name: "asc" },
-      include: qualificationInclude,
-    }),
+    prisma.topicType.findMany({ where, skip, take: limit, orderBy: { name: "asc" }, include: groupInclude }),
     prisma.topicType.count({ where }),
   ]);
 
   return { data, total, page, limit };
 };
 
-export const findById = async (id: number): Promise<TopicTypeWithQualifications | null> => {
-  return await prisma.topicType.findUnique({
-    where: { id },
-    include: qualificationInclude,
-  });
+export const findById = async (id: number): Promise<TopicTypeWithGroups | null> => {
+  return await prisma.topicType.findUnique({ where: { id }, include: groupInclude });
 };
 
-export const findByName = async (name: string): Promise<TopicTypeWithQualifications | null> => {
-  return await prisma.topicType.findUnique({
-    where: { name },
-    include: qualificationInclude,
-  });
+export const findByName = async (name: string): Promise<TopicTypeWithGroups | null> => {
+  return await prisma.topicType.findUnique({ where: { name }, include: groupInclude });
 };
 
 // ─── Update ───────────────────────────────────────────────────────────────────
 
-export const update = async (
-  id: number,
-  data: UpdateTopicTypeInput,
-): Promise<TopicTypeWithQualifications> => {
-  // Update name if provided
+export const update = async (id: number, data: UpdateTopicTypeInput): Promise<TopicTypeWithGroups> => {
   if (data.name !== undefined) {
-    await prisma.topicType.update({
-      where: { id },
-      data: { name: data.name },
-    });
+    await prisma.topicType.update({ where: { id }, data: { name: data.name } });
   }
 
-  // Sync qualifications if provided (replace all)
-  if (data.qualifications !== undefined) {
-    await prisma.qualificationTopicType.deleteMany({ where: { topicTypeId: id } });
-    if (data.qualifications.length > 0) {
-      await prisma.qualificationTopicType.createMany({
-        data: data.qualifications.map((q) => ({
-          qualificationId: q.qualificationId,
+  // Sync groups if provided (replace all)
+  if (data.groups !== undefined) {
+    await prisma.qualificationGroupTopicType.deleteMany({ where: { topicTypeId: id } });
+    if (data.groups.length > 0) {
+      await prisma.qualificationGroupTopicType.createMany({
+        data: data.groups.map((g) => ({
+          qualificationGroupId: g.groupId,
           topicTypeId: id,
-          priorityWeight: q.priorityWeight ?? 1,
-
+          priorityWeight: g.priorityWeight ?? 1,
         })),
         skipDuplicates: true,
       });
@@ -143,7 +124,6 @@ export const update = async (
 // ─── Delete ───────────────────────────────────────────────────────────────────
 
 export const deleteTopicType = async (id: number): Promise<TopicType> => {
-  // Delete junction rows first to avoid FK constraint errors
-  await prisma.qualificationTopicType.deleteMany({ where: { topicTypeId: id } });
+  await prisma.qualificationGroupTopicType.deleteMany({ where: { topicTypeId: id } });
   return await prisma.topicType.delete({ where: { id } });
 };

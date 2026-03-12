@@ -37,9 +37,13 @@ type FullTopic = Topic & {
   topicType?: {
     id: number;
     name: string;
-    qualificationTopicTypes: { 
-      qualification: Qualification;
-      priorityWeight: number; 
+    qualificationGroupTopicTypes: {
+      priorityWeight: number;
+      qualificationGroup: {
+        id: number;
+        name: string;
+        qualifications: { id: number }[];
+      };
     }[];
   } | null;
   topicDefenses: { id: number; defenseId: number | null }[];
@@ -110,24 +114,6 @@ const isAvailableOnDay = (lecturer: FullLecturer, defenseDayId: number): boolean
 };
 
 /**
- * C4 (Soft) — A lecturer has at least one qualification matching the topic type.
- * Returns true when there are no type requirements (unconstrained).
- */
-const matchesTopicType = (
-  lecturer: FullLecturer,
-  topicTypeQualifications: Qualification[]
-): boolean => {
-  if (topicTypeQualifications.length === 0) return true;
-  const qualIds = new Set(lecturer.lecturerQualifications.map(lq => lq.qualificationId));
-  return topicTypeQualifications.some(q => qualIds.has(q.id));
-};
-
-/**
- * C5 (Removed) — Strict "common qualification" coverage no longer applies.
- * Everything is based on Weight * Score now.
- */
-
-/**
  * C6 — A lecturer must not be a supervisor for any of the topics in the board.
  */
 const isNotSupervisorForAnyTopic = (
@@ -143,10 +129,6 @@ const isNotSupervisorForAnyTopic = (
 // SENIORITY
 // =============================================================================
 
-/**
- * getSeniorityBonus - Returns a score multiplier based on lecturer's seniority.
- * Senior lecturers get a higher boost, boosting them higher in ranked picks.
- */
 const getSeniorityBonus = (level: SeniorityLevel): number => {
   switch (level) {
     case SeniorityLevel.Senior:   return 1.3;
@@ -158,54 +140,24 @@ const getSeniorityBonus = (level: SeniorityLevel): number => {
 };
 
 /**
- * calculateFitnessScore - Σ(qualificationScore × priorityWeight) × seniorityBonus.
- * SeniorityBonus amplifies the total score, so Senior lecturers naturally bubble
- * to the top when scores are close.
+ * calculateFitnessScore — Group-based scoring:
+ * Σ(max score of lecturer's quals in this group × group priorityWeight) × seniorityBonus.
  */
 const calculateFitnessScore = (
   lecturer: FullLecturer,
-  requiredTopicQuals: { qualificationId: number; priorityWeight: number }[]
+  requiredGroups: { groupId: number; qualificationIds: number[]; priorityWeight: number }[]
 ): number => {
   const LQualsMap = new Map(
     lecturer.lecturerQualifications.map(lq => [lq.qualificationId, lq.score ?? 0])
   );
-
   let baseScore = 0;
-  for (const req of requiredTopicQuals) {
-    if (LQualsMap.has(req.qualificationId)) {
-      const gvScore = LQualsMap.get(req.qualificationId)!;
-      baseScore += gvScore * req.priorityWeight;
-    }
+  for (const group of requiredGroups) {
+    const maxScoreInGroup = group.qualificationIds.length > 0
+      ? Math.max(0, ...group.qualificationIds.map(qId => LQualsMap.get(qId) ?? 0))
+      : 0;
+    baseScore += maxScoreInGroup * group.priorityWeight;
   }
-
-  // Apply seniority bonus on top of the base qualification score
   return baseScore * getSeniorityBonus(lecturer.seniorityLevel);
-};
-
-// =============================================================================
-// LOGGING HELPERS
-// =============================================================================
-
-const logTopicTypeMatch = (
-  pass: string,
-  topic: FullTopic,
-  topicTypeQuals: Qualification[],
-  matchedCount: number
-): void => {
-  if (topicTypeQuals.length > 0) {
-    console.log(`[${pass}] ${topic.topicCode} (${topic.topicType?.name}): ${matchedCount}/5 with topic-type quals`);
-  }
-};
-
-const logPartialCoverage = (
-  topic: FullTopic,
-  group: FullLecturer[],
-  topicTypeQuals: { qualificationId: number; priorityWeight: number }[]
-): void => {
-  const covered = topicTypeQuals.filter(q =>
-    group.some(l => l.lecturerQualifications.some(lq => lq.qualificationId === q.qualificationId))
-  ).length;
-  console.warn(`⚠️  [Pass2] ${topic.topicCode}: coverage ${covered}/${topicTypeQuals.length} type requirements`);
 };
 
 // =============================================================================
@@ -234,17 +186,23 @@ const getEligibleCandidates = (
  * then fills remaining slots with unmatched (by score).
  * Match means having at least one skill required by the topic type.
  */
+type RequiredGroup = { groupId: number; qualificationIds: number[]; priorityWeight: number };
+
 const selectWithTopicTypePreference = (
   candidates: FullLecturer[],
-  topicTypeQualifications: Qualification[], // For fast matching
-  requiredTopicQuals: { qualificationId: number; priorityWeight: number }[],
+  topicTypeGroupQualIds: number[], // all qualificationIds across all required groups
+  requiredGroups: RequiredGroup[],
   count: number = 5
 ): { selected: FullLecturer[]; matchedCount: number } => {
   const byFitnessScore = (a: FullLecturer, b: FullLecturer) =>
-    calculateFitnessScore(b, requiredTopicQuals) - calculateFitnessScore(a, requiredTopicQuals);
+    calculateFitnessScore(b, requiredGroups) - calculateFitnessScore(a, requiredGroups);
 
-  const matched = candidates.filter(c => matchesTopicType(c, topicTypeQualifications)).sort(byFitnessScore);
-  const unmatched = candidates.filter(c => !matchesTopicType(c, topicTypeQualifications)).sort(byFitnessScore);
+  const matched = candidates
+    .filter(c => c.lecturerQualifications.some(lq => topicTypeGroupQualIds.includes(lq.qualificationId)))
+    .sort(byFitnessScore);
+  const unmatched = candidates
+    .filter(c => !c.lecturerQualifications.some(lq => topicTypeGroupQualIds.includes(lq.qualificationId)))
+    .sort(byFitnessScore);
 
   const selected = [...matched.slice(0, count), ...unmatched].slice(0, count);
   return { selected, matchedCount: Math.min(matched.length, count) };
@@ -265,31 +223,26 @@ const selectWithTopicTypePreference = (
  */
 const buildCouncilGroup = (
   pool: FullLecturer[],
-  requiredTopicQuals: { qualificationId: number; priorityWeight: number }[],
+  requiredGroups: RequiredGroup[],
   size: number = 5
 ): { members: FullLecturer[]; warning?: string } => {
   const byScore = (a: FullLecturer, b: FullLecturer) =>
-    calculateFitnessScore(b, requiredTopicQuals) - calculateFitnessScore(a, requiredTopicQuals);
+    calculateFitnessScore(b, requiredGroups) - calculateFitnessScore(a, requiredGroups);
 
   const sorted = [...pool].sort(byScore);
   const top = sorted.slice(0, size);
 
-  // Pass 1 — Ideal: at least 1 Senior in the group
   const hasSenior = top.some(l => l.seniorityLevel === SeniorityLevel.Senior);
-  if (hasSenior) {
-    return { members: top };
-  }
+  if (hasSenior) return { members: top };
 
-  // Pass 2 — Relaxed: accept MidLevel as the experienced anchor
   const hasMidLevel = top.some(l => l.seniorityLevel === SeniorityLevel.MidLevel);
   if (hasMidLevel) {
     return {
       members: top,
-      warning: `Council formed without Senior (MidLevel used as anchor). Topic(s): ${requiredTopicQuals.map(q => q.qualificationId).join(",")}`
+      warning: `Council formed without Senior (MidLevel used as anchor). Groups: ${requiredGroups.map(g => g.groupId).join(",")}`
     };
   }
 
-  // Pass 3 — Best-Effort: no Senior/MidLevel available, sort by score only
   return {
     members: top,
     warning: `Seniority constraint not met — no Senior or MidLevel available. Council formed by score only.`
@@ -365,48 +318,44 @@ const tryScheduleStrict = (
   if (candidates.length < 5) return "insufficient_candidates";
   if (topicChunk.length === 0) return "insufficient_candidates";
 
-  // Gather all required qualifications from the chunk of topics with their weights
-  const reqQualsMap = new Map<number, number>(); // qualId -> max weight
-  const topicTypeQuals: Qualification[] = [];
-  
+  // Build requiredGroups from all topics in the chunk (take max weight per group)
+  const reqGroupsMap = new Map<number, { qualificationIds: number[]; maxWeight: number }>();
   topicChunk.forEach(topic => {
-      topic.topicType?.qualificationTopicTypes?.forEach(q => {
-          const currentWeight = reqQualsMap.get(q.qualification.id) ?? 0;
-          if (q.priorityWeight > currentWeight) {
-              reqQualsMap.set(q.qualification.id, q.priorityWeight);
-          }
-          if (!topicTypeQuals.find(tq => tq.id === q.qualification.id)) {
-              topicTypeQuals.push(q.qualification);
-          }
-      });
+    topic.topicType?.qualificationGroupTopicTypes?.forEach(gtt => {
+      const groupId = gtt.qualificationGroup.id;
+      const qualIds = gtt.qualificationGroup.qualifications.map(q => q.id);
+      const existing = reqGroupsMap.get(groupId);
+      if (!existing || gtt.priorityWeight > existing.maxWeight) {
+        reqGroupsMap.set(groupId, { qualificationIds: qualIds, maxWeight: gtt.priorityWeight });
+      }
+    });
   });
 
-  const requiredTopicQuals = Array.from(reqQualsMap.entries()).map(([qualificationId, priorityWeight]) => ({
-      qualificationId,
-      priorityWeight
+  const requiredGroups: RequiredGroup[] = Array.from(reqGroupsMap.entries()).map(([groupId, { qualificationIds, maxWeight }]) => ({
+    groupId,
+    qualificationIds,
+    priorityWeight: maxWeight,
   }));
+  const allGroupQualIds = requiredGroups.flatMap(g => g.qualificationIds);
 
-  const { selected, matchedCount } = selectWithTopicTypePreference(candidates, topicTypeQuals, requiredTopicQuals);
-
+  const { selected, matchedCount } = selectWithTopicTypePreference(candidates, allGroupQualIds, requiredGroups);
   if (selected.length < 5) return "insufficient_candidates";
 
-  logTopicTypeMatch("Pass1", topicChunk[0], topicTypeQuals, matchedCount);
+  console.log(`[Pass1] topic chunk: ${matchedCount} matched candidates`);
 
-  const { members, warning } = buildCouncilGroup(selected, requiredTopicQuals);
+  const { members, warning } = buildCouncilGroup(selected, requiredGroups);
   if (members.length < 5) return "insufficient_candidates";
 
-  // Strict check: if there are ANY requirements, the top 5 must have a collective fitness score > 0
-  if (requiredTopicQuals.length > 0) {
-      const collectiveScore = members.reduce((sum: number, member: FullLecturer) => sum + calculateFitnessScore(member, requiredTopicQuals), 0);
-      if (collectiveScore === 0) {
-          console.log(`⚠️  [Pass1] Group of ${topicChunk.length} topics: 0 fitness score for required skills → deferred`);
-          return "deferred";
-      }
+  if (requiredGroups.length > 0) {
+    const collectiveScore = members.reduce((sum: number, member: FullLecturer) => sum + calculateFitnessScore(member, requiredGroups), 0);
+    if (collectiveScore === 0) {
+      console.log(`⚠️  [Pass1] Group of ${topicChunk.length} topics: 0 fitness score for required groups → deferred`);
+      return "deferred";
+    }
   }
 
   return buildPlannedBoard(members, defenseDayId, topicChunk, warning);
 };
-
 
 
 // =============================================================================
@@ -425,45 +374,42 @@ const tryScheduleBestEffort = (
   }
   if (topicChunk.length === 0) return null;
 
-  // Gather all required qualifications and max weights
-  const reqQualsMap = new Map<number, number>();
-  const topicTypeQuals: Qualification[] = [];
-  
+  const reqGroupsMap = new Map<number, { qualificationIds: number[]; maxWeight: number }>();
   topicChunk.forEach(topic => {
-      topic.topicType?.qualificationTopicTypes?.forEach(q => {
-          const currentWeight = reqQualsMap.get(q.qualification.id) ?? 0;
-          if (q.priorityWeight > currentWeight) {
-              reqQualsMap.set(q.qualification.id, q.priorityWeight);
-          }
-          if (!topicTypeQuals.find(tq => tq.id === q.qualification.id)) {
-              topicTypeQuals.push(q.qualification);
-          }
-      });
+    topic.topicType?.qualificationGroupTopicTypes?.forEach(gtt => {
+      const groupId = gtt.qualificationGroup.id;
+      const qualIds = gtt.qualificationGroup.qualifications.map(q => q.id);
+      const existing = reqGroupsMap.get(groupId);
+      if (!existing || gtt.priorityWeight > existing.maxWeight) {
+        reqGroupsMap.set(groupId, { qualificationIds: qualIds, maxWeight: gtt.priorityWeight });
+      }
+    });
   });
 
-  const requiredTopicQuals = Array.from(reqQualsMap.entries()).map(([qualificationId, priorityWeight]) => ({
-      qualificationId,
-      priorityWeight
+  const requiredGroups: RequiredGroup[] = Array.from(reqGroupsMap.entries()).map(([groupId, { qualificationIds, maxWeight }]) => ({
+    groupId,
+    qualificationIds,
+    priorityWeight: maxWeight,
   }));
+  const allGroupQualIds = requiredGroups.flatMap(g => g.qualificationIds);
 
-  const { selected, matchedCount } = selectWithTopicTypePreference(candidates, topicTypeQuals, requiredTopicQuals);
+  const { selected, matchedCount } = selectWithTopicTypePreference(candidates, allGroupQualIds, requiredGroups);
 
   if (selected.length < 5) {
     console.warn(`❌ [Pass2] Group of ${topicChunk.length} topics: not enough candidates after filtering`);
     return null;
   }
 
-  logTopicTypeMatch("Pass2", topicChunk[0], topicTypeQuals, matchedCount);
+  console.log(`[Pass2] topic chunk: ${matchedCount} matched candidates`);
 
-  // We don't drop them in Pass 2 even if score is 0, we just log it
-  if (requiredTopicQuals.length > 0) {
-      const collectiveScore = selected.reduce((sum: number, member: FullLecturer) => sum + calculateFitnessScore(member, requiredTopicQuals), 0);
-      if (collectiveScore === 0) {
-         logPartialCoverage(topicChunk[0], selected, requiredTopicQuals);
-      }
+  if (requiredGroups.length > 0) {
+    const collectiveScore = selected.reduce((sum: number, member: FullLecturer) => sum + calculateFitnessScore(member, requiredGroups), 0);
+    if (collectiveScore === 0) {
+      console.warn(`[Pass2] Collective score = 0 for all groups`);
+    }
   }
 
-  const { members, warning } = buildCouncilGroup(selected, requiredTopicQuals);
+  const { members, warning } = buildCouncilGroup(selected, requiredGroups);
   return buildPlannedBoard(members, defenseDayId, topicChunk, warning);
 };
 
@@ -623,10 +569,13 @@ const fetchSchedulingContext = async (defenseId: number): Promise<SchedulingCont
         topicDefenses: { where: { defenseId } },
         topicType: { 
           include: { 
-            qualificationTopicTypes: { 
-              select: {
-                priorityWeight: true,
-                qualification: true
+            qualificationGroupTopicTypes: { 
+              include: {
+                qualificationGroup: {
+                  include: {
+                    qualifications: { select: { id: true } }
+                  }
+                }
               }
             } 
           } 

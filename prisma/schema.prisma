@@ -21,17 +21,18 @@ model Semester {
 }
 
 model Qualification {
-  id                      Int                      @id @default(autoincrement())
-  qualificationCode       String                   @unique @map("qualification_code") @db.VarChar(50)
-  name                    String                   @db.VarChar(255)
-  component               CriteriaComponent?
-  descHigh                String?                  @map("desc_high") @db.Text
-  descGood                String?                  @map("desc_good") @db.Text
-  descAcceptable          String?                  @map("desc_acceptable") @db.Text
-  descFail                String?                  @map("desc_fail") @db.Text
-  evaluationGuidelines    String?                  @map("evaluation_guidelines") @db.Text
-  lecturerQualifications  LecturerQualification[]
-  qualificationTopicTypes QualificationTopicType[]
+  id                     Int                    @id @default(autoincrement())
+  qualificationCode      String                 @unique @map("qualification_code") @db.VarChar(50)
+  name                   String                 @db.VarChar(255)
+  component              CriteriaComponent?
+  descHigh               String?                @map("desc_high") @db.Text
+  descGood               String?                @map("desc_good") @db.Text
+  descAcceptable         String?                @map("desc_acceptable") @db.Text
+  descFail               String?                @map("desc_fail") @db.Text
+  evaluationGuidelines   String?                @map("evaluation_guidelines") @db.Text
+  groupId                Int?                   @map("group_id")
+  group                  QualificationGroup?    @relation(fields: [groupId], references: [id])
+  lecturerQualifications LecturerQualification[]
 
   @@map("Qualifications")
 }
@@ -71,25 +72,36 @@ model Topic {
 }
 
 model TopicType {
-  id                      Int                      @id @default(autoincrement())
-  name                    String                   @unique @db.VarChar(100)
-  qualificationTopicTypes QualificationTopicType[]
-  topics                  Topic[]
+  id                           Int                           @id @default(autoincrement())
+  name                         String                        @unique @db.VarChar(100)
+  qualificationGroupTopicTypes QualificationGroupTopicType[]
+  topics                       Topic[]
 
   @@map("Topic_Types")
 }
 
-model QualificationTopicType {
-  id              Int           @id @default(autoincrement())
-  qualificationId Int           @map("qualification_id")
-  topicTypeId     Int           @map("topic_type_id")
-  priorityWeight  Int           @default(1) @map("priority_weight")
+model QualificationGroup {
+  id                           Int                           @id @default(autoincrement())
+  code                         String                        @unique @db.VarChar(50)
+  name                         String                        @unique @db.VarChar(100)
+  description                  String?                       @db.VarChar(255)
+  qualifications               Qualification[]
+  qualificationGroupTopicTypes QualificationGroupTopicType[]
 
-  qualification   Qualification @relation(fields: [qualificationId], references: [id])
-  topicType       TopicType     @relation(fields: [topicTypeId], references: [id])
+  @@map("Qualification_Groups")
+}
 
-  @@unique([qualificationId, topicTypeId])
-  @@map("Qualification_Topic_Types")
+model QualificationGroupTopicType {
+  id                   Int                @id @default(autoincrement())
+  qualificationGroupId Int                @map("qualification_group_id")
+  topicTypeId          Int                @map("topic_type_id")
+  priorityWeight       Int                @default(1) @map("priority_weight")
+
+  qualificationGroup   QualificationGroup @relation(fields: [qualificationGroupId], references: [id])
+  topicType            TopicType          @relation(fields: [topicTypeId], references: [id])
+
+  @@unique([qualificationGroupId, topicTypeId])
+  @@map("Qualification_Group_Topic_Types")
 }
 
 model Defense {
