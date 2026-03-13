@@ -162,6 +162,31 @@ export const deleteTopic = async (id: number): Promise<Topic> => {
 };
 
 /**
+ * Remove a topic from its latest defense session registration
+ */
+export const removeTopicFromDefense = async (topicId: number): Promise<void> => {
+  await prisma.$transaction(async (tx) => {
+    // 1. Get the latest topic defense for this topic
+    const topicDefense = await tx.topicDefense.findFirst({
+      where: { topicId },
+      orderBy: { id: "desc" },
+    });
+
+    if (!topicDefense) return;
+
+    // 2. Delete DefenseCouncil records associated with this registration
+    await tx.defenseCouncil.deleteMany({
+      where: { registrationId: topicDefense.id }
+    });
+
+    // 3. Delete TopicDefense record
+    await tx.topicDefense.delete({
+      where: { id: topicDefense.id }
+    });
+  });
+};
+
+/**
  * Find the latest topic defense for a topic
  */
 export const findLatestTopicDefense = async (topicId: number) => {

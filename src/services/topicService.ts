@@ -86,15 +86,10 @@ export const deleteTopic = async (id: number) => {
     throw new Error("Không tìm thấy đề tài");
   }
 
-  // Check for dependencies (simplified: relying on foreign key constraints for now or check registration)
-  const topicDefense = await topicRepository.findLatestTopicDefense(id);
-  if (topicDefense) {
-    // If we want to block deletion if registered:
-    // throw new Error("Cannot delete topic that is registered in a defense");
-  }
-
-  // If we rely on Prisma cascade or just try-catch in controller for FK error
-  return await topicRepository.deleteTopic(id);
+  // Remove the registration from the latest defense session
+  await topicRepository.removeTopicFromDefense(id);
+  
+  return topic;
 };
 
 /**
