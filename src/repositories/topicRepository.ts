@@ -64,6 +64,11 @@ export const findAll = async (
           include: {
             lecturer: true,
           },
+          orderBy: {
+            lecturer: {
+              fullName: "asc",
+            },
+          },
         },
       },
     }),
@@ -153,11 +158,38 @@ export const updateSupervisors = async (
 };
 
 /**
- * Delete topic
+ * Delete topic and all its associated records
  */
-export const deleteTopic = async (id: number): Promise<Topic> => {
-  return await prisma.topic.delete({
-    where: { id },
+export const deleteTopic = async (topicId: number): Promise<void> => {
+  await prisma.$transaction(async (tx) => {
+    // 1. Get all topic defense IDs for this topic
+    const topicDefenses = await tx.topicDefense.findMany({
+      where: { topicId },
+      select: { id: true },
+    });
+    const topicDefenseIds = topicDefenses.map((td) => td.id);
+
+    // 2. Delete DefenseCouncil records associated with these registrations
+    if (topicDefenseIds.length > 0) {
+      await tx.defenseCouncil.deleteMany({
+        where: { registrationId: { in: topicDefenseIds } },
+      });
+    }
+
+    // 3. Delete all TopicDefense records
+    await tx.topicDefense.deleteMany({
+      where: { topicId },
+    });
+
+    // 4. Delete all TopicSupervisor records
+    await tx.topicSupervisor.deleteMany({
+      where: { topicId },
+    });
+
+    // 5. Delete the Topic record
+    await tx.topic.delete({
+      where: { id: topicId },
+    });
   });
 };
 
@@ -226,7 +258,8 @@ export const updateTopicDefenseResultByCodes = async (
         defenseId,
         topic: { topicCode: { in: topicCodes } }
       },
-      include: { topic: true }
+      include: { topic: true },
+      orderBy: { id: "asc" }
     });
 
     // 2. Map topicCode to registration id

@@ -31,7 +31,8 @@ export const create = async (data: CreateTopicDefenseInput) => {
     include: {
       topic: true,
       defense: true,
-    }
+    },
+    orderBy: { id: "asc" }
   });
 };
 
@@ -78,7 +79,14 @@ export const findAndCountAll = async (
     prisma.topicDefense.findMany({
       where: whereClause,
       include: {
-        topic: { include: { topicSupervisors: { include: { lecturer: true } } } },
+        topic: {
+          include: {
+            topicSupervisors: {
+              include: { lecturer: true },
+              orderBy: { lecturer: { fullName: "asc" } }
+            }
+          }
+        },
         defense: true,
         defenseCouncils: true,
       },

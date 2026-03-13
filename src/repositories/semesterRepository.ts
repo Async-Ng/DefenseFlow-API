@@ -261,5 +261,6 @@ export const getDefensesWithDays = async (
   return await prisma.defense.findMany({
     where: { semesterId },
     include: { defenseDays: true },
+    orderBy: { name: "asc" },
   });
 };

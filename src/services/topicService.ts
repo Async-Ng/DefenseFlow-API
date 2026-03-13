@@ -86,8 +86,8 @@ export const deleteTopic = async (id: number) => {
     throw new Error("Không tìm thấy đề tài");
   }
 
-  // Remove the registration from the latest defense session
-  await topicRepository.removeTopicFromDefense(id);
+  // Fully delete the topic and all its associated records (supervisors, defenses, councils)
+  await topicRepository.deleteTopic(id);
   
   return topic;
 };

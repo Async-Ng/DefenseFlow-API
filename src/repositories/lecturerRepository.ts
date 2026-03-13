@@ -75,6 +75,11 @@ export const findAll = async (
           include: {
             qualification: true,
           },
+          orderBy: {
+            qualification: {
+              name: "asc",
+            },
+          },
         },
       },
     }),
@@ -176,6 +181,11 @@ export const findLecturerQualifications = async (
     where: { lecturerId },
     include: {
       qualification: true,
+    },
+    orderBy: {
+      qualification: {
+        name: "asc",
+      },
     },
   });
 };

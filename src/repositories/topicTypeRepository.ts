@@ -36,7 +36,7 @@ const groupInclude = {
     include: {
       qualificationGroup: {
         include: {
-          qualifications: { select: { id: true, name: true, qualificationCode: true } },
+          qualifications: { select: { id: true, name: true, qualificationCode: true }, orderBy: { name: "asc" } },
         },
       },
     },
