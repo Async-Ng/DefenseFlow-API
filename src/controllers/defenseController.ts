@@ -70,8 +70,10 @@ export const createDefense = async (
     const message = getErrorMessage(error);
     if (
       message.includes("already exists") ||
+      message.includes("đã tồn tại") ||
       message.includes("required") ||
       message.includes("not found") ||
+      message.includes("Không tìm thấy") ||
       message.includes("validation failed") ||
       message.includes("fall within")
     ) {
@@ -238,7 +240,7 @@ export const getDefenseById = async (
     );
   } catch (error: unknown) {
     const message = getErrorMessage(error);
-    if (message.includes("not found")) {
+    if (message.includes("not found") || message.includes("Không tìm thấy")) {
       return notFoundResponse(res, message);
     }
     return errorResponse(res, message, 500);
@@ -307,10 +309,14 @@ export const updateDefense = async (
     );
   } catch (error: unknown) {
     const message = getErrorMessage(error);
-    if (message.includes("not found")) {
+    if (message.includes("not found") || message.includes("Không tìm thấy")) {
       return notFoundResponse(res, message);
     }
-    if (message.includes("already exists") || message.includes("must be")) {
+    if (
+      message.includes("already exists") ||
+      message.includes("đã tồn tại") ||
+      message.includes("must be")
+    ) {
       return validationErrorResponse(res, { message });
     }
     return errorResponse(res, message, 500);
@@ -368,10 +374,13 @@ export const deleteDefense = async (
     return successResponse(res, {}, "Defense deleted successfully");
   } catch (error: unknown) {
     const message = getErrorMessage(error);
-    if (message.includes("not found")) {
+    if (message.includes("not found") || message.includes("Không tìm thấy")) {
       return notFoundResponse(res, message);
     }
-    if (message.includes("Cannot delete")) {
+    if (
+      message.includes("Cannot delete") ||
+      message.includes("Không thể xóa")
+    ) {
       return validationErrorResponse(res, { message });
     }
     return errorResponse(res, message, 500);
@@ -445,11 +454,12 @@ export const publishAvailability = async (
     );
   } catch (error: unknown) {
     const message = getErrorMessage(error);
-    if (message.includes("not found")) {
+    if (message.includes("not found") || message.includes("Không tìm thấy")) {
       return notFoundResponse(res, message);
     }
     if (
       message.includes("already published") ||
+      message.includes("đã được công bố") ||
       message.includes("cannot be after")
     ) {
       return validationErrorResponse(res, { message });
@@ -507,13 +517,15 @@ export const importFailedTopics = async (
     return successResponse(res, result, "Failed topics imported successfully");
   } catch (error: unknown) {
     const message = getErrorMessage(error);
-    if (message.includes("not found")) {
+    if (message.includes("not found") || message.includes("Không tìm thấy")) {
       return notFoundResponse(res, message);
     }
     if (
       message.includes("must be a Resit defense") ||
+      message.includes("không thuộc") ||
       message.includes("does not have") || 
-      message.includes("already imported")
+      message.includes("already imported") ||
+      message.includes("chưa có")
     ) {
       return validationErrorResponse(res, { message });
     }

@@ -65,7 +65,7 @@ export const getLecturerById = async (
     return successResponse(res, lecturer, "Lấy thông tin giảng viên thành công");
   } catch (error: unknown) {
     const message = getErrorMessage(error);
-    if (message.includes("not found")) {
+    if (message.includes("not found") || message.includes("Không tìm thấy")) {
       return notFoundResponse(res, message);
     }
     return errorResponse(res, message, 500);
@@ -115,7 +115,7 @@ export const createLecturer = async (req: Request, res: Response): Promise<Respo
     return createdResponse(res, lecturer, "Tạo giảng viên thành công");
   } catch (error: unknown) {
     const message = getErrorMessage(error);
-    if (message.includes("already exists")) {
+    if (message.includes("already exists") || message.includes("đã tồn tại")) {
        return validationErrorResponse(res, { message });
     }
     return errorResponse(res, message, 500);
@@ -180,8 +180,8 @@ export const updateLecturer = async (req: Request, res: Response): Promise<Respo
     return successResponse(res, lecturer, "Cập nhật giảng viên thành công");
   } catch (error: unknown) {
     const message = getErrorMessage(error);
-    if (message.includes("not found")) return notFoundResponse(res, message);
-    if (message.includes("already exists")) return validationErrorResponse(res, { message });
+    if (message.includes("not found") || message.includes("Không tìm thấy")) return notFoundResponse(res, message);
+    if (message.includes("already exists") || message.includes("đã tồn tại")) return validationErrorResponse(res, { message });
     return errorResponse(res, message, 500);
   }
 };
@@ -226,7 +226,7 @@ export const deleteLecturer = async (req: Request, res: Response): Promise<Respo
     return successResponse(res, null, "Xóa giảng viên thành công");
   } catch (error: unknown) {
     const message = getErrorMessage(error);
-    if (message.includes("not found")) return notFoundResponse(res, message);
+    if (message.includes("not found") || message.includes("Không tìm thấy")) return notFoundResponse(res, message);
     return errorResponse(res, message, 500);
   }
 };
@@ -391,7 +391,7 @@ export const updateLecturerQualifications = async (
     );
   } catch (error: unknown) {
     const message = getErrorMessage(error);
-    if (message.includes("not found")) {
+    if (message.includes("not found") || message.includes("Không tìm thấy")) {
       return errorResponse(res, message, 404);
     }
     if (message.includes("Invalid qualification score")) {
@@ -469,7 +469,7 @@ export const addLecturerQualifications = async (
     );
   } catch (error: unknown) {
     const message = getErrorMessage(error);
-    if (message.includes("not found")) {
+    if (message.includes("not found") || message.includes("Không tìm thấy")) {
       return errorResponse(res, message, 404);
     }
     return errorResponse(res, message, 500);
@@ -538,7 +538,11 @@ export const deleteLecturerQualification = async (
     return successResponse(res, null, "Xóa chuyên môn thành công");
   } catch (error: unknown) {
     const message = getErrorMessage(error);
-    if (message.includes("not found") || message.includes("not assigned")) {
+    if (
+      message.includes("not found") ||
+      message.includes("Không tìm thấy") ||
+      message.includes("not assigned")
+    ) {
         return errorResponse(res, message, 404);
     }
     return errorResponse(res, message, 500);
@@ -580,7 +584,11 @@ export const resetPassword = async (req: Request, res: Response): Promise<Respon
     return successResponse(res, null, "Đã reset mật khẩu về mặc định thành công.");
   } catch (error: unknown) {
     const message = getErrorMessage(error);
-    if (message.includes("not found") || message.includes("chưa có tài khoản")) {
+    if (
+      message.includes("not found") ||
+      message.includes("Không tìm thấy") ||
+      message.includes("chưa có tài khoản")
+    ) {
       return notFoundResponse(res, message);
     }
     return errorResponse(res, message, 500);
@@ -644,10 +652,17 @@ export const updateLecturerRoles = async (req: Request, res: Response): Promise<
     return successResponse(res, null, "Cập nhật quyền thành công.");
   } catch (error: unknown) {
     const message = getErrorMessage(error);
-    if (message.includes("not found") || message.includes("chưa có tài khoản")) {
+    if (
+      message.includes("not found") ||
+      message.includes("Không tìm thấy") ||
+      message.includes("chưa có tài khoản")
+    ) {
       return notFoundResponse(res, message);
     }
-    if (message.includes("ít nhất một quyền")) {
+    if (
+      message.includes("ít nhất một quyền") ||
+      message.includes("at least one role")
+    ) {
       return errorResponse(res, message, 400);
     }
     return errorResponse(res, message, 500);

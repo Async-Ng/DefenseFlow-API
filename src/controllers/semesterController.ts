@@ -65,7 +65,11 @@ export const createSemester = async (
     return createdResponse(res, semester, "Semester created successfully");
   } catch (error: unknown) {
     const message = getErrorMessage(error);
-    if (message.includes("already exists") || message.includes("required")) {
+    if (
+      message.includes("already exists") ||
+      message.includes("đã tồn tại") ||
+      message.includes("required")
+    ) {
       return validationErrorResponse(res, { message });
     }
     return errorResponse(res, message, 500);
@@ -186,7 +190,7 @@ export const getSemesterById = async (
     return successResponse(res, semester, "Semester retrieved successfully");
   } catch (error: unknown) {
     const message = getErrorMessage(error);
-    if (message.includes("not found")) {
+    if (message.includes("not found") || message.includes("Không tìm thấy")) {
       return notFoundResponse(res, message);
     }
     return errorResponse(res, message, 500);
@@ -251,10 +255,14 @@ export const updateSemester = async (
     return successResponse(res, semester, "Semester updated successfully");
   } catch (error: unknown) {
     const message = getErrorMessage(error);
-    if (message.includes("not found")) {
+    if (message.includes("not found") || message.includes("Không tìm thấy")) {
       return notFoundResponse(res, message);
     }
-    if (message.includes("already exists") || message.includes("conflict")) {
+    if (
+      message.includes("already exists") ||
+      message.includes("đã tồn tại") ||
+      message.includes("conflict")
+    ) {
       return validationErrorResponse(res, { message });
     }
     return errorResponse(res, message, 500);
@@ -312,10 +320,13 @@ export const deleteSemester = async (
     return successResponse(res, {}, "Semester deleted successfully");
   } catch (error: unknown) {
     const message = getErrorMessage(error);
-    if (message.includes("not found")) {
+    if (message.includes("not found") || message.includes("Không tìm thấy")) {
       return notFoundResponse(res, message);
     }
-    if (message.includes("Cannot delete")) {
+    if (
+      message.includes("Cannot delete") ||
+      message.includes("Không thể xóa")
+    ) {
       return validationErrorResponse(res, { message });
     }
     return errorResponse(res, message, 500);

@@ -72,9 +72,16 @@ export const getDefenseDays = async (
     successResponse(res, defenseDays, "Defense days retrieved successfully");
   } catch (error) {
     const message = getErrorMessage(error);
-    if (message.includes("not found")) {
+    if (message.includes("not found") || message.includes("Không tìm thấy")) {
       errorResponse(res, message, 404);
-    } else if (message.includes("not been published yet") || message.includes("Registration opens on") || message.includes("period has ended")) {
+    } else if (
+      message.includes("not been published yet") ||
+      message.includes("Lịch bảo vệ chưa được công bố") ||
+      message.includes("Registration opens on") ||
+      message.includes("Thời gian đăng ký nguyện vọng chưa bắt đầu") ||
+      message.includes("period has ended") ||
+      message.includes("Thời gian đăng ký nguyện vọng đã kết thúc")
+    ) {
       errorResponse(res, message, 400);
     } else {
       errorResponse(res, message, 500);
@@ -179,9 +186,18 @@ export const getDefenseDaysWithAvailability = async (
     );
   } catch (error) {
     const message = getErrorMessage(error);
-    if (message.includes("not found")) {
+    if (message.includes("not found") || message.includes("Không tìm thấy")) {
       errorResponse(res, message, 404);
-    } else if (message.includes("not been published yet") || message.includes("Registration opens on") || message.includes("period has ended")) {
+    } else if (
+      message.includes("not been published yet") ||
+      message.includes("Lịch bảo vệ chưa được công bố") ||
+      message.includes("Registration opens on") ||
+      message.includes("Thời gian đăng ký nguyện vọng chưa bắt đầu") ||
+      message.includes("period has ended") ||
+      message.includes("Thời gian đăng ký nguyện vọng đã kết thúc") ||
+      message.includes("Valid lecturer ID is required") ||
+      message.includes("Bạn không có tên")
+    ) {
       errorResponse(res, message, 400);
     } else {
       errorResponse(res, message, 500);
@@ -273,9 +289,13 @@ export const getLecturerStatus = async (
     successResponse(res, status, "Lecturer status retrieved successfully");
   } catch (error) {
     const message = getErrorMessage(error);
-    if (message.includes("not found")) {
+    if (message.includes("not found") || message.includes("Không tìm thấy")) {
       errorResponse(res, message, 404);
-    } else if (message.includes("not been published yet")) {
+    } else if (
+      message.includes("not been published yet") ||
+      message.includes("Lịch bảo vệ chưa được công bố") ||
+      message.includes("Bạn không có tên")
+    ) {
       errorResponse(res, message, 400);
     } else {
       errorResponse(res, message, 500);
@@ -382,9 +402,16 @@ export const updateAvailability = async (
     successResponse(res, availability, "Availability updated successfully");
   } catch (error) {
     const message = getErrorMessage(error);
-    if (message.includes("not found")) {
+    if (message.includes("not found") || message.includes("Không tìm thấy")) {
       errorResponse(res, message, 404);
-    } else if (message.includes("closed") || message.includes("not been published yet")) {
+    } else if (
+      message.includes("closed") ||
+      message.includes("Đợt đăng ký đã đóng") ||
+      message.includes("not been published yet") ||
+      message.includes("Lịch bảo vệ chưa được công bố") ||
+      message.includes("Thời gian đăng ký nguyện vọng") ||
+      message.includes("Bạn không có tên")
+    ) {
       errorResponse(res, message, 400);
     } else {
       errorResponse(res, message, 500);
@@ -511,9 +538,19 @@ export const batchUpdateAvailability = async (
     );
   } catch (error) {
     const message = getErrorMessage(error);
-    if (message.includes("not found")) {
+    if (message.includes("not found") || message.includes("Không tìm thấy")) {
       errorResponse(res, message, 404);
-    } else if (message.includes("closed") || message.includes("same defense") || message.includes("not been published yet") || message.includes("Registration opens on") || message.includes("period has ended")) {
+    } else if (
+      message.includes("closed") ||
+      message.includes("Đợt đăng ký đã đóng") ||
+      message.includes("same defense") ||
+      message.includes("cùng một đợt bảo vệ") ||
+      message.includes("not been published yet") ||
+      message.includes("Lịch bảo vệ chưa được công bố") ||
+      message.includes("Registration opens on") ||
+      message.includes("Thời gian đăng ký nguyện vọng") ||
+      message.includes("Bạn không có tên")
+    ) {
       errorResponse(res, message, 400);
     } else {
       errorResponse(res, message, 500);
@@ -612,9 +649,16 @@ export const removeAvailability = async (
     );
   } catch (error) {
     const message = getErrorMessage(error);
-    if (message.includes("not found")) {
+    if (message.includes("not found") || message.includes("Không tìm thấy")) {
       errorResponse(res, message, 404);
-    } else if (message.includes("closed") || message.includes("not been published yet") || message.includes("Registration opens on") || message.includes("period has ended")) {
+    } else if (
+      message.includes("closed") ||
+      message.includes("Đợt đăng ký đã đóng") ||
+      message.includes("not been published yet") ||
+      message.includes("Lịch bảo vệ chưa được công bố") ||
+      message.includes("Thời gian đăng ký nguyện vọng") ||
+      message.includes("Bạn không có tên")
+    ) {
       errorResponse(res, message, 400);
     } else {
       errorResponse(res, message, 500);
@@ -666,7 +710,7 @@ export const getAvailableLecturers = async (
     successResponse(res, lecturers, "Available lecturers retrieved successfully");
   } catch (error) {
     const message = getErrorMessage(error);
-    if (message.includes("not found")) {
+    if (message.includes("not found") || message.includes("Không tìm thấy")) {
       errorResponse(res, message, 404);
     } else {
       errorResponse(res, message, 500);
