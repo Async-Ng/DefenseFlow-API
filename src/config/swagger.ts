@@ -335,6 +335,13 @@ const options: swaggerJsdoc.Options = {
               nullable: true,
               example: "2025-04-30",
             },
+            status: {
+              type: "string",
+              enum: ["Upcoming", "Ongoing", "Finished"],
+              default: "Upcoming",
+              example: "Upcoming",
+              description: "Current status of the semester",
+            },
           },
         },
         CreateSemesterInput: {
@@ -349,6 +356,11 @@ const options: swaggerJsdoc.Options = {
               example: "2025-01-01",
             },
             endDate: { type: "string", format: "date", example: "2025-04-30" },
+            status: {
+              type: "string",
+              enum: ["Upcoming", "Ongoing", "Finished"],
+              default: "Upcoming",
+            },
           },
         },
         UpdateSemesterInput: {
@@ -367,6 +379,10 @@ const options: swaggerJsdoc.Options = {
               format: "date",
               nullable: true,
               example: "2025-04-30",
+            },
+            status: {
+              type: "string",
+              enum: ["Upcoming", "Ongoing", "Finished"],
             },
           },
         },
