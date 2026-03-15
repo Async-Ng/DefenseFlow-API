@@ -88,10 +88,12 @@ export const getIncludeOptions = (req: Request): ValidatedIncludeOptions => {
 export const getSemesterFilters = (req: Request): SemesterFilters => {
   const semesterCodeParam = req.query.semesterCode;
   const nameParam = req.query.name;
+  const statusParam = req.query.status;
 
   return {
     semesterCode: isString(semesterCodeParam) ? semesterCodeParam : undefined,
     name: isString(nameParam) ? nameParam : undefined,
+    status: isString(statusParam) ? statusParam as any : undefined,
     search: isString(req.query.search) ? req.query.search : undefined,
   };
 };

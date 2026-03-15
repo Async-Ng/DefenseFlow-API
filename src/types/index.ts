@@ -25,6 +25,7 @@ import type {
   TopicSupervisor,
   DefenseCouncil,
   DefenseStatus,
+  SemesterStatus,
   CriteriaComponent,
   SeniorityLevel,
 } from "../../generated/prisma/client.js";
@@ -48,6 +49,7 @@ export type {
   TopicSupervisor,
   DefenseCouncil,
   DefenseStatus,
+  SemesterStatus,
   CriteriaComponent,
   SeniorityLevel,
 };
@@ -160,6 +162,7 @@ export type IncludeQuery = {
 export type SemesterFilterQuery = {
   semesterCode?: string | string[];
   name?: string | string[];
+  status?: string | string[];
   search?: string | string[];
 };
 
@@ -196,6 +199,7 @@ export type CreateSemesterInput = {
   name: string;
   startDate?: string;
   endDate?: string;
+  status?: SemesterStatus;
 };
 
 export type UpdateSemesterInput = Partial<CreateSemesterInput>;
@@ -507,6 +511,7 @@ export type PaginatedResult<T> = {
 export type SemesterFilters = {
   semesterCode?: string;
   name?: string;
+  status?: SemesterStatus;
   search?: string;
 };
 

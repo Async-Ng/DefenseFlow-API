@@ -13,6 +13,7 @@ model Semester {
   name          String         @db.VarChar(100)
   startDate     DateTime?      @map("start_date") @db.Date
   endDate       DateTime?      @map("end_date") @db.Date
+  status        SemesterStatus? @default(Upcoming)
   councilBoards CouncilBoard[]
   defenses      Defense[]
   topics        Topic[]
@@ -235,6 +236,14 @@ model TopicDefense {
   topic            Topic?           @relation(fields: [topicId], references: [id])
 
   @@map("Topic_Defenses")
+}
+
+enum SemesterStatus {
+  Upcoming
+  Ongoing
+  Finished
+
+  @@map("semester_status")
 }
 
 enum DefenseStatus {

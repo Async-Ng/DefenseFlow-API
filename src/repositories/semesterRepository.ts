@@ -19,6 +19,7 @@ export const create = async (data: CreateSemesterInput): Promise<Semester> => {
       name: data.name,
       startDate: data.startDate ? new Date(data.startDate) : null,
       endDate: data.endDate ? new Date(data.endDate) : null,
+      status: data.status,
     },
   });
 };
@@ -40,6 +41,9 @@ export const findAll = async (
   }
   if (filters.name) {
     where.name = { contains: filters.name };
+  }
+  if (filters.status) {
+    where.status = filters.status;
   }
 
   const [data, total] = await Promise.all([
@@ -111,6 +115,9 @@ export const update = async (
   }
   if (data.endDate !== undefined) {
     updateData.endDate = data.endDate ? new Date(data.endDate) : null;
+  }
+  if (data.status !== undefined) {
+    updateData.status = data.status;
   }
 
   return await prisma.semester.update({

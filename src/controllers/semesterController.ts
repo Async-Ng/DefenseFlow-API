@@ -97,6 +97,11 @@ export const createSemester = async (
  *         name: name
  *         schema:
  *           type: string
+ *       - in: query
+ *         name: status
+ *         schema:
+ *           type: string
+ *           enum: [Upcoming, Ongoing, Finished]
  *     responses:
  *       200:
  *         description: List of semesters
