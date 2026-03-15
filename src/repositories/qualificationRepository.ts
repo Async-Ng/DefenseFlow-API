@@ -59,11 +59,10 @@ export const findAll = async (
       where,
       skip,
       take: limit,
-      orderBy: { name: "asc" },
+      orderBy: { qualificationCode: "asc" },
     }),
     prisma.qualification.count({ where }),
   ]);
-
   return { data, total, page, limit };
 };
 
