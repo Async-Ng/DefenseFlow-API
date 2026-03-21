@@ -110,6 +110,35 @@ export const updateLecturer = async (id: number, data: UpdateLecturerInput): Pro
     }
   }
   
+  // 1. Sync with Supabase Auth if they have an authId
+  if (lecturer.authId && (data.email !== undefined || data.fullName !== undefined)) {
+    const updateAuthData: any = {};
+    if (data.email !== undefined && data.email !== lecturer.email) {
+      updateAuthData.email = data.email || "";
+      updateAuthData.email_confirm = true; // Auto-confirm email change if admin updates it
+    }
+    
+    if (data.fullName !== undefined && data.fullName !== lecturer.fullName) {
+      updateAuthData.user_metadata = { full_name: data.fullName };
+      // Also update app_metadata for fullName
+      const { data: { user } } = await supabase.auth.admin.getUserById(lecturer.authId);
+      if (user) {
+         updateAuthData.app_metadata = {
+           ...(user.app_metadata || {}),
+           fullName: data.fullName
+         };
+      }
+    }
+    
+    if (Object.keys(updateAuthData).length > 0) {
+      const { error: authError } = await supabase.auth.admin.updateUserById(lecturer.authId, updateAuthData);
+      if (authError) {
+        throw new Error(`Lỗi cập nhật tài khoản Auth: ${authError.message}`);
+      }
+    }
+  }
+
+  // 2. Update local database
   return await lecturerRepository.update(id, data);
 };
 
@@ -122,6 +151,17 @@ export const deleteLecturer = async (id: number): Promise<void> => {
     throw new Error(`Không tìm thấy giảng viên với ID ${id}`);
   }
 
+  // 1. Delete from Supabase Auth if authId exists
+  if (lecturer.authId) {
+    const { error: authError } = await supabase.auth.admin.deleteUser(lecturer.authId);
+    if (authError) {
+      console.error(`Failed to delete Supabase Auth user for lecturer ${id}:`, authError.message);
+      // We still map it to a user-friendly error
+      throw new Error(`Lỗi xóa tài khoản Auth: ${authError.message}`);
+    }
+  }
+
+  // 2. Delete from local database
   await lecturerRepository.deleteLecturer(id);
 };
 
