@@ -84,7 +84,14 @@ const options: swaggerJsdoc.Options = {
             },
 
             topicType: { $ref: "#/components/schemas/TopicType" },
+            status: { $ref: "#/components/schemas/TopicStatus" },
           },
+        },
+        TopicStatus: {
+          type: "string",
+          enum: ["Pending", "Passed_Main", "Passed_Resit", "Failed_Main", "Failed_Final"],
+          example: "Passed_Main",
+          description: "Trạng thái tổng của đề tài trong học kỳ",
         },
         // ─── QualificationGroup schemas ───────────────────────────────────────
         QualificationGroup: {

@@ -68,6 +68,7 @@ model Topic {
   topicSupervisors TopicSupervisor[]
   semester         Semester          @relation(fields: [semesterId], references: [id])
   topicType        TopicType?        @relation(fields: [topicTypeId], references: [id])
+  status           TopicStatus       @default(Pending) @map("status")
 
   @@map("Topics")
 }
@@ -281,6 +282,16 @@ enum DefenseType {
   Resit
 
   @@map("defense_type")
+}
+
+enum TopicStatus {
+  Pending
+  Passed_Main
+  Passed_Resit
+  Failed_Main
+  Failed_Final
+
+  @@map("topic_status")
 }
 
 enum CriteriaComponent {

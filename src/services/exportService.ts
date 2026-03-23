@@ -71,7 +71,6 @@ export class ExportService {
     const tTitleCell = topicSheet.getCell("A1");
     tTitleCell.value = `DANH SÁCH ĐỀ TÀI: ${defense.name?.toUpperCase() || ""}`;
     tTitleCell.font = { bold: true, size: 14 };
-    tTitleCell.alignment = { horizontal: "center" };
 
     const topicHeaders = [
       "STT",
@@ -79,6 +78,7 @@ export class ExportService {
       "Mã nhóm",
       "Tên đề tài Tiếng Anh/ Tiếng Nhật",
       "Tên đề tài Tiếng Việt",
+      "Trạng thái tổng",
       "GVHD (Tất cả)",
       "GVHD 1 (Mã GV)",
       "GVHD 2 (Mã GV)",
@@ -97,12 +97,21 @@ export class ExportService {
       const gvhd1 = supervisors[0]?.lecturer.lecturerCode || "-";
       const gvhd2 = supervisors[1]?.lecturer.lecturerCode || "-";
 
+      const statusLabels: Record<string, string> = {
+        Pending: "Đang chờ bảo vệ",
+        Passed_Main: "Bảo vệ thành công (Đợt chính)",
+        Passed_Resit: "Bảo vệ thành công (Đợt bổ sung)",
+        Failed_Main: "Bảo vệ chưa thành công (Đợt chính)",
+        Failed_Final: "Bảo vệ chưa thành công (Đợt bổ sung)",
+      };
+
       const r = topicSheet.addRow([
         tStt++,
         topic?.topicCode || "-",
         topic?.groupCode || "-",
         topic?.title || "-",
         topic?.vietnameseTitle || "-",
+        statusLabels[topic?.status || "Pending"] || topic?.status || "-",
         supervisorsStr,
         gvhd1,
         gvhd2
@@ -115,9 +124,10 @@ export class ExportService {
     topicSheet.getColumn(3).width = 15;
     topicSheet.getColumn(4).width = 40;
     topicSheet.getColumn(5).width = 40;
-    topicSheet.getColumn(6).width = 30;
-    topicSheet.getColumn(7).width = 15;
-    topicSheet.getColumn(8).width = 15;
+    topicSheet.getColumn(6).width = 25; // Trạng thái tổng
+    topicSheet.getColumn(7).width = 30; // GVHD (Tất cả)
+    topicSheet.getColumn(8).width = 15; // GVHD 1
+    topicSheet.getColumn(9).width = 15; // GVHD 2
 
     // ----------------------------------------------------
     // Sheet 2: Danh sách Hội đồng

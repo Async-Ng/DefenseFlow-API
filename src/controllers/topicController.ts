@@ -97,6 +97,11 @@ export const createTopic = async (
  *           items:
  *             type: integer
  *         description: Filter by supervisor IDs (can provide multiple)
+ *       - in: query
+ *         name: status
+ *         schema:
+ *           $ref: '#/components/schemas/TopicStatus'
+ *         description: Filter by global topic status in the semester
  *     responses:
  *       200:
  *         description: List of topics retrieved successfully
@@ -302,6 +307,7 @@ export const deleteTopic = async (
  * /api/topics/{id}/result:
  *   patch:
  *     summary: "[ADMIN] Update the result of a topic registration"
+ *     description: Updates the results for a specific topic's defense in a round. Automatically synchronizes the Global Topic Status.
  *     tags: [Topics]
  *     parameters:
  *       - in: path

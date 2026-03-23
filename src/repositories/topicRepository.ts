@@ -1,6 +1,7 @@
 import { prisma } from "../config/prisma.js";
 import {
   DefenseResult,
+  TopicStatus,
   TopicDefense,
   Topic,
   Prisma,
@@ -236,9 +237,17 @@ export const updateTopicDefenseResult = async (
   topicDefenseId: number,
   result: DefenseResult,
 ): Promise<TopicDefense> => {
-  return await prisma.topicDefense.update({
-    where: { id: topicDefenseId },
-    data: { finalResult: result },
+  return await prisma.$transaction(async (tx) => {
+    const updated = await tx.topicDefense.update({
+      where: { id: topicDefenseId },
+      data: { finalResult: result },
+    });
+
+    if (updated.topicId) {
+      await syncTopicStatus(updated.topicId, tx);
+    }
+
+    return updated;
   });
 };
 /**
@@ -271,19 +280,80 @@ export const updateTopicDefenseResultByCodes = async (
     }
 
     // 3. Update sequentially but much faster since we don't query each time
+    const updatedTopicIds = new Set<number>();
+    
     for (const item of topicResults) {
       const regId = regMap.get(item.topicCode);
       if (regId) {
-        await tx.topicDefense.update({
+        const updated = await tx.topicDefense.update({
           where: { id: regId },
           data: { finalResult: item.result },
         });
+        if (updated.topicId) {
+          updatedTopicIds.add(updated.topicId);
+        }
         count++;
       }
+    }
+
+    // 4. Sync global status for all affected topics
+    for (const topicId of updatedTopicIds) {
+      await syncTopicStatus(topicId, tx);
     }
     
     return { count };
   }, {
     timeout: 30000, // 30 seconds timeout for bulk operations
+  });
+};
+
+/**
+ * Synchronize the global status of a topic based on all its defenses in the semester
+ */
+export const syncTopicStatus = async (
+  topicId: number,
+  tx: Prisma.TransactionClient,
+): Promise<void> => {
+  // 1. Fetch all defenses for this topic
+  const topicDefenses = await tx.topicDefense.findMany({
+    where: { topicId },
+    include: { defense: true },
+    orderBy: { id: "desc" }, // latest first
+  });
+
+  if (topicDefenses.length === 0) return;
+
+  let newStatus: TopicStatus = "Pending";
+
+  // Check for any Passed status first (priority)
+  const passedMain = topicDefenses.find(
+    (td) => td.finalResult === "Passed" && td.defense?.type === "Main",
+  );
+
+  const passedResit = topicDefenses.find(
+    (td) => td.finalResult === "Passed" && td.defense?.type === "Resit",
+  );
+
+  if (passedMain) {
+    newStatus = "Passed_Main";
+  } else if (passedResit) {
+    newStatus = "Passed_Resit";
+  } else {
+    // If no Passed, check the latest defense result for the final status
+    const latest = topicDefenses[0]; // ordered by id desc
+    if (latest.finalResult === "Failed") {
+      if (latest.defense?.type === "Resit") {
+        newStatus = "Failed_Final";
+      } else if (latest.defense?.type === "Main") {
+        newStatus = "Failed_Main";
+      }
+    } else {
+      newStatus = "Pending";
+    }
+  }
+
+  await tx.topic.update({
+    where: { id: topicId },
+    data: { status: newStatus },
   });
 };

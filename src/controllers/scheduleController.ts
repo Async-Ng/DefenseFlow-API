@@ -542,6 +542,7 @@ export const updateCouncilBoard = async (
  * /api/schedule/{defenseId}/export:
  *   get:
  *     summary: "[ADMIN] Export defense schedule to Excel"
+ *     description: Returns an Excel file with two sheets ("Thông tin Đề tài" and "Thông tin Hội đồng"). "Thông tin Đề tài" includes the "Trạng thái tổng" (Global Status) column.
  *     tags: [Schedule]
  *     parameters:
  *       - in: path

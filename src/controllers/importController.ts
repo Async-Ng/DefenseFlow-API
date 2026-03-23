@@ -210,6 +210,7 @@ export const downloadLecturerTemplate = async (
  * /api/import/topic-results:
  *   post:
  *     summary: "[ADMIN] Import topic results from Excel file"
+ *     description: Imports defense results from an Excel file (using the "Thông tin Hội đồng" sheet format) and automatically synchronizes the Global Topic Status for each topic.
  *     tags: [Import]
  *     requestBody:
  *       required: true
