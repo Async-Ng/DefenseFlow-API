@@ -16,6 +16,21 @@ export class ExportService {
       throw new AppError(404, "Không tìm thấy đợt bảo vệ");
     }
 
+    const topicDefenses = await prisma.topicDefense.findMany({
+      where: { defenseId },
+      include: {
+        topic: {
+          include: {
+            topicSupervisors: {
+              include: { lecturer: true },
+              orderBy: { id: "asc" }
+            }
+          }
+        }
+      },
+      orderBy: { id: "asc" }
+    });
+
     const councilBoards = await prisma.councilBoard.findMany({
       where: {
         defenseDay: {
@@ -34,15 +49,7 @@ export class ExportService {
           include: {
             topicDefense: {
               include: {
-                topic: {
-                  include: {
-                    topicSupervisors: {
-                      include: {
-                        lecturer: true,
-                      },
-                    },
-                  },
-                },
+                topic: true
               },
             },
           },
@@ -56,182 +63,154 @@ export class ExportService {
 
     const workbook = new ExcelJS.Workbook();
 
-    // Group council boards by day
-    const boardsByDay = new Map<string, typeof councilBoards>();
+    // ----------------------------------------------------
+    // Sheet 1: Danh sách Đề tài
+    // ----------------------------------------------------
+    const topicSheet = workbook.addWorksheet("Thông tin Đề tài");
+    topicSheet.mergeCells("A1:H1");
+    const tTitleCell = topicSheet.getCell("A1");
+    tTitleCell.value = `DANH SÁCH ĐỀ TÀI: ${defense.name?.toUpperCase() || ""}`;
+    tTitleCell.font = { bold: true, size: 14 };
+    tTitleCell.alignment = { horizontal: "center" };
+
+    const topicHeaders = [
+      "STT",
+      "Mã đề tài",
+      "Mã nhóm",
+      "Tên đề tài Tiếng Anh/ Tiếng Nhật",
+      "Tên đề tài Tiếng Việt",
+      "GVHD (Tất cả)",
+      "GVHD 1 (Mã GV)",
+      "GVHD 2 (Mã GV)",
+    ];
+    topicSheet.addRow(topicHeaders);
+    const tHeaderRow = topicSheet.getRow(2);
+    tHeaderRow.font = { bold: true };
+    tHeaderRow.alignment = { horizontal: "center", vertical: "middle" };
+    tHeaderRow.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FFD9D9D9" } };
+
+    let tStt = 1;
+    for (const td of topicDefenses) {
+      const topic = td.topic;
+      const supervisors = topic?.topicSupervisors || [];
+      const supervisorsStr = supervisors.map(s => s.lecturer.fullName).join(", ") || "-";
+      const gvhd1 = supervisors[0]?.lecturer.lecturerCode || "-";
+      const gvhd2 = supervisors[1]?.lecturer.lecturerCode || "-";
+
+      const r = topicSheet.addRow([
+        tStt++,
+        topic?.topicCode || "-",
+        topic?.groupCode || "-",
+        topic?.title || "-",
+        topic?.vietnameseTitle || "-",
+        supervisorsStr,
+        gvhd1,
+        gvhd2
+      ]);
+      r.alignment = { wrapText: true, vertical: "middle" };
+    }
+
+    topicSheet.getColumn(1).width = 5;
+    topicSheet.getColumn(2).width = 15;
+    topicSheet.getColumn(3).width = 15;
+    topicSheet.getColumn(4).width = 40;
+    topicSheet.getColumn(5).width = 40;
+    topicSheet.getColumn(6).width = 30;
+    topicSheet.getColumn(7).width = 15;
+    topicSheet.getColumn(8).width = 15;
+
+    // ----------------------------------------------------
+    // Sheet 2: Danh sách Hội đồng
+    // ----------------------------------------------------
+    const boardSheet = workbook.addWorksheet("Thông tin Hội đồng");
+    boardSheet.mergeCells("A1:K1");
+    const bTitleCell = boardSheet.getCell("A1");
+    bTitleCell.value = `LỊCH BẢO VỆ (HỘI ĐỒNG): ${defense.name?.toUpperCase() || ""}`;
+    bTitleCell.font = { bold: true, size: 14 };
+    bTitleCell.alignment = { horizontal: "center" };
+
+    const boardHeaders = [
+      "STT",
+      "Hội đồng",
+      "Ngày bảo vệ",
+      "Thời gian",
+      "Mã đề tài",
+      "Chủ tịch",
+      "Thư ký",
+      "Ủy viên 1",
+      "Ủy viên 2",
+      "Ủy viên 3",
+      "Kết quả (Passed/Failed)"
+    ];
+    boardSheet.addRow(boardHeaders);
+    const bHeaderRow = boardSheet.getRow(2);
+    bHeaderRow.font = { bold: true };
+    bHeaderRow.alignment = { horizontal: "center", vertical: "middle" };
+    bHeaderRow.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FFD9D9D9" } };
+
+    const getMemberByRole = (members: any[], role: string) => {
+      return members.find(m => m.role === role)?.lecturer?.fullName || "-";
+    };
+
+    let bStt = 1;
     for (const board of councilBoards) {
       const dayStr = board.defenseDay.dayDate.toLocaleDateString("vi-VN").replace(/\//g, "-");
-      if (!boardsByDay.has(dayStr)) {
-        boardsByDay.set(dayStr, []);
-      }
-      boardsByDay.get(dayStr)!.push(board);
-    }
+      const boardName = board.boardCode || board.name || "N/A";
 
-    if (boardsByDay.size === 0) {
-      const worksheet = workbook.addWorksheet("Empty Schedule");
-      worksheet.addRow(["No schedule data available for this defense round"]);
-    }
+      const president = getMemberByRole(board.councilBoardMembers, "President");
+      const secretary = getMemberByRole(board.councilBoardMembers, "Secretary");
+      
+      const commissioners = board.councilBoardMembers
+        .filter(m => m.role === "Member")
+        .map(m => m.lecturer?.fullName || "-");
+      const c1 = commissioners[0] || "-";
+      const c2 = commissioners[1] || "-";
+      const c3 = commissioners[2] || "-";
 
-    for (const [dayStr, boards] of boardsByDay.entries()) {
-      const worksheet = workbook.addWorksheet(`Ngày ${dayStr}`);
-
-      // 1. Header Information
-      worksheet.mergeCells("A1:Q1");
-      const titleCell = worksheet.getCell("A1");
-      titleCell.value = `LỊCH BẢO VỆ NGÀY ${dayStr}: ${defense.name?.toUpperCase()}`;
-      titleCell.font = { bold: true, size: 14 };
-      titleCell.alignment = { horizontal: "center" };
-
-      // 2. Column Headers
-      const headers = [
-        "STT",
-        "Ngày",
-        "Hội đồng",
-        "Thời gian",
-        "Mã đề tài",
-        "Mã nhóm",
-        "Tên đề tài Tiếng Anh/ Tiếng Nhật",
-        "Tên đề tài Tiếng Việt",
-        "GVHD",
-        "GVHD1",
-        "GVHD2",
-        "Chủ tịch",
-        "Thư ký",
-        "Ủy viên 1",
-        "Ủy viên 2",
-        "Ủy viên 3", // Add more if needed, typically boards have 3-5 members
-        "Kết quả (Passed/Failed)",
-      ];
-      worksheet.addRow(headers);
-
-      // Style headers
-      const headerRow = worksheet.getRow(2);
-      headerRow.font = { bold: true };
-      headerRow.alignment = { horizontal: "center", vertical: "middle" };
-      headerRow.fill = {
-        type: "pattern",
-        pattern: "solid",
-        fgColor: { argb: "FFD9D9D9" },
-      };
-
-      // Helper to extract member by role
-      const getMemberByRole = (members: any[], role: string) => {
-        return members.find(m => m.role === role)?.lecturer?.fullName || "-";
-      };
-
-      // 3. Data Rows
-      let stt = 1;
-      for (const board of boards) {
-        const boardName = board.boardCode || board.name || "N/A";
-        
-        // Members extraction
-        const president = getMemberByRole(board.councilBoardMembers, "President");
-        const secretary = getMemberByRole(board.councilBoardMembers, "Secretary");
-        
-        // Extract commissioners (ỦY VIÊN / MEMBER)
-        const commissioners = board.councilBoardMembers
-          .filter(m => m.role === "Member")
-          .map(m => m.lecturer?.fullName || "-");
-          
-        const commissioner1 = commissioners[0] || "-";
-        const commissioner2 = commissioners[1] || "-";
-        const commissioner3 = commissioners[2] || "-";
-
-        if (board.defenseCouncils.length === 0) {
-          // Empty board
-          const rowData = [
-            stt++,
-            dayStr,
-            boardName,
-            "Chưa xếp lịch",
-            "-", // Mã đề tài
-            "-", // Mã nhóm
-            "-", // Tên EN
-            "-", // Tên VI
-            "-", // GVHD
-            "-", // GVHD1
-            "-", // GVHD2
-            president,
-            secretary,
-            commissioner1,
-            commissioner2,
-            commissioner3,
-            "", // Kết quả
-          ];
-          const row = worksheet.addRow(rowData);
-          row.alignment = { wrapText: true, vertical: "middle" };
-          continue;
-        }
-
-        for (const dc of board.defenseCouncils) {
-          const startTime = dc.startTime ? dc.startTime.toLocaleTimeString("vi-VN", { hour: '2-digit', minute: '2-digit' }) : "N/A";
-          const endTime = dc.endTime ? dc.endTime.toLocaleTimeString("vi-VN", { hour: '2-digit', minute: '2-digit' }) : "N/A";
-          const topic = dc.topicDefense?.topic;
-          
-          const supervisorsStr = topic?.topicSupervisors
-            .map(s => s.lecturer.fullName)
-            .join(", ") || "-";
-            
-          const gvhd1 = topic?.topicSupervisors?.[0]?.lecturer.lecturerCode || "-";
-          const gvhd2 = topic?.topicSupervisors?.[1]?.lecturer.lecturerCode || "-";
-
-          const rowData = [
-            stt++,
-            dayStr,
-            boardName,
-            `${startTime} - ${endTime}`,
-            topic?.topicCode || "-",
-            topic?.groupCode || "-",
-            topic?.title || "-",
-            topic?.vietnameseTitle || "-",
-            supervisorsStr,
-            gvhd1,
-            gvhd2,
-            president,
-            secretary,
-            commissioner1,
-            commissioner2,
-            commissioner3,
-            "", // Kết quả (luôn để trống theo yêu cầu)
-          ];
-
-          const row = worksheet.addRow(rowData);
-          row.alignment = { wrapText: true, vertical: "middle" };
-
-          // Add dropdown validation to the result cell if there's a topic
-          if (topic?.topicCode && topic.topicCode !== "-") {
-            const resultCell = row.getCell(17);
-            resultCell.dataValidation = {
-              type: 'list',
-              allowBlank: true,
-              formulae: ['"Passed,Failed"'],
-              showErrorMessage: true,
-              errorStyle: 'stop',
-              errorTitle: 'Giá trị không hợp lệ',
-              error: 'Vui lòng chọn kết quả từ danh sách (Passed, Failed)',
-            };
-          }
-        }
+      if (board.defenseCouncils.length === 0) {
+        const r = boardSheet.addRow([
+          bStt++, boardName, dayStr, "Chưa xếp lịch", "-", president, secretary, c1, c2, c3, ""
+        ]);
+        r.alignment = { wrapText: true, vertical: "middle" };
+        continue;
       }
 
-      // Adjust column widths
-      worksheet.getColumn(1).width = 5;   // STT
-      worksheet.getColumn(2).width = 12;  // Ngày
-      worksheet.getColumn(3).width = 15;  // Hội đồng
-      worksheet.getColumn(4).width = 15;  // Thời gian
-      worksheet.getColumn(5).width = 15;  // Mã đề tài
-      worksheet.getColumn(6).width = 15;  // Mã nhóm
-      worksheet.getColumn(7).width = 40;  // Tên đề tài Tiếng Anh/ Tiếng Nhật
-      worksheet.getColumn(8).width = 40;  // Tên đề tài Tiếng Việt
-      worksheet.getColumn(9).width = 25;  // GVHD
-      worksheet.getColumn(10).width = 15; // GVHD1
-      worksheet.getColumn(11).width = 15; // GVHD2
-      worksheet.getColumn(12).width = 25; // Chủ tịch
-      worksheet.getColumn(13).width = 25; // Thư ký
-      worksheet.getColumn(14).width = 25; // Ủy viên 1
-      worksheet.getColumn(15).width = 25; // Ủy viên 2
-      worksheet.getColumn(16).width = 25; // Ủy viên 3
-      worksheet.getColumn(17).width = 25; // Kết quả
+      for (const dc of board.defenseCouncils) {
+        const startTime = dc.startTime ? dc.startTime.toLocaleTimeString("vi-VN", { hour: '2-digit', minute: '2-digit' }) : "N/A";
+        const endTime = dc.endTime ? dc.endTime.toLocaleTimeString("vi-VN", { hour: '2-digit', minute: '2-digit' }) : "N/A";
+        const topicCode = dc.topicDefense?.topic?.topicCode || "-";
+
+        const r = boardSheet.addRow([
+          bStt++, boardName, dayStr, `${startTime} - ${endTime}`, topicCode, president, secretary, c1, c2, c3, ""
+        ]);
+        r.alignment = { wrapText: true, vertical: "middle" };
+
+        if (topicCode !== "-") {
+          const resultCell = r.getCell(11);
+          resultCell.dataValidation = {
+            type: 'list',
+            allowBlank: true,
+            formulae: ['"Passed,Failed"'],
+            showErrorMessage: true,
+            errorStyle: 'stop',
+            errorTitle: 'Giá trị không hợp lệ',
+            error: 'Vui lòng chọn kết quả từ danh sách (Passed, Failed)'
+          };
+        }
+      }
     }
+
+    boardSheet.getColumn(1).width = 5;  // STT
+    boardSheet.getColumn(2).width = 15; // Hội đồng
+    boardSheet.getColumn(3).width = 15; // Ngày
+    boardSheet.getColumn(4).width = 20; // Thời gian
+    boardSheet.getColumn(5).width = 15; // Mã đề tài
+    boardSheet.getColumn(6).width = 25; // Chủ tịch
+    boardSheet.getColumn(7).width = 25; // Thư ký
+    boardSheet.getColumn(8).width = 25; // Ủy viên 1
+    boardSheet.getColumn(9).width = 25; // Ủy viên 2
+    boardSheet.getColumn(10).width = 25; // Ủy viên 3
+    boardSheet.getColumn(11).width = 25; // Kết quả
 
     return (await workbook.xlsx.writeBuffer()) as unknown as Buffer;
   }

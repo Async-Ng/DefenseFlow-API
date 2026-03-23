@@ -383,32 +383,40 @@ export class ImportService {
 
     const validEnumValues = ["Passed", "Failed"];
 
-    workbook.worksheets.forEach((worksheet) => {
-      worksheet.eachRow((row, rowNum) => {
-        if (rowNum <= 2) return; // Skip Header rows (Title + Columns)
-
-        // Column 5: Mã đề tài, Column 17: Kết quả
-        const topicCode = row.getCell(5).text?.toString().trim();
-        const resultText = row.getCell(17).text?.toString().trim();
-
-        if (!topicCode || topicCode === "-" || !resultText) return;
-
-        // Normalize result
-        let result = resultText.charAt(0).toUpperCase() + resultText.slice(1).toLowerCase();
-        if (result === "Pass") result = "Passed";
-        if (result === "Fail") result = "Failed";
-
-        if (!validEnumValues.includes(result)) {
-          errors.push({
-            sheet: worksheet.name,
-            row: rowNum,
-            message: `Invalid result '${resultText}' for topic ${topicCode}. Must be Passed or Failed.`,
-          });
-          return;
-        }
-
-        validResults.push({ topicCode, result });
+    const worksheet = workbook.getWorksheet("Thông tin Hội đồng");
+    if (!worksheet) {
+      errors.push({
+        sheet: "N/A",
+        row: 0,
+        message: "Không tìm thấy sheet 'Thông tin Hội đồng' trong file",
       });
+      return { successCount: 0, errors };
+    }
+
+    worksheet.eachRow((row, rowNum) => {
+      if (rowNum <= 2) return; // Skip Header rows (Title + Columns)
+
+      // Column 5: Mã đề tài, Column 11: Kết quả
+      const topicCode = row.getCell(5).text?.toString().trim();
+      const resultText = row.getCell(11).text?.toString().trim();
+
+      if (!topicCode || topicCode === "-" || !resultText) return;
+
+      // Normalize result
+      let result = resultText.charAt(0).toUpperCase() + resultText.slice(1).toLowerCase();
+      if (result === "Pass") result = "Passed";
+      if (result === "Fail") result = "Failed";
+
+      if (!validEnumValues.includes(result)) {
+        errors.push({
+          sheet: worksheet.name,
+          row: rowNum,
+          message: `Invalid result '${resultText}' for topic ${topicCode}. Must be Passed or Failed.`,
+        });
+        return;
+      }
+
+      validResults.push({ topicCode, result });
     });
 
     if (validResults.length > 0) {
