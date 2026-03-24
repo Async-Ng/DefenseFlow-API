@@ -130,5 +130,15 @@ export const findByTopicAndDefense = async (topicId: number, defenseId: number) 
  * Delete a TopicDefense by ID
  */
 export const remove = async (id: number) => {
-  return await prisma.topicDefense.delete({ where: { id } });
+  return await prisma.$transaction(async (tx) => {
+    // 1. Delete associated DefenseCouncil records
+    await tx.defenseCouncil.deleteMany({
+      where: { registrationId: id }
+    });
+
+    // 2. Delete the TopicDefense record
+    return await tx.topicDefense.delete({
+      where: { id }
+    });
+  });
 };
