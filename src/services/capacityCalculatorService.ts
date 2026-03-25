@@ -8,6 +8,7 @@ import type {
   CapacityCalculationRequest,
   CapacityCalculationResponse,
   CapacityAnalysis,
+  DayCapacityAnalysis,
   CapacityRecommendations,
   DefenseDayAdjustment,
 } from "../types/index.js";
@@ -48,7 +49,6 @@ export async function calculateCapacity(
 
   // Get defense data - priority: specified defenseId > first defense from semester > null
   let defense = null;
-  let currentDefenseDays = null;
 
   if (defenseId) {
     // Use specified defense
@@ -63,22 +63,47 @@ export async function calculateCapacity(
       throw new Error(`Defense with ID ${defenseId} not found`);
     }
 
-    currentDefenseDays = defense.defenseDays.length;
   } else if (semester.defenses && semester.defenses.length > 0) {
     // Auto-select first defense from semester if exists
     defense = semester.defenses[0];
-    currentDefenseDays = defense.defenseDays?.length || null;
   }
 
-  // Auto-derive configuration values with priority:
-  // 1. Defense data (if defense exists)
-  // 2. Default constant
+  // Calculate total configured councils and per-day analysis
   const timePerTopic = defense?.timePerTopic || DEFAULT_TIME_PER_TOPIC;
   const workHoursPerDay = DEFAULT_WORK_HOURS_PER_DAY;
   const councilBoardSize = DEFAULT_COUNCIL_BOARD_SIZE;
+  const topicsPerBoard = Math.floor(workHoursPerDay / timePerTopic);
 
-  // Calculate total councils currently configured
-  const totalConfiguredCouncils = defense?.defenseDays?.reduce((sum, day) => sum + (day.maxCouncils || 1), 0) || 0;
+  const days: DayCapacityAnalysis[] = [];
+  let totalConfiguredCouncils = 0;
+
+  if (defense?.defenseDays) {
+    for (const day of defense.defenseDays) {
+      // Count available lecturers for this specific day
+      const availableLecturers = await prisma.lecturerDayAvailability.count({
+        where: {
+          defenseDayId: day.id,
+          status: "Available",
+        },
+      });
+
+      const maxCouncils = day.maxCouncils || 1;
+      const potentialCouncils = Math.floor(availableLecturers / councilBoardSize);
+      const isUnderstaffed = potentialCouncils < maxCouncils;
+
+      days.push({
+        defenseDayId: day.id,
+        date: day.dayDate,
+        maxCouncils,
+        availableLecturers,
+        potentialCouncils,
+        isUnderstaffed,
+        maxTopics: maxCouncils * topicsPerBoard,
+      });
+
+      totalConfiguredCouncils += maxCouncils;
+    }
+  }
 
   // Count topics in semester
   const totalTopics = await prisma.topic.count({
@@ -86,18 +111,19 @@ export async function calculateCapacity(
   });
 
   // Build analysis object
-  const analysis: any = {
+  const analysis: CapacityAnalysis = {
     totalTopics,
     timePerTopic,
     workHoursPerDay,
     councilBoardSize,
     totalConfiguredCouncils,
+    days,
   };
 
   // Calculate recommendations
   const recommendations = calculateRecommendations(
     analysis,
-    currentDefenseDays
+    defense?.defenseDays?.length || null
   );
 
   // Generate warnings and suggestions
@@ -258,21 +284,42 @@ function generateWarnings(
   recommendations: CapacityRecommendations
 ): string[] {
   const warnings: string[] = [];
-  const { totalTopics } = analysis;
-  const { currentDefenseDays, totalCapacity } = recommendations;
+  const { totalTopics, days } = analysis;
+  const { totalCapacity } = recommendations;
 
   // Warning if no topics
   if (totalTopics === 0) {
     warnings.push("Học kỳ chưa có đề tài nào. Vui lòng import đề tài trước.");
   }
 
-  // Warning if defense days insufficient
-  if (currentDefenseDays !== null && currentDefenseDays > 0) {
-    if (totalTopics > totalCapacity) {
+  // Warning for understaffed days
+  let totalPracticalCapacity = 0;
+  const firstDay = days[0];
+  const topicsPerBoard = firstDay && firstDay.maxCouncils > 0 
+    ? firstDay.maxTopics / firstDay.maxCouncils 
+    : (analysis.workHoursPerDay / analysis.timePerTopic);
+
+  for (const day of days) {
+    const practicalCouncils = Math.min(day.maxCouncils, day.potentialCouncils);
+    totalPracticalCapacity += practicalCouncils * topicsPerBoard;
+
+    if (day.isUnderstaffed) {
+      const dateStr = new Date(day.date).toLocaleDateString("vi-VN");
       warnings.push(
-        `Đợt bảo vệ hiện tại (${currentDefenseDays} ngày) chỉ có thể chấm tối đa ${totalCapacity} đề tài, trong khi có ${totalTopics} đề tài thực tế.`
+        `Ngày ${dateStr}: Cấu hình ${day.maxCouncils} hội đồng nhưng chỉ đủ giảng viên cho ${day.potentialCouncils} hội đồng.`
       );
     }
+  }
+
+  // Warning if defense capacity insufficient
+  if (totalTopics > totalCapacity) {
+    warnings.push(
+      `Tổng công suất cấu hình (${totalCapacity} đề tài) không đủ cho ${totalTopics} đề tài thực tế.`
+    );
+  } else if (totalTopics > totalPracticalCapacity) {
+    warnings.push(
+      `Mặc dù cấu hình đủ, nhưng do thiếu giảng viên ở một số ngày, công suất thực tế chỉ đạt ${Math.floor(totalPracticalCapacity)} đề tài, không đủ cho ${totalTopics} đề tài.`
+    );
   }
 
   // Warning if too many topics
@@ -281,10 +328,6 @@ function generateWarnings(
       `Số lượng đề tài rất lớn (${totalTopics}). Cần lập kế hoạch cực kỳ kỹ lưỡng.`
     );
   }
-
-  // Warning if suggested boards per day is near/at limit
-  // Note: We removed the specific limit check here as it's now per-day. 
-  // It's checked during actual scheduling.
   
   return warnings;
 }
@@ -297,14 +340,15 @@ function generateSuggestions(
   recommendations: CapacityRecommendations
 ): string[] {
   const suggestions: string[] = [];
-  const { totalTopics, councilBoardSize } = analysis;
+  const { totalTopics, councilBoardSize, days } = analysis;
   const {
     recommendedLecturers,
     topicsPerCouncilBoardPerDay,
     defenseDayAdjustment,
-    currentDefenseDays,
     recommendedDays,
   } = recommendations;
+
+  const currentDefenseDays = days.length;
 
   // Suggest lecturer count
   if (totalTopics > 0) {
@@ -318,32 +362,28 @@ function generateSuggestions(
     `Mỗi hội đồng nên chấm khoảng ${topicsPerCouncilBoardPerDay.minimum}-${topicsPerCouncilBoardPerDay.maximum} đề tài mỗi ngày.`
   );
 
+  // Suggestions for understaffed days
+  for (const day of days) {
+    if (day.isUnderstaffed) {
+      const dateStr = new Date(day.date).toLocaleDateString("vi-VN");
+      suggestions.push(
+        `Ngày ${dateStr}: Hãy kêu gọi thêm ít nhất ${day.maxCouncils * 5 - day.availableLecturers} giảng viên rảnh hoặc giảm số hội đồng xuống ${day.potentialCouncils}.`
+      );
+    }
+  }
+
   // Suggest defense day adjustment
   if (defenseDayAdjustment?.shouldAdjust) {
     const change = defenseDayAdjustment.suggestedChange;
     if (change > 0) {
       suggestions.push(
-        `Đề xuất tăng thêm ${change} ngày bảo vệ (tổng ${recommendedDays} ngày) hoặc tăng số hội đồng song song lên ${Math.ceil(totalTopics / (topicsPerCouncilBoardPerDay.average * currentDefenseDays!))} để giảm áp lực.`
+        `Đề xuất tăng thêm ${change} ngày bảo vệ (tổng ${recommendedDays} ngày) hoặc tăng số hội đồng trên các ngày có nhiều giảng viên rảnh.`
       );
     } else {
       suggestions.push(
         `Có thể giảm số ngày từ ${currentDefenseDays} xuống ${recommendedDays} ngày để tối ưu hóa thời gian.`
       );
     }
-  }
-
-  // Suggest increasing parallel boards if days are limited
-  if (currentDefenseDays !== null && currentDefenseDays < recommendedDays) {
-    suggestions.push(
-      `Nếu không thể thêm ngày bảo vệ, hãy cân nhắc tăng 'Giới hạn hội đồng song song' của từng ngày để giải quyết ${totalTopics} đề tài.`
-    );
-  }
-
-  // Suggest buffer days for large defenses
-  if (totalTopics > 100 && recommendedDays < 5) {
-    suggestions.push(
-      `Với ${totalTopics} đề tài, nên cân nhắc thêm 1-2 ngày dự phòng để xử lý các trường hợp bất ngờ.`
-    );
   }
 
   return suggestions;

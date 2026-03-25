@@ -662,6 +662,19 @@ export type CapacityRecommendations = {
 };
 
 /**
+ * Detailed analysis per defense day
+ */
+export type DayCapacityAnalysis = {
+  defenseDayId: number;
+  date: Date;
+  maxCouncils: number;
+  availableLecturers: number;
+  potentialCouncils: number;
+  isUnderstaffed: boolean;
+  maxTopics: number;
+};
+
+/**
  * Analysis data for capacity calculation
  */
 export type CapacityAnalysis = {
@@ -669,6 +682,8 @@ export type CapacityAnalysis = {
   timePerTopic: number;
   workHoursPerDay: number;
   councilBoardSize: number;
+  totalConfiguredCouncils: number;
+  days: DayCapacityAnalysis[];
 };
 
 /**
