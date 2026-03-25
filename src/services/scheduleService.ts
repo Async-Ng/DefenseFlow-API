@@ -21,6 +21,7 @@ import {
   CouncilBoardSort,
   PaginatedResult,
 } from "../types/index.js";
+import { ensureDefenseNotLocked, ensureDefenseDayNotLocked } from "../utils/lockUtils.js";
 
 // =============================================================================
 // TYPES
@@ -774,6 +775,9 @@ const persistSchedule = async (defenseId: number, boards: PlannedBoard[]): Promi
 // =============================================================================
 
 export const generateSchedule = async (defenseId: number) => {
+  // Check if defense is locked
+  await ensureDefenseNotLocked(defenseId);
+
   const ctx = await fetchSchedulingContext(defenseId);
   validateDefenseReadiness(ctx);
   validateCapacity(ctx);
@@ -822,6 +826,9 @@ export const getCouncilBoardById = async (id: number): Promise<CouncilBoard> => 
 };
 
 export const publishSchedule = async (defenseId: number) => {
+  // Check if defense is locked
+  await ensureDefenseNotLocked(defenseId);
+
   // 1. Validation: Ensure all topics for this defense are scheduled
   const unscheduledTopics = await prisma.topicDefense.findMany({
     where: {
@@ -882,8 +889,16 @@ export const updateDefenseCouncil = async (
   defenseCouncilId: number,
   data: { startTime?: Date; endTime?: Date; councilBoardId?: number | null }
 ) => {
-  const dc = await prisma.defenseCouncil.findUnique({ where: { id: defenseCouncilId } });
+  const dc = await prisma.defenseCouncil.findUnique({ 
+    where: { id: defenseCouncilId },
+    include: { councilBoard: { select: { defenseDayId: true } } }
+  });
   if (!dc) throw new AppError(404, "Không tìm thấy lịch bảo vệ (Defense Council)");
+
+  // Check if locked
+  if (dc.councilBoard?.defenseDayId) {
+    await ensureDefenseDayNotLocked(dc.councilBoard.defenseDayId);
+  }
 
   if (data.councilBoardId && data.councilBoardId !== dc.councilBoardId) {
     const board = await prisma.councilBoard.findUnique({ where: { id: data.councilBoardId } });
@@ -911,6 +926,9 @@ export const updateCouncilBoard = async (
   });
 
   if (!board) throw new AppError(404, "Không tìm thấy Hội đồng bảo vệ");
+
+  // Check if locked
+  await ensureDefenseDayNotLocked(councilBoardId);
 
   const defenseId = board.defenseDay?.defenseId;
   const defenseDayId = board.defenseDayId;
@@ -1107,6 +1125,15 @@ export const updateCouncilBoard = async (
 
 
 export const deleteDefenseCouncil = async (id: number) => {
+  const dc = await prisma.defenseCouncil.findUnique({
+    where: { id },
+    include: { councilBoard: { select: { defenseDayId: true } } }
+  });
+  
+  if (dc?.councilBoard?.defenseDayId) {
+    await ensureDefenseDayNotLocked(dc.councilBoard.defenseDayId);
+  }
+
   return prisma.defenseCouncil.delete({
     where: { id },
   });
@@ -1118,6 +1145,9 @@ export const createDefenseCouncil = async (data: {
   startTime?: Date;
   endTime?: Date;
 }) => {
+  // Check if locked
+  await ensureDefenseDayNotLocked(data.councilBoardId);
+
   let { startTime, endTime } = data;
 
   if (!startTime || !endTime) {

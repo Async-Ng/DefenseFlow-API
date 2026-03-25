@@ -1,5 +1,6 @@
 import * as lecturerDefenseConfigRepo from "../repositories/lecturerDefenseConfigRepository.js";
 import { LecturerDefenseConfigInput, LecturerDefenseConfig, UpdateLecturerDefenseConfigInput } from "../types/index.js";
+import { ensureDefenseNotLocked } from "../utils/lockUtils.js";
 
 export const getLecturerDefenseConfig = async (
   lecturerId: number,
@@ -12,6 +13,9 @@ export const createLecturerDefenseConfig = async (
   input: LecturerDefenseConfigInput
 ): Promise<LecturerDefenseConfig> => {
   const { lecturerId, defenseId, minTopics, maxTopics } = input;
+  
+  // Check if defense is locked
+  await ensureDefenseNotLocked(defenseId);
 
   // Check existence
   const existing = await lecturerDefenseConfigRepo.getByLecturerAndDefense(lecturerId, defenseId);
@@ -43,6 +47,11 @@ export const updateLecturerDefenseConfig = async (
   const existing = await lecturerDefenseConfigRepo.getById(id);
   if (!existing) {
     throw new Error("Không tìm thấy cấu hình");
+  }
+
+  // Check if defense is locked
+  if (existing.defenseId) {
+    await ensureDefenseNotLocked(existing.defenseId);
   }
 
   // Determine effective values (merging)
@@ -97,5 +106,11 @@ export const getLecturerDefenseConfigById = async (id: number): Promise<Lecturer
 export const deleteLecturerDefenseConfig = async (id: number): Promise<void> => {
   const config = await lecturerDefenseConfigRepo.getById(id);
   if (!config) throw new Error("Không tìm thấy cấu hình");
+  
+  // Check if defense is locked
+  if (config.defenseId) {
+    await ensureDefenseNotLocked(config.defenseId);
+  }
+
   await lecturerDefenseConfigRepo.deleteById(id);
 };

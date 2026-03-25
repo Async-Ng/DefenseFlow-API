@@ -65,6 +65,8 @@ export const getSemesterById = async (
   return semester;
 };
 
+import { ensureSemesterNotFinished } from "../utils/lockUtils.js";
+
 /**
  * Update semester
  */
@@ -77,6 +79,9 @@ export const updateSemester = async (
   if (!existing) {
     throw new Error(`Không tìm thấy học kỳ với ID ${id}`);
   }
+
+  // Check if semester is finished
+  await ensureSemesterNotFinished(id);
 
   // If updating semester code, check for duplicates
   if (data.semesterCode && data.semesterCode !== existing.semesterCode) {
@@ -118,9 +123,13 @@ export const deleteSemester = async (id: number): Promise<Semester> => {
     throw new Error(`Không tìm thấy học kỳ với ID ${id}`);
   }
 
+  // Check if semester is finished
+  await ensureSemesterNotFinished(id);
+
   // Cascade-delete semester and all associated data in a single transaction
   return await semesterRepository.deleteSemesterCascade(id);
 };
+
 
 /**
  * Check if updating semester dates would conflict with existing defenses

@@ -1,6 +1,7 @@
 import * as topicDefenseRepository from "../repositories/topicDefenseRepository.js";
 import { prisma } from "../config/prisma.js";
 import { CreateTopicDefenseInput, TopicDefenseFilters } from "../types/index.js";
+import { ensureDefenseNotLocked } from "../utils/lockUtils.js";
 
 /**
  * Register a topic into a defense
@@ -9,6 +10,9 @@ export const createTopicDefense = async (data: CreateTopicDefenseInput) => {
   // Validate defense exists
   const defense = await prisma.defense.findUnique({ where: { id: data.defenseId } });
   if (!defense) throw new Error(`Không tìm thấy đợt bảo vệ với ID ${data.defenseId}`);
+
+  // Check if defense is locked
+  await ensureDefenseNotLocked(data.defenseId);
 
   // Validate defense is open
   if (defense.status !== "Open") {
@@ -84,6 +88,11 @@ export const deleteTopicDefense = async (id: number) => {
   const record = await topicDefenseRepository.findById(id);
   if (!record) throw new Error("Không tìm thấy thông tin đăng ký đề tài");
   
+  // Check if defense is locked
+  if (record.defenseId) {
+    await ensureDefenseNotLocked(record.defenseId);
+  }
+
   // Optional: Add logic to prevent deletion if schedule is already published, etc.
   if (record.defense?.isSchedulePublished) {
     throw new Error("Không thể xóa đăng ký khi lịch bảo vệ đã được công bố");

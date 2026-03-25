@@ -14,6 +14,7 @@ import type {
   DefenseDayWithRelations,
 } from "../types/index.js";
 import { calculateEnhancedDefenseDay } from "../utils/defenseDayStatus.js";
+import { ensureDefenseNotLocked } from "../utils/lockUtils.js";
 
 /**
  * Get all defense days for a specific defense (for active defense)
@@ -155,12 +156,11 @@ export const updateAvailability = async (
     throw new Error(`Không tìm thấy đợt bảo vệ`);
   }
 
+  // Check if defense is locked
+  await ensureDefenseNotLocked(defenseDay.defenseId);
+
   if (!defense.isAvailabilityPublished) {
     throw new Error("Lịch bảo vệ chưa được công bố. Vui lòng chờ admin mở đợt đăng ký.");
-  }
-
-  if (defense.status === "Locked") {
-    throw new Error("Đợt đăng ký đã đóng để tiến hành xếp lịch");
   }
 
   validateAvailabilityWindow(defense);
@@ -216,10 +216,6 @@ export const batchUpdateAvailability = async (
       throw new Error("Lịch bảo vệ chưa được công bố. Vui lòng chờ admin mở đợt đăng ký.");
     }
 
-    if (defense.status === "Locked") {
-      throw new Error("Đợt đăng ký đã đóng để tiến hành xếp lịch");
-    }
-
     validateAvailabilityWindow(defense);
     await validateLecturerConfigured(lecturerId, defenseId);
   }
@@ -259,12 +255,11 @@ export const removeAvailability = async (
     throw new Error(`Không tìm thấy đợt bảo vệ`);
   }
 
+  // Check if defense is locked
+  await ensureDefenseNotLocked(defenseDay.defenseId);
+
   if (!defense.isAvailabilityPublished) {
     throw new Error("Lịch bảo vệ chưa được công bố. Vui lòng chờ admin mở đợt đăng ký.");
-  }
-
-  if (defense.status === "Locked") {
-    throw new Error("Đợt đăng ký đã đóng để tiến hành xếp lịch");
   }
 
   validateAvailabilityWindow(defense);

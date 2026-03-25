@@ -151,6 +151,8 @@ export const getDefenseById = async (
   return defense as DefenseWithRelations;
 };
 
+import { ensureDefenseNotLocked } from "../utils/lockUtils.js";
+
 /**
  * Update defense
  */
@@ -163,6 +165,9 @@ export const updateDefense = async (
   if (!existing) {
     throw new Error(`Không tìm thấy đợt bảo vệ với ID ${id}`);
   }
+
+  // Check if defense is locked (or parent semester is finished)
+  await ensureDefenseNotLocked(id);
 
   // If updating defense code, check for duplicates
   if (data.defenseCode && data.defenseCode !== existing.defenseCode) {
@@ -230,6 +235,7 @@ export const updateDefense = async (
 
 /**
  * Delete defense
+
  */
 export const deleteDefense = async (id: number): Promise<Defense> => {
   // Check if defense exists
@@ -238,12 +244,16 @@ export const deleteDefense = async (id: number): Promise<Defense> => {
     throw new Error(`Defense with ID ${id} not found`);
   }
 
+  // Check if defense is locked
+  await ensureDefenseNotLocked(id);
+
   // Delete defense (cascading handled in repository transaction)
   return await defenseRepository.deleteDefense(id);
 };
 
 /**
  * Publish availability registration for a defense
+
  * Once published, lecturers can view and register their availability
  */
 export const publishAvailability = async (
@@ -255,6 +265,9 @@ export const publishAvailability = async (
   if (!existing) {
     throw new Error(`Defense with ID ${id} not found`);
   }
+
+  // Check if defense is locked
+  await ensureDefenseNotLocked(id);
 
   if (existing.isAvailabilityPublished) {
     throw new Error(
@@ -292,6 +305,10 @@ export const importFailedTopics = async (resitDefenseId: number): Promise<{ impo
   if (!targetDefense) {
     throw new Error(`Defense with ID ${resitDefenseId} not found`);
   }
+
+  // Check if target defense is locked
+  await ensureDefenseNotLocked(resitDefenseId);
+
   if (targetDefense.type !== "Resit") {
     throw new Error(`Target defense '${targetDefense.defenseCode}' must be a Resit defense`);
   }
@@ -339,3 +356,5 @@ export const importFailedTopics = async (resitDefenseId: number): Promise<{ impo
 
   return { importedCount: newFailedTopicIds.length };
 };
+
+

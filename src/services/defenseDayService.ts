@@ -1,5 +1,6 @@
 import * as defenseDayRepository from "../repositories/defenseDayRepository.js";
 import { DefenseDay } from "../../generated/prisma/client.js";
+import { ensureDefenseNotLocked } from "../utils/lockUtils.js";
 
 /**
  * Update a defense day
@@ -12,6 +13,9 @@ export const updateDefenseDay = async (
   if (!existing) {
     throw new Error(`DefenseDay with ID ${id} not found`);
   }
+
+  // Check if defense is locked
+  await ensureDefenseNotLocked(existing.defenseId);
 
   const updateData: any = {};
   if (data.dayDate) updateData.dayDate = new Date(data.dayDate);
@@ -46,6 +50,9 @@ export const deleteDefenseDay = async (id: number): Promise<DefenseDay> => {
   if (!existing) {
     throw new Error(`DefenseDay with ID ${id} not found`);
   }
+
+  // Check if defense is locked
+  await ensureDefenseNotLocked(existing.defenseId);
 
   // Optional dependency check before delete (like related schedules)
   return await defenseDayRepository.remove(id);

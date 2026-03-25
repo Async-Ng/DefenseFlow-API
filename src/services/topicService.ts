@@ -6,6 +6,7 @@ import {
   UpdateTopicInput,
   CreateTopicInput,
 } from "../types/index.js";
+import { ensureSemesterNotFinished, ensureTopicNotLocked, ensureDefenseNotLocked } from "../utils/lockUtils.js";
 
 /**
  * Create a new topic
@@ -16,6 +17,9 @@ export const createTopic = async (data: CreateTopicInput) => {
   if (!semester) {
     throw new Error(`Không tìm thấy học kỳ với ID ${data.semesterId}`);
   }
+
+  // Ensure semester is not finished
+  await ensureSemesterNotFinished(data.semesterId);
 
   // Validate unique topicCode
   const existing = await topicRepository.findByCode(data.topicCode);
@@ -57,6 +61,9 @@ export const updateTopic = async (id: number, data: UpdateTopicInput) => {
     throw new Error("Không tìm thấy đề tài");
   }
 
+  // Ensure topic is not locked (semester not finished)
+  await ensureTopicNotLocked(id);
+
   // Check unique constraints if topicCode is being updated
   if (data.topicCode && data.topicCode !== topic.topicCode) {
     const existing = await topicRepository.findByCode(data.topicCode);
@@ -86,6 +93,9 @@ export const deleteTopic = async (id: number) => {
     throw new Error("Không tìm thấy đề tài");
   }
 
+  // Ensure topic is not locked
+  await ensureTopicNotLocked(id);
+
   // Fully delete the topic and all its associated records (supervisors, defenses, councils)
   await topicRepository.deleteTopic(id);
   
@@ -114,6 +124,7 @@ export const updateTopicResult = async (
     data.result,
   );
 };
+
 /**
  * Update results of multiple topics for a specific defense
  */
@@ -121,6 +132,9 @@ export const updateTopicResultsBulk = async (
   defenseId: number,
   topicResults: { topicCode: string; result: any }[]
 ) => {
+  // Ensure defense is not locked
+  await ensureDefenseNotLocked(defenseId);
+
   // Simple validation for result values
   for (const item of topicResults) {
     if (!["Pending", "Passed", "Failed"].includes(item.result)) {
@@ -130,3 +144,5 @@ export const updateTopicResultsBulk = async (
 
   return await topicRepository.updateTopicDefenseResultByCodes(defenseId, topicResults);
 };
+
+
