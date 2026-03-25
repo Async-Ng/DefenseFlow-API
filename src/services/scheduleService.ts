@@ -904,10 +904,16 @@ export const updateCouncilBoard = async (
 
   const board = await prisma.councilBoard.findUnique({
     where: { id: councilBoardId },
-    include: { councilBoardMembers: true },
+    include: { 
+      councilBoardMembers: true,
+      defenseDay: true,
+    },
   });
 
   if (!board) throw new AppError(404, "Không tìm thấy Hội đồng bảo vệ");
+
+  const defenseId = board.defenseDay?.defenseId;
+  const defenseDayId = board.defenseDayId;
 
   // 1. Gather all new IDs (explicitly provided or from current state if not provided)
   const current = board.councilBoardMembers;
@@ -917,6 +923,30 @@ export const updateCouncilBoard = async (
 
   const allIds = [newPresidentId, newSecretaryId, ...(newMemberIds || [])].filter((id): id is number => id != null);
   
+  // 1.5 Fetch detailed info for validation
+  const lecturers = await prisma.lecturer.findMany({
+    where: { id: { in: allIds } },
+    include: {
+      lecturerDayAvailability: { where: { defenseDayId: defenseDayId } },
+      lecturerDefenseConfigs: { where: { defenseId: defenseId } },
+      lecturerQualifications: { include: { qualification: true } },
+    }
+  });
+
+  const lecturerBoardsCount = await prisma.councilBoardMember.groupBy({
+    by: ['lecturerId'],
+    where: {
+      lecturerId: { in: allIds },
+      councilBoard: {
+        defenseDay: { defenseId: defenseId },
+        id: { not: councilBoardId }
+      }
+    },
+    _count: { id: true }
+  });
+
+  const countMap = new Map(lecturerBoardsCount.map(c => [c.lecturerId, c._count.id]));
+
   // 2. Intra-board uniqueness check
   const uniqueIds = new Set(allIds);
   if (uniqueIds.size !== allIds.length) {
@@ -946,29 +976,39 @@ export const updateCouncilBoard = async (
     );
   }
 
-  // 4. Role Eligibility Check (GTDSS-11 Scenario 3)
-  // [TEMPORARILY DISABLED FOR TESTING]
-  // Check if the assigned president is actually qualified to be President.
-  // Assuming there's a specific common qualification for president or a flag.
-  // Since we don't have a direct "isPresidentQualified" boolean, we will use the FPTU rule:
-  // Usually, presidents must have higher degree or specific qualifications.
-  // For the sake of this US, let's query if they have a qualification that has isCommon=true OR simply
-  // ensure they aren't completely missing qualifications.
-  /*
-  if (newPresidentId) {
-     const presidentQuals = await prisma.lecturerQualification.findMany({
-         where: { lecturerId: newPresidentId },
-         include: { qualification: true }
-     });
-     // Soft check: Warn if they have NO qualifications at all (can be refined based on actual schema rules)
-     if (presidentQuals.length === 0) {
-        // According to US: "system prevents the action or shows a warning". We will throw a 400.
-        throw new AppError(400, "Cảnh báo Điều kiện Vai trò: Giảng viên này không đủ điều kiện cho vai trò Chủ tịch hội đồng.");
-     }
-  }
-  */
+  // 4. Availability & Workload & Role Checks
+  for (const lId of allIds) {
+      const lecturer = lecturers.find(l => l.id === lId);
+      if (!lecturer) continue;
 
-  // 5. Conflict of Interest Check (GTDSS-11 Scenario 2)
+      // 4.1 Availability Check
+      const availability = lecturer.lecturerDayAvailability[0];
+      if (availability && availability.status === AvailabilityStatus.Busy) {
+          throw new AppError(400, `Giảng viên ${lecturer.fullName} đã đăng ký Bận vào ngày này.`);
+      }
+
+      // 4.2 Workload Check (maxTopics)
+      const config = lecturer.lecturerDefenseConfigs[0];
+      if (config && config.maxTopics) {
+          const currentCount = countMap.get(lId) ?? 0;
+          if (currentCount >= config.maxTopics) {
+              throw new AppError(400, `Giảng viên ${lecturer.fullName} đã đạt giới hạn tối đa số hội đồng (${config.maxTopics}).`);
+          }
+      }
+  }
+
+  // 4.3 Seniority Anchor Check
+  // Note: automatic buildCouncilGroup uses byScore sorting but here we just check if President OR Secretary is stable
+  const president = lecturers.find(l => l.id === newPresidentId);
+  const secretary = lecturers.find(l => l.id === newSecretaryId);
+  const anchorExists = (president && (president.seniorityLevel === SeniorityLevel.Senior || president.seniorityLevel === SeniorityLevel.MidLevel)) ||
+                       (secretary && (secretary.seniorityLevel === SeniorityLevel.Senior || secretary.seniorityLevel === SeniorityLevel.MidLevel));
+  
+  if (!anchorExists) {
+      throw new AppError(400, "Điều kiện vai trò: Hội đồng phải có ít nhất 1 giảng viên Senior hoặc MidLevel đảm nhiệm vai trò Chủ tịch hoặc Thư ký.");
+  }
+
+  // 5. Conflict of Interest Check & Expertise Check
   // Get all topics assigned to this council board
   const boardTopics = await prisma.defenseCouncil.findMany({
     where: { councilBoardId },
@@ -976,12 +1016,42 @@ export const updateCouncilBoard = async (
       topicDefense: {
         include: {
           topic: {
-            include: { topicSupervisors: true }
+            include: { 
+                topicSupervisors: true,
+                topicType: {
+                    include: {
+                        qualificationGroupTopicTypes: {
+                            include: {
+                                qualificationGroup: {
+                                    include: { qualifications: { select: { id: true } } }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
           }
         }
       }
     }
   });
+
+  // Expertise (Qualification) Check
+  const requiredQualIds = new Set<number>();
+  boardTopics.forEach(dc => {
+      dc.topicDefense?.topic?.topicType?.qualificationGroupTopicTypes?.forEach(gtt => {
+          gtt.qualificationGroup.qualifications.forEach(q => requiredQualIds.add(q.id));
+      });
+  });
+
+  if (requiredQualIds.size > 0) {
+      const anyMatch = lecturers.some(l => 
+          l.lecturerQualifications.some(lq => requiredQualIds.has(lq.qualificationId))
+      );
+      if (!anyMatch) {
+          throw new AppError(400, "Thiếu chuyên môn: Không có giảng viên nào trong danh sách được chọn có chuyên môn phù hợp với các đề tài của hội đồng này.");
+      }
+  }
 
   // Extract all supervisor IDs for topics assigned to this board
   const supervisorsInBoardTopics = new Set<number>();
@@ -1034,6 +1104,7 @@ export const updateCouncilBoard = async (
     });
   });
 };
+
 
 export const deleteDefenseCouncil = async (id: number) => {
   return prisma.defenseCouncil.delete({
