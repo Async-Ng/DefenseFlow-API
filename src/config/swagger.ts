@@ -431,11 +431,6 @@ const options: swaggerJsdoc.Options = {
               nullable: true,
               example: "08:00:00",
             },
-            maxCouncilsPerDay: {
-              type: "integer",
-              nullable: true,
-              example: 1,
-            },
             isAvailabilityPublished: {
               type: "boolean",
               default: false,
@@ -488,7 +483,6 @@ const options: swaggerJsdoc.Options = {
               format: "time",
               example: "08:00:00",
             },
-            maxCouncilsPerDay: { type: "integer", example: 1 },
             status: {
               type: "string",
               enum: ["Open", "Locked"],
@@ -530,7 +524,6 @@ const options: swaggerJsdoc.Options = {
               format: "time",
               example: "08:00:00",
             },
-            maxCouncilsPerDay: { type: "integer", example: 1 },
             status: {
               type: "string",
               enum: ["Open", "Locked"],
@@ -600,6 +593,10 @@ const options: swaggerJsdoc.Options = {
               nullable: true,
               example: "Morning session",
             },
+            maxCouncils: {
+              type: "integer",
+              example: 1,
+            },
           },
         },
         DefenseDayStatus: {
@@ -643,6 +640,10 @@ const options: swaggerJsdoc.Options = {
               type: "string",
               maxLength: 255,
               example: "Morning session",
+            },
+            maxCouncils: {
+              type: "integer",
+              example: 1,
             },
           },
         },

@@ -1,5 +1,5 @@
 import { prisma } from "../config/prisma.js";
-import { Prisma } from "../../generated/prisma/client.js";
+import { Prisma, SemesterStatus } from "../../generated/prisma/client.js";
 import type {
   Lecturer,
   LecturerQualification,
@@ -232,48 +232,233 @@ export const findSupervisedTopics = async (
 };
 
 /**
- * Get dashboard stats for a lecturer
+ * Get dashboard stats for a lecturer — redesigned for at-a-glance actionability
  */
 export const getLecturerDashboardStats = async (lecturerId: number): Promise<any> => {
-  const [totalTopics, totalBoards, upcomingCouncils, supervisedTopics] = await Promise.all([
-    prisma.topicSupervisor.count({ where: { lecturerId } }),
-    prisma.councilBoardMember.count({ where: { lecturerId } }),
-    prisma.councilBoard.findMany({
-      where: {
-        councilBoardMembers: { some: { lecturerId } },
-        defenseDay: { dayDate: { gte: new Date() } },
+  const now = new Date();
+  const todayStart = new Date(now);
+  todayStart.setHours(0, 0, 0, 0);
+  const todayEnd = new Date(now);
+  todayEnd.setHours(23, 59, 59, 999);
+  const tomorrow = new Date(todayStart);
+  tomorrow.setDate(tomorrow.getDate() + 1);
+
+  // ── 1. Current active semester ───────────────────────────────────────────
+  const currentSemester = await prisma.semester.findFirst({
+    where: { status: SemesterStatus.Ongoing },
+    select: { id: true, name: true, semesterCode: true },
+    orderBy: { id: "desc" },
+  });
+
+  // ── 2. Today's councils ──────────────────────────────────────────────────
+  const todayCouncilMembers = await prisma.councilBoardMember.findMany({
+    where: {
+      lecturerId,
+      councilBoard: {
+        defenseDay: { dayDate: { gte: todayStart, lte: todayEnd } },
       },
-      include: {
-        defenseDay: {
-          include: {
-            defense: { select: { name: true } },
+    },
+    include: {
+      councilBoard: {
+        include: {
+          defenseDay: {
+            include: { defense: { select: { name: true, defenseCode: true } } },
+          },
+          defenseCouncils: {
+            orderBy: { startTime: "asc" },
+            include: {
+              topicDefense: {
+                include: {
+                  topic: { select: { topicCode: true, title: true } },
+                },
+              },
+            },
           },
         },
-        councilBoardMembers: {
-          include: { lecturer: true },
+      },
+    },
+  });
+
+  const todayCouncils = todayCouncilMembers.map((m) => ({
+    boardCode: m.councilBoard!.boardCode,
+    name: m.councilBoard!.name,
+    role: m.role,
+    defenseName: m.councilBoard!.defenseDay?.defense?.name ?? null,
+    dayDate: m.councilBoard!.defenseDay?.dayDate ?? null,
+    slots: m.councilBoard!.defenseCouncils.map((dc) => ({
+      startTime: dc.startTime,
+      endTime: dc.endTime,
+      topicCode: dc.topicDefense?.topic?.topicCode ?? null,
+      topicTitle: dc.topicDefense?.topic?.title ?? null,
+    })),
+  }));
+
+  // ── 3. Upcoming councils (from tomorrow, next 5) ─────────────────────────
+  const upcomingMembers = await prisma.councilBoardMember.findMany({
+    where: {
+      lecturerId,
+      councilBoard: {
+        defenseDay: { dayDate: { gte: tomorrow } },
+      },
+    },
+    include: {
+      councilBoard: {
+        include: {
+          defenseDay: {
+            include: { defense: { select: { name: true, defenseCode: true } } },
+          },
+          defenseCouncils: {
+            orderBy: { startTime: "asc" },
+            include: {
+              topicDefense: {
+                include: {
+                  topic: { select: { topicCode: true, title: true } },
+                },
+              },
+            },
+          },
         },
       },
-      take: 5,
-      orderBy: { defenseDay: { dayDate: "asc" } },
-    }),
-    prisma.topic.findMany({
-      where: {
-        topicSupervisors: { some: { lecturerId } },
+    },
+    orderBy: { councilBoard: { defenseDay: { dayDate: "asc" } } },
+    take: 5,
+  });
+
+  const upcomingCouncils = upcomingMembers.map((m) => ({
+    boardCode: m.councilBoard!.boardCode,
+    name: m.councilBoard!.name,
+    role: m.role,
+    defenseName: m.councilBoard!.defenseDay?.defense?.name ?? null,
+    dayDate: m.councilBoard!.defenseDay?.dayDate ?? null,
+    slots: m.councilBoard!.defenseCouncils.map((dc) => ({
+      startTime: dc.startTime,
+      endTime: dc.endTime,
+      topicCode: dc.topicDefense?.topic?.topicCode ?? null,
+      topicTitle: dc.topicDefense?.topic?.title ?? null,
+    })),
+  }));
+
+  // ── 4. Pending availability registrations ────────────────────────────────
+  // Defenses where lecturer is configured, availability is open, but has unregistered days
+  const configuredDefenses = await prisma.lecturerDefenseConfig.findMany({
+    where: { lecturerId },
+    select: { defenseId: true },
+  });
+  const configuredDefenseIds = configuredDefenses
+    .map((c) => c.defenseId)
+    .filter((id): id is number => id !== null);
+
+  const openDefenses = await prisma.defense.findMany({
+    where: {
+      id: { in: configuredDefenseIds },
+      isAvailabilityPublished: true,
+      availabilityEndDate: { gte: now },
+    },
+    include: {
+      defenseDays: {
+        select: {
+          id: true,
+          dayDate: true,
+          lecturerDayAvailability: {
+            where: { lecturerId },
+            select: { id: true },
+          },
+        },
+        orderBy: { dayDate: "asc" },
       },
-      include: {
-        semester: { select: { name: true } },
-        topicType: { select: { name: true } },
+    },
+  });
+
+  const pendingAvailability = openDefenses
+    .map((defense) => {
+      const unregisteredDays = defense.defenseDays.filter(
+        (day) => day.lecturerDayAvailability.length === 0
+      );
+      if (unregisteredDays.length === 0) return null;
+
+      const endDate = defense.availabilityEndDate ? new Date(defense.availabilityEndDate) : null;
+      const daysLeft = endDate
+        ? Math.ceil((endDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24))
+        : null;
+
+      return {
+        defenseId: defense.id,
+        defenseCode: defense.defenseCode,
+        defenseName: defense.name,
+        availabilityEndDate: defense.availabilityEndDate,
+        daysLeft,
+        unregisteredDays: unregisteredDays.map((d) => ({
+          defenseDayId: d.id,
+          dayDate: d.dayDate,
+        })),
+      };
+    })
+    .filter(Boolean);
+
+  // ── 5. Stats (scoped to current semester) ───────────────────────────────
+  const semesterFilter = currentSemester ? { semesterId: currentSemester.id } : {};
+
+  const [totalSupervisedThisSemester, totalBoardsThisSemester, topicResultGroups] =
+    await Promise.all([
+      prisma.topicSupervisor.count({
+        where: { lecturerId, topic: semesterFilter },
+      }),
+      prisma.councilBoardMember.count({
+        where: {
+          lecturerId,
+          councilBoard: currentSemester ? { semesterId: currentSemester.id } : {},
+        },
+      }),
+      prisma.topicDefense.groupBy({
+        by: ["finalResult"],
+        where: {
+          topic: { topicSupervisors: { some: { lecturerId } }, ...semesterFilter },
+        },
+        _count: { id: true },
+      }),
+    ]);
+
+  const topicResultSummary: Record<string, number> = { pending: 0, passed: 0, failed: 0 };
+  topicResultGroups.forEach((g) => {
+    const key = (g.finalResult ?? "pending").toLowerCase();
+    if (key in topicResultSummary) topicResultSummary[key] = g._count.id;
+  });
+
+  // ── 6. Recent supervised topics (current semester, latest 5) ────────────
+  const recentSupervisedTopics = await prisma.topic.findMany({
+    where: {
+      topicSupervisors: { some: { lecturerId } },
+      ...semesterFilter,
+    },
+    include: {
+      topicType: { select: { name: true } },
+      topicDefenses: {
+        select: { finalResult: true, defenseId: true },
+        orderBy: { id: "desc" },
+        take: 1,
       },
-      take: 5,
-      orderBy: { id: "desc" },
-    }),
-  ]);
+    },
+    orderBy: { id: "desc" },
+    take: 5,
+  });
 
   return {
-    totalSupervisedTopics: totalTopics,
-    totalCouncilBoards: totalBoards,
+    currentSemester,
+    todayCouncils,
     upcomingCouncils,
-    supervisedTopics,
+    pendingAvailability,
+    stats: {
+      totalSupervisedTopicsThisSemester: totalSupervisedThisSemester,
+      totalCouncilBoardsThisSemester: totalBoardsThisSemester,
+      topicResultSummary,
+    },
+    recentSupervisedTopics: recentSupervisedTopics.map((t) => ({
+      id: t.id,
+      topicCode: t.topicCode,
+      title: t.title,
+      topicType: t.topicType?.name ?? null,
+      latestDefenseResult: t.topicDefenses[0]?.finalResult ?? null,
+    })),
   };
 };
 

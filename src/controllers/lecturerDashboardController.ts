@@ -9,7 +9,10 @@ import { getIdParam, getActiveRole } from "../utils/requestHelpers.js";
  * /api/lecturers/{id}/dashboard:
  *   get:
  *     summary: "[LECTURER] Get lecturer dashboard stats"
- *     description: Returns a summary of stats for a lecturer, including total supervised topics, total council boards, and lists of recent/upcoming items.
+ *     description: |
+ *       Returns a rich, at-a-glance dashboard for a lecturer. Includes today's councils,
+ *       upcoming schedules, defenses that still need availability registration, semester-scoped
+ *       stats, and recent supervised topics with defense outcomes.
  *     tags: [Lecturers]
  *     parameters:
  *       - in: path
@@ -20,7 +23,7 @@ import { getIdParam, getActiveRole } from "../utils/requestHelpers.js";
  *         description: Lecturer ID
  *     responses:
  *       200:
- *         description: Dashboard stats retrieved successfully
+ *         description: Dashboard data retrieved successfully
  *         content:
  *           application/json:
  *             schema:
@@ -33,20 +36,124 @@ import { getIdParam, getActiveRole } from "../utils/requestHelpers.js";
  *                 data:
  *                   type: object
  *                   properties:
- *                     totalSupervisedTopics:
- *                       type: integer
- *                       example: 5
- *                     totalCouncilBoards:
- *                       type: integer
- *                       example: 2
+ *                     currentSemester:
+ *                       type: object
+ *                       nullable: true
+ *                       properties:
+ *                         id:
+ *                           type: integer
+ *                         name:
+ *                           type: string
+ *                         semesterCode:
+ *                           type: string
+ *                     todayCouncils:
+ *                       type: array
+ *                       description: Council boards the lecturer is assigned to today
+ *                       items:
+ *                         type: object
+ *                         properties:
+ *                           boardCode:
+ *                             type: string
+ *                           name:
+ *                             type: string
+ *                           role:
+ *                             type: string
+ *                             enum: [President, Secretary, Member]
+ *                           defenseName:
+ *                             type: string
+ *                             nullable: true
+ *                           dayDate:
+ *                             type: string
+ *                             format: date-time
+ *                             nullable: true
+ *                           slots:
+ *                             type: array
+ *                             items:
+ *                               type: object
+ *                               properties:
+ *                                 startTime:
+ *                                   type: string
+ *                                 endTime:
+ *                                   type: string
+ *                                 topicCode:
+ *                                   type: string
+ *                                   nullable: true
+ *                                 topicTitle:
+ *                                   type: string
+ *                                   nullable: true
  *                     upcomingCouncils:
  *                       type: array
+ *                       description: Next 5 upcoming council assignments
  *                       items:
  *                         $ref: '#/components/schemas/CouncilBoard'
- *                     supervisedTopics:
+ *                     pendingAvailability:
  *                       type: array
+ *                       description: Defenses where the lecturer has not yet registered all availability days
  *                       items:
- *                         $ref: '#/components/schemas/Topic'
+ *                         type: object
+ *                         properties:
+ *                           defenseId:
+ *                             type: integer
+ *                           defenseCode:
+ *                             type: string
+ *                           defenseName:
+ *                             type: string
+ *                             nullable: true
+ *                           availabilityEndDate:
+ *                             type: string
+ *                             format: date-time
+ *                             nullable: true
+ *                           daysLeft:
+ *                             type: integer
+ *                             nullable: true
+ *                           unregisteredDays:
+ *                             type: array
+ *                             items:
+ *                               type: object
+ *                               properties:
+ *                                 defenseDayId:
+ *                                   type: integer
+ *                                 dayDate:
+ *                                   type: string
+ *                                   format: date-time
+ *                     stats:
+ *                       type: object
+ *                       description: Statistics scoped to the current semester
+ *                       properties:
+ *                         totalSupervisedTopicsThisSemester:
+ *                           type: integer
+ *                         totalCouncilBoardsThisSemester:
+ *                           type: integer
+ *                         topicResultSummary:
+ *                           type: object
+ *                           properties:
+ *                             pending:
+ *                               type: integer
+ *                             passed:
+ *                               type: integer
+ *                             failed:
+ *                               type: integer
+ *                     recentSupervisedTopics:
+ *                       type: array
+ *                       description: Last 5 supervised topics in current semester with latest defense result
+ *                       items:
+ *                         type: object
+ *                         properties:
+ *                           id:
+ *                             type: integer
+ *                           topicCode:
+ *                             type: string
+ *                           title:
+ *                             type: string
+ *                             nullable: true
+ *                           topicType:
+ *                             type: string
+ *                             nullable: true
+ *                           latestDefenseResult:
+ *                             type: string
+ *                             nullable: true
+ *       403:
+ *         description: Forbidden - Lecturers can only access their own dashboard
  *       404:
  *         description: Lecturer not found
  *       500:
