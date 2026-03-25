@@ -420,8 +420,7 @@ const tryScheduleBestEffort = (
 // =============================================================================
 
 const runScheduler = (ctx: SchedulingContext): { boards: PlannedBoard[]; unscheduled: FullTopic[]; warnings: string[] } => {
-  const { defenseDays, lecturers, topics, lecturerDefenseConfigs, defense, topicsPerBoard } = ctx;
-  const maxCouncilsPerDay = defense.maxCouncilsPerDay || 1;
+  const { defenseDays, lecturers, topics, lecturerDefenseConfigs, topicsPerBoard } = ctx;
 
   const state: SchedulingState = {
     usedLecturersPerDay: new Map(),
@@ -441,11 +440,13 @@ const runScheduler = (ctx: SchedulingContext): { boards: PlannedBoard[]; unsched
   for (const day of defenseDays) {
     console.log(`\n=== Defense Day ${day.id} ===`);
     let boardsCreatedToday = 0;
+    // Strictly per-day limit: use day.maxCouncils if set, else default to 1
+    const maxCouncilsThisDay = day.maxCouncils ?? 1;
 
     // ── Pass 1: Strict ──────────────────────────────────────────────────────
     console.log("--- Pass 1 (Strict) ---");
     let pass1Running = true;
-    while (pass1Running && boardsCreatedToday < maxCouncilsPerDay) {
+    while (pass1Running && boardsCreatedToday < maxCouncilsThisDay) {
       const pending = getPendingTopics(topics, state.scheduledTopicIds, deferredTopics);
       if (pending.length === 0) break;
 
@@ -473,10 +474,10 @@ const runScheduler = (ctx: SchedulingContext): { boards: PlannedBoard[]; unsched
     }
 
     // ── Pass 2: Best-Effort ─────────────────────────────────────────────────
-    if (deferredTopics.length > 0 && boardsCreatedToday < maxCouncilsPerDay) {
+    if (deferredTopics.length > 0 && boardsCreatedToday < maxCouncilsThisDay) {
       console.log(`--- Pass 2 (Best-Effort): ${deferredTopics.length} deferred ---`);
       
-      const remainingSlots = maxCouncilsPerDay - boardsCreatedToday;
+      const remainingSlots = maxCouncilsThisDay - boardsCreatedToday;
       let boardsCreatedPass2 = 0;
       
       while(deferredTopics.length > 0 && boardsCreatedPass2 < remainingSlots) {
@@ -619,13 +620,20 @@ const validateDefenseReadiness = (ctx: SchedulingContext): void => {
 const validateCapacity = (ctx: SchedulingContext): void => {
   const timePerTopic = ctx.defense.timePerTopic ?? 45;
   const totalMinutesNeeded = ctx.topics.length * timePerTopic;
-  const maxCouncilsPerDay = ctx.defense.maxCouncilsPerDay || 1;
-  const totalMinutesAvailable = ctx.defenseDays.length * maxCouncilsPerDay * (8 * 60);
+
+  // Sum per-day capacity using each day's own maxCouncils
+  const totalMinutesAvailable = ctx.defenseDays.reduce((sum, day) => {
+    const maxCouncilsThisDay = day.maxCouncils ?? 1;
+    return sum + maxCouncilsThisDay * (8 * 60);
+  }, 0);
 
   if (totalMinutesNeeded > totalMinutesAvailable) {
+    const dayBreakdown = ctx.defenseDays
+      .map(d => `Ngày ${(d.dayDate as Date).toLocaleDateString('vi-VN')}: ${d.maxCouncils ?? 1} HĐ`)
+      .join(', ');
     throw new AppError(
       400,
-      `Không đủ thời gian: Cần ${totalMinutesNeeded} phút, nhưng chỉ có ${totalMinutesAvailable} phút trong ${ctx.defenseDays.length} ngày (với ${maxCouncilsPerDay} hội đồng/ngày).`
+      `Không đủ thời gian: Cần ${totalMinutesNeeded} phút, nhưng chỉ có ${totalMinutesAvailable} phút (${dayBreakdown}).`
     );
   }
 

@@ -37,6 +37,10 @@ import { getErrorMessage } from "../utils/typeGuards.js";
  *                 format: date-time
  *               note:
  *                 type: string
+ *               maxCouncils:
+ *                 type: integer
+ *                 minimum: 1
+ *                 description: Maximum number of council boards allowed on this specific day (overrides the defense-level default)
  *     responses:
  *       200:
  *         description: Defense day updated successfully

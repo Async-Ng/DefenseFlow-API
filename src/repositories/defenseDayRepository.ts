@@ -15,7 +15,7 @@ export const findById = async (id: number): Promise<DefenseDay | null> => {
  */
 export const update = async (
   id: number,
-  data: { dayDate?: Date; note?: string },
+  data: { dayDate?: Date; note?: string; maxCouncils?: number },
 ): Promise<DefenseDay> => {
   return await prisma.defenseDay.update({
     where: { id },

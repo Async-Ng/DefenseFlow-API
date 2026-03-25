@@ -173,7 +173,6 @@ export type DefenseFilterQuery = {
   semesterId?: string | string[];
   defenseCode?: string | string[];
   type?: string | string[];
-  maxCouncilsPerDay?: string | string[];
   status?: string | string[];
   search?: string | string[];
 };
@@ -210,7 +209,6 @@ export type CreateDefenseInput = {
   name: string;
   type?: DefenseType;
   timePerTopic?: number;
-  maxCouncilsPerDay?: number;
   workStartTime?: string;
   status?: DefenseStatus;
   defenseDays?: CreateDefenseDayInput[];
@@ -222,6 +220,7 @@ export type CreateDefenseDayInput = {
   defenseDayCode: string;
   dayDate: string;
   note?: string;
+  maxCouncils?: number;
 };
 
 export type UpdateDefenseInput = {
@@ -229,7 +228,6 @@ export type UpdateDefenseInput = {
   name?: string;
   type?: DefenseType;
   timePerTopic?: number;
-  maxCouncilsPerDay?: number;
   workStartTime?: string;
   status?: DefenseStatus;
   defenseDays?: CreateDefenseDayInput[];
@@ -519,7 +517,6 @@ export type DefenseFilters = {
   defenseCode?: string;
   semesterId?: number;
   type?: DefenseType;
-  maxCouncilsPerDay?: number;
   status?: DefenseStatus;
   search?: string;
 };
@@ -654,6 +651,7 @@ export type CapacityRecommendations = {
   minimumDaysRequired: number;
   recommendedDays: number;
   currentDefenseDays: number | null;
+  totalCapacity: number;
   defenseDayAdjustment: DefenseDayAdjustment | null;
   minLecturersRequired: number;
   recommendedLecturers: number;
@@ -671,7 +669,6 @@ export type CapacityAnalysis = {
   timePerTopic: number;
   workHoursPerDay: number;
   councilBoardSize: number;
-  maxCouncilsPerDay: number;
 };
 
 /**

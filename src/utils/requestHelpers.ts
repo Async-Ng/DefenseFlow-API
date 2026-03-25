@@ -113,17 +113,12 @@ export const getDefenseFilters = (req: Request): DefenseFilters => {
     defenseType = typeParam;
   }
 
-  const maxCouncilsParam = req.query.maxCouncilsPerDay;
-
   return {
     semesterId: isString(semesterIdParam)
       ? parseInt(semesterIdParam, 10)
       : undefined,
     defenseCode: isString(defenseCodeParam) ? defenseCodeParam : undefined,
     type: defenseType,
-    maxCouncilsPerDay: isString(maxCouncilsParam)
-      ? parseInt(maxCouncilsParam, 10)
-      : undefined,
     search: isString(req.query.search) ? req.query.search : undefined,
   };
 };

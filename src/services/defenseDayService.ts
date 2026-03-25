@@ -6,7 +6,7 @@ import { DefenseDay } from "../../generated/prisma/client.js";
  */
 export const updateDefenseDay = async (
   id: number,
-  data: { dayDate?: string; note?: string },
+  data: { dayDate?: string; note?: string; maxCouncils?: number },
 ): Promise<DefenseDay> => {
   const existing = await defenseDayRepository.findById(id);
   if (!existing) {
@@ -16,6 +16,10 @@ export const updateDefenseDay = async (
   const updateData: any = {};
   if (data.dayDate) updateData.dayDate = new Date(data.dayDate);
   if (data.note !== undefined) updateData.note = data.note;
+  if (data.maxCouncils !== undefined) {
+    if (data.maxCouncils < 1) throw new Error("maxCouncils must be at least 1");
+    updateData.maxCouncils = data.maxCouncils;
+  }
 
   // Validate constraint if updating date
   if (updateData.dayDate) {

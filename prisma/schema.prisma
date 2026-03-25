@@ -119,7 +119,6 @@ model Defense {
   isSchedulePublished     Boolean        @default(false) @map("is_schedule_published")
   availabilityStartDate   DateTime?      @map("availability_start_date") @db.Date
   availabilityEndDate     DateTime?      @map("availability_end_date") @db.Date
-  maxCouncilsPerDay       Int?           @default(1) @map("max_councils_per_day")
 
   defenseDays            DefenseDay[]
   semester               Semester                @relation(fields: [semesterId], references: [id])
@@ -135,6 +134,7 @@ model DefenseDay {
   defenseId               Int                       @map("defense_id")
   dayDate                 DateTime                  @map("day_date") @db.Date
   note                    String?                   @db.VarChar(255)
+  maxCouncils             Int?                      @default(1) @map("max_councils")
   councilBoards           CouncilBoard[]
   defense                 Defense                   @relation(fields: [defenseId], references: [id])
   lecturerDayAvailability LecturerDayAvailability[]

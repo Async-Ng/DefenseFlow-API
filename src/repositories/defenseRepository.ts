@@ -29,7 +29,6 @@ export const create = async (data: CreateDefenseInput): Promise<Defense> => {
       name: data.name,
       type: data.type || "Main",
       timePerTopic: data.timePerTopic,
-      maxCouncilsPerDay: data.maxCouncilsPerDay,
       workStartTime: data.workStartTime,
       status: data.status || "Open",
       availabilityStartDate: data.availabilityStartDate ? new Date(data.availabilityStartDate) : null,
@@ -54,7 +53,6 @@ export const createWithDays = async (
         name: defenseData.name,
         type: defenseData.type || "Main",
         timePerTopic: defenseData.timePerTopic,
-        maxCouncilsPerDay: defenseData.maxCouncilsPerDay,
         workStartTime: defenseData.workStartTime,
         status: defenseData.status || "Open",
         availabilityStartDate: defenseData.availabilityStartDate ? new Date(defenseData.availabilityStartDate) : null,
@@ -70,6 +68,7 @@ export const createWithDays = async (
           defenseId: defense.id,
           dayDate: new Date(day.dayDate),
           note: day.note || null,
+          maxCouncils: day.maxCouncils || 1,
         })),
       });
     }
@@ -111,9 +110,6 @@ export const findAll = async (
   }
   if (filters.type) {
     where.type = filters.type;
-  }
-  if (filters.maxCouncilsPerDay) {
-    where.maxCouncilsPerDay = filters.maxCouncilsPerDay;
   }
 
   // Build include options
@@ -252,8 +248,6 @@ export const update = async (
   if (data.type !== undefined) updateData.type = data.type;
   if (data.timePerTopic !== undefined)
     updateData.timePerTopic = data.timePerTopic;
-  if (data.maxCouncilsPerDay !== undefined)
-    updateData.maxCouncilsPerDay = data.maxCouncilsPerDay;
   if (data.workStartTime !== undefined)
     updateData.workStartTime = data.workStartTime;
   if (data.status !== undefined)

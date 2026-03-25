@@ -117,9 +117,14 @@ export const createDefense = async (
  *           type: string
  *           enum: [Main, Resit]
  *       - in: query
- *         name: maxCouncilsPerDay
+ *         name: status
  *         schema:
- *           type: integer
+ *           type: string
+ *           enum: [Open, Locked, Completed]
+ *       - in: query
+ *         name: search
+ *         schema:
+ *           type: string
  *     responses:
  *       200:
  *         description: List of defenses
@@ -143,6 +148,12 @@ export const getAllDefenses = async (
     const { page, limit } = getPaginationParams(req);
     const filters = getDefenseFilters(req);
     const include = getIncludeOptions(req);
+
+    const { query } = req;
+    if (query.semesterId) filters.semesterId = parseInt(query.semesterId as string);
+    if (query.type) filters.type = query.type as any;
+    if (query.status) filters.status = query.status as any;
+    if (query.search) filters.search = query.search as string;
 
     // Process
     const result = await defenseService.getAllDefenses(
