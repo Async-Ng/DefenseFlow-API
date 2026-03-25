@@ -309,3 +309,11 @@ export const findById = async (id: number): Promise<CouncilBoard | null> => {
   });
 };
 
+/**
+ * Count council boards for a specific defense day
+ */
+export const countByDefenseDay = async (defenseDayId: number): Promise<number> => {
+  return await prisma.councilBoard.count({
+    where: { defenseDayId },
+  });
+};

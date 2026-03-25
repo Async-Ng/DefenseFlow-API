@@ -1,4 +1,5 @@
 import * as defenseDayRepository from "../repositories/defenseDayRepository.js";
+import * as councilBoardRepository from "../repositories/councilBoardRepository.js";
 import { DefenseDay } from "../../generated/prisma/client.js";
 import { ensureDefenseNotLocked } from "../utils/lockUtils.js";
 
@@ -22,6 +23,15 @@ export const updateDefenseDay = async (
   if (data.note !== undefined) updateData.note = data.note;
   if (data.maxCouncils !== undefined) {
     if (data.maxCouncils < 1) throw new Error("maxCouncils must be at least 1");
+    
+    // Check if new maxCouncils is less than existing boards
+    const currentBoardCount = await councilBoardRepository.countByDefenseDay(id);
+    if (data.maxCouncils < currentBoardCount) {
+      throw new Error(
+        `Không thể giảm số hội đồng xuống ${data.maxCouncils} vì ngày này đang có ${currentBoardCount} hội đồng đã được xếp lịch. Vui lòng xóa bớt hội đồng trước.`
+      );
+    }
+    
     updateData.maxCouncils = data.maxCouncils;
   }
 
