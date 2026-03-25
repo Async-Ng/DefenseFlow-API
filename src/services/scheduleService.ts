@@ -921,17 +921,23 @@ export const updateCouncilBoard = async (
     where: { id: councilBoardId },
     include: { 
       councilBoardMembers: true,
-      defenseDay: true,
+      defenseDay: {
+        include: { defense: true },
+      },
     },
   });
 
   if (!board) throw new AppError(404, "Không tìm thấy Hội đồng bảo vệ");
 
-  // Check if locked
-  await ensureDefenseDayNotLocked(councilBoardId);
+  // Check if locked (fix: pass defenseDayId, not councilBoardId)
+  await ensureDefenseDayNotLocked(board.defenseDayId);
 
   const defenseId = board.defenseDay?.defenseId;
   const defenseDayId = board.defenseDayId;
+  const isSchedulePublished = board.defenseDay?.defense?.isSchedulePublished ?? false;
+
+  // Snapshot current member IDs before update (for notification diff)
+  const oldMemberIds = new Set(board.councilBoardMembers.map(m => m.lecturerId).filter((id): id is number => id != null));
 
   // 1. Gather all new IDs (explicitly provided or from current state if not provided)
   const current = board.councilBoardMembers;
@@ -1088,7 +1094,7 @@ export const updateCouncilBoard = async (
   }
 
   // 6. Update members
-  return await prisma.$transaction(async (tx) => {
+  const updatedBoard = await prisma.$transaction(async (tx) => {
     await tx.councilBoardMember.deleteMany({
       where: { councilBoardId },
     });
@@ -1121,6 +1127,71 @@ export const updateCouncilBoard = async (
       },
     });
   });
+
+  // 7. Post-publication adjustment notifications
+  if (isSchedulePublished && defenseId) {
+    try {
+      const newMemberIdSet = new Set(allIds);
+
+      const addedIds     = allIds.filter(id => !oldMemberIds.has(id));
+      const removedIds   = Array.from(oldMemberIds).filter(id => !newMemberIdSet.has(id));
+      const remainingIds = allIds.filter(id => oldMemberIds.has(id));
+
+      const fetchAuthIds = async (lecturerIds: number[]): Promise<string[]> => {
+        if (lecturerIds.length === 0) return [];
+        const rows = await prisma.lecturer.findMany({
+          where: { id: { in: lecturerIds }, authId: { not: null } },
+          select: { authId: true },
+        });
+        return rows.map(r => r.authId as string);
+      };
+
+      const notifRepository = await import("../repositories/notificationRepository.js");
+
+      const [addedAuthIds, removedAuthIds, remainingAuthIds] = await Promise.all([
+        fetchAuthIds(addedIds),
+        fetchAuthIds(removedIds),
+        fetchAuthIds(remainingIds),
+      ]);
+
+      const notifications: { authId: string; title: string; message: string; type: string }[] = [];
+
+      for (const authId of addedAuthIds) {
+        notifications.push({
+          authId,
+          title: "Phân công hội đồng mới",
+          message: `Bạn vừa được phân công bổ sung vào Hội đồng ${board!.boardCode}. Vui lòng kiểm tra lại lịch bảo vệ.`,
+          type: "COUNCIL_MEMBER_ADDED",
+        });
+      }
+
+      for (const authId of removedAuthIds) {
+        notifications.push({
+          authId,
+          title: "Thay đổi phân công hội đồng",
+          message: `Bạn đã được rút khỏi Hội đồng ${board!.boardCode} do có sự điều chỉnh nhân sự.`,
+          type: "COUNCIL_MEMBER_REMOVED",
+        });
+      }
+
+      for (const authId of remainingAuthIds) {
+        notifications.push({
+          authId,
+          title: "Cập nhật thành viên hội đồng",
+          message: `Hội đồng ${board!.boardCode} của bạn vừa có sự thay đổi về nhân sự. Vui lòng kiểm tra lại danh sách thành viên.`,
+          type: "COUNCIL_MEMBER_UPDATED",
+        });
+      }
+
+      if (notifications.length > 0) {
+        await notifRepository.createManyNotifications(notifications);
+      }
+    } catch (err) {
+      console.error("[updateCouncilBoard] Failed to dispatch post-publication notifications:", err);
+    }
+  }
+
+  return updatedBoard;
 };
 
 
