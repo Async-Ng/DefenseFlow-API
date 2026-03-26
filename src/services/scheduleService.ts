@@ -140,13 +140,15 @@ const getSeniorityBonus = (level: SeniorityLevel): number => {
   }
 };
 
+export type RequiredGroup = { groupId: number; qualificationIds: number[]; priorityWeight: number };
+
 /**
  * calculateFitnessScore — Group-based scoring:
  * Σ(max score of lecturer's quals in this group × group priorityWeight) × seniorityBonus.
  */
-const calculateFitnessScore = (
+export const calculateFitnessScore = (
   lecturer: FullLecturer,
-  requiredGroups: { groupId: number; qualificationIds: number[]; priorityWeight: number }[]
+  requiredGroups: RequiredGroup[]
 ): number => {
   const LQualsMap = new Map(
     lecturer.lecturerQualifications.map(lq => [lq.qualificationId, lq.score ?? 0])
@@ -187,8 +189,6 @@ const getEligibleCandidates = (
  * then fills remaining slots with unmatched (by score).
  * Match means having at least one skill required by the topic type.
  */
-type RequiredGroup = { groupId: number; qualificationIds: number[]; priorityWeight: number };
-
 const selectWithTopicTypePreference = (
   candidates: FullLecturer[],
   topicTypeGroupQualIds: number[], // all qualificationIds across all required groups
@@ -1268,3 +1268,104 @@ export const createDefenseCouncil = async (data: {
     },
   });
 };
+
+/**
+ * getSuitableLecturersForBoard - Find suitable replacements for a council board
+ */
+export const getSuitableLecturersForBoard = async (id: number) => {
+  const board = (await councilBoardRepository.findById(id)) as any;
+  if (!board) throw new AppError(404, "Không tìm thấy hội đồng bảo vệ");
+
+  const defenseDayId = board.defenseDayId;
+  const topics = board.defenseCouncils
+    .map((dc: any) => dc.topicDefense?.topic)
+    .filter((t: any): t is FullTopic => !!t);
+
+  // 1. Convert topics to RequiredGroups for scoring
+  const requiredGroups = getRequiredGroupsForTopics(topics);
+
+  // 2. Fetch all lecturers for this defense
+  const lecturers = await prisma.lecturer.findMany({
+    where: {
+      lecturerDefenseConfigs: {
+        some: { defenseId: board.defenseDay.defenseId },
+      },
+    },
+    include: {
+      lecturerDayAvailability: true,
+      lecturerQualifications: {
+        include: {
+          qualification: true,
+        },
+      },
+    },
+  });
+
+  // 3. Find IDs of lecturers already assigned on this day (excluding this board's current members)
+  const otherAssignments = await prisma.councilBoardMember.findMany({
+    where: {
+      councilBoard: {
+        defenseDayId: defenseDayId,
+        id: { not: id },
+      },
+    },
+    select: { lecturerId: true },
+  });
+  const excludedIds = otherAssignments.map((a: any) => a.lecturerId).filter((id: any): id is number => id !== null);
+
+  // 4. Filter candidates
+  const candidates = lecturers.filter((l) => {
+    // Available on this day (Default Busy logic)
+    const isAvail = l.lecturerDayAvailability.some(
+      (a) => a.defenseDayId === defenseDayId && (a.status as string) === "Available"
+    );
+    // Not in another board today
+    const isNotElsewhere = !excludedIds.includes(l.id);
+    // Not a supervisor for any topic in this board
+    const isNotSupervisor = isNotSupervisorForAnyTopic(l.id, topics);
+
+    return isAvail && isNotElsewhere && isNotSupervisor;
+  });
+
+  // 5. Calculate scores and return
+  const results = candidates.map((l) => {
+    const score = calculateFitnessScore(l as any, requiredGroups);
+    const isCurrentlyIn = board.councilBoardMembers.some(
+      (m: any) => m.lecturerId === l.id
+    );
+
+    return {
+      id: l.id,
+      fullName: l.fullName,
+      lecturerCode: l.lecturerCode,
+      seniorityLevel: l.seniorityLevel,
+      fitnessScore: score,
+      isCurrentlyInBoard: isCurrentlyIn,
+    };
+  });
+
+  return results.sort((a, b) => b.fitnessScore - a.fitnessScore);
+};
+
+/** Helper to convert topics to required groups */
+const getRequiredGroupsForTopics = (topics: FullTopic[]): RequiredGroup[] => {
+  const groupsMap = new Map<number, RequiredGroup>();
+  for (const topic of topics) {
+    const qgtts = topic.topicType?.qualificationGroupTopicTypes || [];
+    for (const qgtt of qgtts) {
+      const g = qgtt.qualificationGroup;
+      if (!groupsMap.has(g.id)) {
+        groupsMap.set(g.id, {
+          groupId: g.id,
+          qualificationIds: g.qualifications.map((q) => q.id),
+          priorityWeight: qgtt.priorityWeight,
+        });
+      } else {
+        const existing = groupsMap.get(g.id)!;
+        existing.priorityWeight = Math.max(existing.priorityWeight, qgtt.priorityWeight);
+      }
+    }
+  }
+  return Array.from(groupsMap.values());
+};
+

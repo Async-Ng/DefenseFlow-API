@@ -19,6 +19,8 @@ router.put("/council-boards/:councilBoardId", requireRole("admin"), scheduleCont
 
 router.get("/council-boards/:id", scheduleController.getCouncilBoardById);
 
+router.get("/council-boards/:id/suitable-lecturers", requireRole("admin"), scheduleController.getSuitableLecturers);
+
 router.get("/:defenseId", scheduleController.getSchedule);
 
 router.get("/:defenseId/export", scheduleController.exportSchedule);

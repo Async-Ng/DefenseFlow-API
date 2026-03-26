@@ -632,3 +632,61 @@ export const deleteDefenseCouncil = async (
     return next(error);
   }
 };
+
+/**
+ * @swagger
+ * /api/schedule/council-boards/{id}/suitable-lecturers:
+ *   get:
+ *     summary: "[ADMIN] Get suitable lecturers for a specific council board adjustment"
+ *     tags: [Schedule]
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: integer
+ *         description: Council Board ID
+ *     responses:
+ *       200:
+ *         description: Suitable lecturers retrieved successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                 data:
+ *                   type: array
+ *                   items:
+ *                     type: object
+ *                     properties:
+ *                       id:
+ *                         type: integer
+ *                       fullName:
+ *                         type: string
+ *                       lecturerCode:
+ *                         type: string
+ *                       seniorityLevel:
+ *                         type: string
+ *                       fitnessScore:
+ *                         type: number
+ *                       isCurrentlyInBoard:
+ *                         type: boolean
+ */
+export const getSuitableLecturers = async (
+  req: Request,
+  res: Response,
+  next: NextFunction,
+) => {
+  try {
+    const id = parseInt(req.params.id as string);
+    if (isNaN(id)) throw new AppError(400, "ID Hội đồng bảo vệ không hợp lệ");
+
+    const result = await scheduleService.getSuitableLecturersForBoard(id);
+    return successResponse(res, result, "Suitable lecturers retrieved successfully");
+  } catch (error) {
+    return next(error);
+  }
+};
+
