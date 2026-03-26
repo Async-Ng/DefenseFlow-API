@@ -337,9 +337,9 @@ export const getAvailableLecturersForDay = async (defenseDayId: number) => {
         notIn: excludedIds,
       },
       lecturerDayAvailability: {
-        none: {
+        some: {
           defenseDayId: defenseDayId,
-          status: "Busy",
+          status: "Available",
         },
       },
     },

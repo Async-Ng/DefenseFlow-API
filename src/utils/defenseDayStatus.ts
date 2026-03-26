@@ -54,7 +54,7 @@ export const calculateEnhancedDefenseDay = (
     status,
     boardCount: cb.length,
     availableLecturerCount: lda.filter((a) => a.status === "Available").length,
-    busyLecturerCount: lda.filter((a) => a.status === "Busy").length,
+    busyLecturerCount: (def?.lecturerDefenseConfigs?.length || 0) - lda.filter((a) => a.status === "Available").length,
     totalConfiguredLecturers: def?.lecturerDefenseConfigs?.length || 0,
   };
 };

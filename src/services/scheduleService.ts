@@ -111,7 +111,7 @@ const isUnderTopicLimit = (lecturerId: number, state: SchedulingState): boolean 
  */
 const isAvailableOnDay = (lecturer: FullLecturer, defenseDayId: number): boolean => {
   const slot = lecturer.lecturerDayAvailability.find(a => a.defenseDayId === defenseDayId);
-  return !slot || slot.status !== AvailabilityStatus.Busy;
+  return !!slot && (slot.status as string) === 'Available';
 };
 
 /**
