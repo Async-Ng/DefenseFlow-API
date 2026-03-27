@@ -424,6 +424,76 @@ export const publishSchedule = async (
  *             schema:
  *               $ref: '#/components/schemas/ErrorResponse'
  */
+/**
+ * @swagger
+ * /api/schedule/defense-councils/{defenseCouncilId}:
+ *   put:
+ *     summary: "[ADMIN] Update a defense council (Manual Scheduling)"
+ *     description: Update the time slot or reassign a topic's defense council to a different council board. All fields are optional (partial update). Cannot modify if the parent Defense Day is locked.
+ *     tags: [Schedule]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: defenseCouncilId
+ *         required: true
+ *         schema:
+ *           type: integer
+ *         description: ID of the Defense Council to update
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               startTime:
+ *                 type: string
+ *                 format: date-time
+ *                 description: New start time (ISO 8601)
+ *                 example: "2024-03-28T08:00:00Z"
+ *               endTime:
+ *                 type: string
+ *                 format: date-time
+ *                 description: New end time (ISO 8601)
+ *                 example: "2024-03-28T08:45:00Z"
+ *               councilBoardId:
+ *                 type: integer
+ *                 nullable: true
+ *                 description: ID of the target council board (null to unassign)
+ *                 example: 3
+ *     responses:
+ *       200:
+ *         description: Defense Council updated successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/DefenseCouncilResponse'
+ *       400:
+ *         description: Invalid defenseCouncilId or validation error
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ValidationErrorResponse'
+ *       403:
+ *         description: Defense or Defense Day is locked
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ *       404:
+ *         description: Defense Council or target Council Board not found
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ *       500:
+ *         description: Server error
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ */
 export const updateDefenseCouncil = async (
   req: Request,
   res: Response,
@@ -598,6 +668,75 @@ export const exportSchedule = async (
   }
 };
 
+/**
+ * @swagger
+ * /api/schedule/defense-councils:
+ *   post:
+ *     summary: "[ADMIN] Add a topic to a council board (Manual Scheduling)"
+ *     description: Assign a topic registration to a council board by creating a Defense Council record. If startTime/endTime are omitted, they are auto-calculated based on the defense's timePerTopic configuration and the last scheduled slot on the board.
+ *     tags: [Schedule]
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - registrationId
+ *               - councilBoardId
+ *             properties:
+ *               registrationId:
+ *                 type: integer
+ *                 description: ID of the TopicDefense registration to assign
+ *                 example: 5
+ *               councilBoardId:
+ *                 type: integer
+ *                 description: ID of the Council Board to assign the topic to
+ *                 example: 3
+ *               startTime:
+ *                 type: string
+ *                 format: date-time
+ *                 description: Start time (ISO 8601). Auto-calculated if omitted.
+ *                 example: "2024-03-28T08:00:00Z"
+ *               endTime:
+ *                 type: string
+ *                 format: date-time
+ *                 description: End time (ISO 8601). Auto-calculated if omitted.
+ *                 example: "2024-03-28T08:45:00Z"
+ *     responses:
+ *       200:
+ *         description: Topic assigned to council successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/DefenseCouncilResponse'
+ *       400:
+ *         description: Validation error
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ValidationErrorResponse'
+ *       403:
+ *         description: Defense Day is locked
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ *       404:
+ *         description: TopicDefense registration or Council Board not found
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ *       500:
+ *         description: Server error
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ */
 export const createDefenseCouncil = async (
   req: Request,
   res: Response,
@@ -619,6 +758,63 @@ export const createDefenseCouncil = async (
   }
 };
 
+/**
+ * @swagger
+ * /api/schedule/defense-councils/{id}:
+ *   delete:
+ *     summary: "[ADMIN] Remove a topic from a council board (Manual Scheduling)"
+ *     description: Deletes a Defense Council record, effectively unassigning the topic from its council board. Cannot delete if the parent Defense Day is locked.
+ *     tags: [Schedule]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: integer
+ *         description: ID of the Defense Council to delete
+ *     responses:
+ *       200:
+ *         description: Topic removed from council successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 message:
+ *                   type: string
+ *                   example: "Topic removed from council successfully"
+ *                 data:
+ *                   type: object
+ *       400:
+ *         description: Invalid ID
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ValidationErrorResponse'
+ *       403:
+ *         description: Defense Day is locked
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ *       404:
+ *         description: Defense Council not found
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ *       500:
+ *         description: Server error
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ */
 export const deleteDefenseCouncil = async (
   req: Request,
   res: Response,
