@@ -1219,6 +1219,32 @@ export const createDefenseCouncil = async (data: {
   // Check if locked
   await ensureDefenseDayNotLocked(data.councilBoardId);
 
+  // C6 — Supervisor conflict check: a topic's supervisor must not be a member of the council
+  const [registration, boardMembers] = await Promise.all([
+    prisma.topicDefense.findUnique({
+      where: { id: data.registrationId },
+      include: { topic: { include: { topicSupervisors: true } } },
+    }),
+    prisma.councilBoardMember.findMany({
+      where: { councilBoardId: data.councilBoardId },
+      include: { lecturer: { select: { id: true, fullName: true } } },
+    }),
+  ]);
+
+  if (!registration) throw new AppError(404, "Không tìm thấy đăng ký bảo vệ (TopicDefense)");
+
+  const supervisorIds = new Set(
+    registration.topic?.topicSupervisors.map((ts) => ts.lecturerId) ?? [],
+  );
+  const conflicting = boardMembers.filter((m) => m.lecturerId !== null && supervisorIds.has(m.lecturerId));
+  if (conflicting.length > 0) {
+    const names = conflicting.map((m) => m.lecturer?.fullName || `ID ${m.lecturerId}`).join(", ");
+    throw new AppError(
+      409,
+      `Xung đột: Giảng viên hướng dẫn của đề tài này (${names}) đang là thành viên chấm của hội đồng được chọn.`,
+    );
+  }
+
   let { startTime, endTime } = data;
 
   if (!startTime || !endTime) {
