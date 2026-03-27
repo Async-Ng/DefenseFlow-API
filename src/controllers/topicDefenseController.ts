@@ -226,9 +226,10 @@ export const getTopicDefenses = async (
  *         required: true
  *         schema:
  *           type: integer
+ *         description: Topic Defense registration ID
  *     responses:
  *       200:
- *         description: Topic defense details
+ *         description: Detailed information of a topic registration in a defense session
  *         content:
  *           application/json:
  *             schema:
@@ -248,7 +249,13 @@ export const getTopicDefenses = async (
  *                       example: 1
  *                     topicDefenseCode:
  *                       type: string
- *                       example: "REG_12345"
+ *                       example: "TD-5-2-KW9X1"
+ *                     topicId:
+ *                       type: integer
+ *                       example: 5
+ *                     defenseId:
+ *                       type: integer
+ *                       example: 2
  *                     finalResult:
  *                       type: string
  *                       example: "Pending"
@@ -257,23 +264,54 @@ export const getTopicDefenses = async (
  *                       properties:
  *                         id:
  *                           type: integer
+ *                           example: 5
  *                         topicCode:
  *                           type: string
+ *                           example: "SWD_01"
  *                         title:
  *                           type: string
+ *                           example: "Defense Flow System"
+ *                         topicSupervisors:
+ *                           type: array
+ *                           items:
+ *                             type: object
+ *                             properties:
+ *                               lecturer:
+ *                                 type: object
+ *                                 properties:
+ *                                   id:
+ *                                     type: integer
+ *                                   fullName:
+ *                                     type: string
+ *                                   email:
+ *                                     type: string
  *                     defense:
  *                       type: object
  *                       properties:
  *                         id:
  *                           type: integer
+ *                           example: 2
  *                         defenseCode:
+ *                           type: string
+ *                           example: "DEF_SP24"
+ *                         name:
+ *                           type: string
+ *                         status:
  *                           type: string
  *                     defenseCouncils:
  *                       type: array
+ *                       description: List of council board assignments for this topic
  *                       items:
  *                         type: object
+ *                         properties:
+ *                           id:
+ *                             type: integer
+ *                           councilBoardId:
+ *                             type: integer
+ *                           registrationId:
+ *                             type: integer
  *       404:
- *         description: Not found
+ *         description: Topic registration not found
  *         content:
  *           application/json:
  *             schema:
