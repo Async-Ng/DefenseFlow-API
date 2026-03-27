@@ -629,12 +629,15 @@ const validateCapacity = (ctx: SchedulingContext): void => {
   }, 0);
 
   if (totalMinutesNeeded > totalMinutesAvailable) {
+    const totalHoursNeeded = (totalMinutesNeeded / 60).toFixed(1).replace(/\.0$/, "");
+    const totalHoursAvailable = (totalMinutesAvailable / 60).toFixed(1).replace(/\.0$/, "");
+    
     const dayBreakdown = ctx.defenseDays
       .map(d => `Ngày ${(d.dayDate as Date).toLocaleDateString('vi-VN')}: ${d.maxCouncils ?? 1} HĐ`)
       .join(', ');
     throw new AppError(
       400,
-      `Không đủ thời gian: Cần ${totalMinutesNeeded} phút, nhưng chỉ có ${totalMinutesAvailable} phút (${dayBreakdown}).`
+      `Không đủ thời gian: Cần ${totalHoursNeeded} giờ, nhưng chỉ có ${totalHoursAvailable} giờ (${dayBreakdown}).`
     );
   }
 
@@ -1065,9 +1068,23 @@ export const updateCouncilBoard = async (
   const current = board.councilBoardMembers;
   const newPresidentId = presidentId !== undefined ? presidentId : current.find(m => m.role === CouncilRole.President)?.lecturerId;
   const newSecretaryId = secretaryId !== undefined ? secretaryId : current.find(m => m.role === CouncilRole.Secretary)?.lecturerId;
-  const newMemberIds = memberIds !== undefined ? memberIds : current.filter(m => m.role === CouncilRole.Member).map(m => m.lecturerId!).filter(id => id != null);
+  let newMemberIds = memberIds !== undefined ? memberIds : current.filter(m => m.role === CouncilRole.Member).map(m => m.lecturerId!).filter(id => id != null);
+
+  // Auto-deduplicate: If someone is promoted to President/Secretary, remove them from Members
+  if (presidentId !== undefined) {
+    newMemberIds = newMemberIds.filter(id => id !== presidentId);
+  }
+  if (secretaryId !== undefined) {
+    newMemberIds = newMemberIds.filter(id => id !== secretaryId);
+  }
+
+  // Ensure President and Secretary are distinct if both are present
+  if (newPresidentId && newSecretaryId && newPresidentId === newSecretaryId) {
+    throw new AppError(400, "Chủ tịch và Thư ký không thể là cùng một người.");
+  }
 
   const allIds = [newPresidentId, newSecretaryId, ...(newMemberIds || [])].filter((id): id is number => id != null);
+
   
   // 1.5 Fetch detailed info for validation
   const lecturers = await prisma.lecturer.findMany({

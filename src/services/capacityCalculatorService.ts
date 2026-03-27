@@ -115,14 +115,11 @@ export async function calculateCapacity(
 
   if (defense?.defenseDays) {
     for (const day of defense.defenseDays) {
-      // Available lecturers: status=Available AND not a supervisor of any topic in this defense
+      // Available lecturers: status=Available (Supervisors are still available for other boards)
       const availableLecturers = await prisma.lecturerDayAvailability.count({
         where: {
           defenseDayId: day.id,
           status: "Available",
-          ...(supervisorIds.length > 0 && {
-            lecturerId: { notIn: supervisorIds },
-          }),
         },
       });
 
@@ -312,7 +309,7 @@ function generateWarnings(
     if (day.isUnderstaffed) {
       const dateStr = new Date(day.date).toLocaleDateString("vi-VN");
       warnings.push(
-        `Ngày ${dateStr}: Cấu hình ${day.maxCouncils} hội đồng nhưng sau khi loại giảng viên hướng dẫn, chỉ đủ người cho ${day.potentialCouncils} hội đồng.`
+        `Ngày ${dateStr}: Cấu hình ${day.maxCouncils} hội đồng nhưng hiện chỉ có đủ giảng viên rảnh cho ${day.potentialCouncils} hội đồng.`
       );
     }
   }
@@ -323,9 +320,10 @@ function generateWarnings(
     );
   } else if (totalTopics > totalPracticalCapacity && totalPracticalCapacity > 0) {
     warnings.push(
-      `Cấu hình đủ nhưng do thiếu giảng viên sau khi loại người hướng dẫn, công suất thực tế chỉ đạt ${Math.floor(totalPracticalCapacity)} đề tài, không đủ cho ${totalTopics} đề tài.`
+      `Cấu hình đủ nhưng do thiếu giảng viên rảnh thực tế, công suất chỉ đạt ${Math.floor(totalPracticalCapacity)} đề tài, không đủ cho ${totalTopics} đề tài.`
     );
   }
+
 
   if (totalTopics > 200) {
     warnings.push(`Số lượng đề tài rất lớn (${totalTopics}). Cần lập kế hoạch cực kỳ kỹ lưỡng.`);
