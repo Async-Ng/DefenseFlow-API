@@ -885,81 +885,152 @@ export const publishSchedule = async (defenseId: number) => {
   return updatedDefense;
 };
 
+/**
+ * Internal helper to re-align all slots in a board to be contiguous,
+ * preserving their original individual durations.
+ */
+const rippleBoard = async (tx: any, boardId: number) => {
+  const allSlots = await tx.defenseCouncil.findMany({
+    where: { councilBoardId: boardId },
+    orderBy: { startTime: "asc" },
+  });
+
+  if (allSlots.length === 0) return;
+
+  // Anchor the schedule to the current start time of the first topic
+  let nextStartTime = allSlots[0].startTime;
+
+  for (const slot of allSlots) {
+    if (!slot.startTime || !slot.endTime || !nextStartTime) continue;
+
+    const durationMs = slot.endTime.getTime() - slot.startTime.getTime();
+
+    // Re-align if there's a gap or overlap
+    if (slot.startTime.getTime() !== nextStartTime.getTime()) {
+      const newEndTime = new Date(nextStartTime.getTime() + durationMs);
+      await tx.defenseCouncil.update({
+        where: { id: slot.id },
+        data: {
+          startTime: nextStartTime,
+          endTime: newEndTime,
+        },
+      });
+      nextStartTime = newEndTime;
+    } else {
+      nextStartTime = slot.endTime;
+    }
+  }
+};
+
 export const updateDefenseCouncil = async (
   defenseCouncilId: number,
   data: { startTime?: Date; endTime?: Date; councilBoardId?: number | null },
 ) => {
-  const dc = await prisma.defenseCouncil.findUnique({
+  const oldDC = await prisma.defenseCouncil.findUnique({
     where: { id: defenseCouncilId },
-    include: { councilBoard: { select: { defenseDayId: true } } },
+    include: {
+      councilBoard: {
+        select: {
+          id: true,
+          defenseDayId: true,
+          defenseDay: { select: { defenseId: true, defense: true } },
+        },
+      },
+      topicDefense: {
+        include: {
+          topic: { include: { topicSupervisors: true } },
+        },
+      },
+    },
   });
-  if (!dc)
+
+  if (!oldDC)
     throw new AppError(404, "Không tìm thấy lịch bảo vệ (Defense Council)");
 
-  // Check if locked
-  if (dc.councilBoard?.defenseDayId) {
-    await ensureDefenseDayNotLocked(dc.councilBoard.defenseDayId);
-  }
+  const oldBoardId = oldDC.councilBoardId;
+  const isMovingBoards =
+    data.councilBoardId !== undefined && data.councilBoardId !== oldBoardId;
 
-  if (data.councilBoardId && data.councilBoardId !== dc.councilBoardId) {
-    const board = await prisma.councilBoard.findUnique({
-      where: { id: data.councilBoardId },
-    });
-    if (!board)
-      throw new AppError(404, "Không tìm thấy Hội đồng bảo vệ mục tiêu");
+  // Check if source board is locked
+  if (oldDC.councilBoard?.defenseDayId) {
+    await ensureDefenseDayNotLocked(oldDC.councilBoard.defenseDayId);
   }
 
   return prisma.$transaction(async (tx) => {
-    // 1. Perform the initial update for the targeted slot
+    // A. Validation & Auto-Calculation for Cross-Board Movement
+    if (isMovingBoards && data.councilBoardId) {
+      const targetBoard = await tx.councilBoard.findUnique({
+        where: { id: data.councilBoardId },
+        include: {
+          councilBoardMembers: true,
+          defenseDay: { include: { defense: true } },
+          defenseCouncils: { orderBy: { endTime: "desc" }, take: 1 },
+        },
+      });
+
+      if (!targetBoard)
+        throw new AppError(404, "Không tìm thấy Hội đồng mục tiêu");
+
+      // A1. Block Move if target board/day is locked
+      await ensureDefenseDayNotLocked(targetBoard.defenseDayId);
+
+      // A2. C6 Conflict Check: Supervisor must not be in the target board
+      const supervisorIds = new Set(
+        oldDC.topicDefense?.topic?.topicSupervisors.map((s) => s.lecturerId) ||
+          [],
+      );
+      const conflicting = targetBoard.councilBoardMembers.filter(
+        (m) => m.lecturerId !== null && supervisorIds.has(m.lecturerId),
+      );
+      if (conflicting.length > 0) {
+        throw new AppError(
+          409,
+          `Xung đột: Người hướng dẫn của đề tài này đang là thành viên của Hội đồng mục tiêu.`,
+        );
+      }
+
+      // A3. Auto-calculate time if NOT provided (Append logic)
+      if (!data.startTime) {
+        let startTime: Date;
+        if (targetBoard.defenseCouncils.length > 0) {
+          startTime = targetBoard.defenseCouncils[0].endTime!;
+        } else {
+          // Board is empty, use defense workStartTime
+          const defense = targetBoard.defenseDay.defense;
+          const [h, m] = (defense.workStartTime || "07:30")
+            .split(":")
+            .map(Number);
+          startTime = minutesToDate(h * 60 + m);
+        }
+
+        // Preserve original duration
+        const durationMs =
+          (oldDC.endTime?.getTime() || 0) - (oldDC.startTime?.getTime() || 0);
+        data.startTime = startTime;
+        data.endTime = new Date(startTime.getTime() + (durationMs || 45 * 60000));
+      }
+    }
+
+    // B. Update the target record
     const updated = await tx.defenseCouncil.update({
       where: { id: defenseCouncilId },
       data,
     });
 
-    // 2. Ripple Effect: Update subsequent topics in the same board if time changed
-    // Only trigger if startTime or endTime is modified, and the record belongs to a board
-    if ((data.startTime || data.endTime) && updated.councilBoardId) {
-      // Fetch all slots in this board, ordered by startTime
-      const allSlots = await tx.defenseCouncil.findMany({
-        where: { councilBoardId: updated.councilBoardId },
-        orderBy: { startTime: "asc" },
-      });
+    // C. Source Board Ripple (Gap Closing)
+    if (isMovingBoards && oldBoardId) {
+      await rippleBoard(tx, oldBoardId);
+    }
 
-      // Find the index of the slot we just updated
-      const updatedIndex = allSlots.findIndex((s) => s.id === updated.id);
-
-      if (updatedIndex !== -1 && updatedIndex < allSlots.length - 1) {
-        let previousEndTime = updated.endTime;
-
-        // Iterate through all subsequent slots
-        for (let i = updatedIndex + 1; i < allSlots.length; i++) {
-          const slot = allSlots[i];
-          if (!slot.startTime || !slot.endTime || !previousEndTime) continue;
-
-          // Calculate original duration in milliseconds
-          const durationMs = slot.endTime.getTime() - slot.startTime.getTime();
-
-          const newStartTime = new Date(previousEndTime);
-          const newEndTime = new Date(newStartTime.getTime() + durationMs);
-
-          // Update the subsequent slot
-          await tx.defenseCouncil.update({
-            where: { id: slot.id },
-            data: {
-              startTime: newStartTime,
-              endTime: newEndTime,
-            },
-          });
-
-          // Carry forward the new end time for the next iteration
-          previousEndTime = newEndTime;
-        }
-      }
+    // D. Target Board Ripple (Consistency)
+    if ((data.startTime || data.endTime || isMovingBoards) && updated.councilBoardId) {
+      await rippleBoard(tx, updated.councilBoardId);
     }
 
     return updated;
   });
 };
+
 
 
 export const updateCouncilBoard = async (
@@ -1298,53 +1369,64 @@ export const createDefenseCouncil = async (data: {
 
   let { startTime, endTime } = data;
 
-  if (!startTime || !endTime) {
-    const board = await prisma.councilBoard.findUnique({
-      where: { id: data.councilBoardId },
-      include: {
-        defenseDay: {
-          include: { defense: true },
+  return prisma.$transaction(async (tx) => {
+    if (!startTime || !endTime) {
+      const board = await tx.councilBoard.findUnique({
+        where: { id: data.councilBoardId },
+        include: {
+          defenseDay: {
+            include: { defense: true },
+          },
+          defenseCouncils: {
+            orderBy: { endTime: "desc" },
+            take: 1,
+          },
         },
-        defenseCouncils: {
-          orderBy: { endTime: "desc" },
-          take: 1,
-        },
-      },
-    });
+      });
 
-    if (!board) throw new AppError(404, "Không tìm thấy Hội đồng bảo vệ");
-    const defense = board.defenseDay?.defense;
-    if (!defense) throw new AppError(404, "Không tìm thấy cấu hình đợt bảo vệ");
+      if (!board) throw new AppError(404, "Không tìm thấy Hội đồng bảo vệ");
+      const defense = board.defenseDay?.defense;
+      if (!defense) throw new AppError(404, "Không tìm thấy cấu hình đợt bảo vệ");
 
-    const timePerTopic = defense.timePerTopic ?? 45;
+      const timePerTopic = defense.timePerTopic ?? 45;
 
-    if (!startTime) {
-      if (board.defenseCouncils.length > 0 && board.defenseCouncils[0].endTime) {
-        startTime = board.defenseCouncils[0].endTime;
-      } else {
-        const [startH, startM] = (defense.workStartTime ?? "07:30").split(":").map(Number);
-        startTime = minutesToDate(startH * 60 + startM);
+      if (!startTime) {
+        if (board.defenseCouncils.length > 0 && board.defenseCouncils[0].endTime) {
+          startTime = board.defenseCouncils[0].endTime;
+        } else {
+          const [startH, startM] = (defense.workStartTime ?? "07:30").split(":").map(Number);
+          startTime = minutesToDate(startH * 60 + startM);
+        }
+      }
+
+      if (!endTime) {
+        const startMinutes = startTime.getHours() * 60 + startTime.getMinutes();
+        endTime = minutesToDate(startMinutes + timePerTopic);
       }
     }
 
-    if (!endTime) {
-      const startMinutes = startTime.getHours() * 60 + startTime.getMinutes();
-      endTime = minutesToDate(startMinutes + timePerTopic);
+    const code = `DC-${data.registrationId}-${data.councilBoardId}-${Date.now().toString(36).toUpperCase()}`;
+
+    const created = await tx.defenseCouncil.create({
+      data: {
+        defenseCouncilCode: code,
+        registrationId: data.registrationId,
+        councilBoardId: data.councilBoardId,
+        startTime: startTime,
+        endTime: endTime,
+      },
+    });
+
+    // Ripple effect to ensure board continuity
+    if (created.councilBoardId) {
+      await rippleBoard(tx, created.councilBoardId);
     }
-  }
 
-  const code = `DC-${data.registrationId}-${data.councilBoardId}-${Date.now().toString(36).toUpperCase()}`;
+    return created;
 
-  return prisma.defenseCouncil.create({
-    data: {
-      defenseCouncilCode: code,
-      registrationId: data.registrationId,
-      councilBoardId: data.councilBoardId,
-      startTime: startTime,
-      endTime: endTime,
-    },
   });
 };
+
 
 /**
  * getSuitableLecturersForBoard - Find suitable replacements for a council board
