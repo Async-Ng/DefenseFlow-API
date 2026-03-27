@@ -21,7 +21,7 @@ import {
   CouncilBoardSort,
   PaginatedResult,
 } from "../types/index.js";
-import { ensureDefenseNotLocked, ensureDefenseDayNotLocked } from "../utils/lockUtils.js";
+import { ensureDefenseNotLocked, ensureDefenseDayNotLocked, ensureCouncilBoardNotLocked } from "../utils/lockUtils.js";
 
 // =============================================================================
 // TYPES
@@ -959,6 +959,11 @@ export const updateDefenseCouncil = async (
     await ensureDefenseDayNotLocked(oldDC.councilBoard.defenseDayId);
   }
 
+  // Check if target board is locked (if moving)
+  if (isMovingBoards && data.councilBoardId) {
+    await ensureCouncilBoardNotLocked(data.councilBoardId);
+  }
+
   return prisma.$transaction(async (tx) => {
     // A. Validation & Auto-Calculation for Cross-Board Movement
     if (isMovingBoards && data.councilBoardId) {
@@ -1356,7 +1361,7 @@ export const createDefenseCouncil = async (data: {
   endTime?: Date;
 }) => {
   // Check if locked
-  await ensureDefenseDayNotLocked(data.councilBoardId);
+  await ensureCouncilBoardNotLocked(data.councilBoardId);
 
   // C6 — Supervisor conflict check: a topic's supervisor must not be a member of the council
   const [registration, boardMembers] = await Promise.all([

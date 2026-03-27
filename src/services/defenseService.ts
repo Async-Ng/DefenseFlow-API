@@ -4,6 +4,7 @@
  */
 
 import * as defenseRepository from "../repositories/defenseRepository.js";
+import { prisma } from "../config/prisma.js";
 import * as semesterRepository from "../repositories/semesterRepository.js";
 // Assuming validators will be renamed or updated separately. 
 // For now, I will rename the imports assuming they will be refactored.
@@ -230,6 +231,40 @@ export const updateDefense = async (
   }
 
   // Update defense
+  if (data.defenseCode && data.defenseCode !== existing.defenseCode) {
+    return await prisma.$transaction(async (tx) => {
+      // 1. Update Defense
+      const updated = await defenseRepository.update(id, data);
+
+      // 2. Fetch all CouncilBoards related to this Defense
+      const boards = await tx.councilBoard.findMany({
+        where: { defenseDay: { defenseId: id } },
+      });
+
+      // 3. Update each Board's code (e.g. HD-OLD-01 -> HD-NEW-01)
+      for (const board of boards) {
+        const newBoardCode = board.boardCode.replace(
+          existing.defenseCode,
+          data.defenseCode!
+        );
+        // Also update name if it contains the old code
+        const newName = board.name
+          ? board.name.replace(existing.defenseCode, data.defenseCode!)
+          : null;
+
+        await tx.councilBoard.update({
+          where: { id: board.id },
+          data: {
+            boardCode: newBoardCode,
+            name: newName,
+          },
+        });
+      }
+
+      return updated;
+    });
+  }
+
   return await defenseRepository.update(id, data);
 };
 

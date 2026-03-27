@@ -76,6 +76,22 @@ export const ensureDefenseDayNotLocked = async (defenseDayId: number) => {
 };
 
 /**
+ * Ensures that a council board's parent defense and semester are not locked.
+ */
+export const ensureCouncilBoardNotLocked = async (councilBoardId: number) => {
+  const board = await prisma.councilBoard.findUnique({
+    where: { id: councilBoardId },
+    select: { defenseDay: { select: { defenseId: true } } }
+  });
+
+  if (!board) {
+    throw new AppError(404, `Không tìm thấy Hội đồng bảo vệ với ID ${councilBoardId}`);
+  }
+
+  await ensureDefenseNotLocked(board.defenseDay.defenseId);
+};
+
+/**
  * Ensures a topic's parent semester is not finished.
  */
 export const ensureTopicNotLocked = async (topicId: number) => {
