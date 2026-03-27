@@ -887,13 +887,14 @@ export const publishSchedule = async (defenseId: number) => {
 
 export const updateDefenseCouncil = async (
   defenseCouncilId: number,
-  data: { startTime?: Date; endTime?: Date; councilBoardId?: number | null }
+  data: { startTime?: Date; endTime?: Date; councilBoardId?: number | null },
 ) => {
-  const dc = await prisma.defenseCouncil.findUnique({ 
+  const dc = await prisma.defenseCouncil.findUnique({
     where: { id: defenseCouncilId },
-    include: { councilBoard: { select: { defenseDayId: true } } }
+    include: { councilBoard: { select: { defenseDayId: true } } },
   });
-  if (!dc) throw new AppError(404, "Không tìm thấy lịch bảo vệ (Defense Council)");
+  if (!dc)
+    throw new AppError(404, "Không tìm thấy lịch bảo vệ (Defense Council)");
 
   // Check if locked
   if (dc.councilBoard?.defenseDayId) {
@@ -901,15 +902,65 @@ export const updateDefenseCouncil = async (
   }
 
   if (data.councilBoardId && data.councilBoardId !== dc.councilBoardId) {
-    const board = await prisma.councilBoard.findUnique({ where: { id: data.councilBoardId } });
-    if (!board) throw new AppError(404, "Không tìm thấy Hội đồng bảo vệ mục tiêu");
+    const board = await prisma.councilBoard.findUnique({
+      where: { id: data.councilBoardId },
+    });
+    if (!board)
+      throw new AppError(404, "Không tìm thấy Hội đồng bảo vệ mục tiêu");
   }
 
-  return prisma.defenseCouncil.update({
-    where: { id: defenseCouncilId },
-    data,
+  return prisma.$transaction(async (tx) => {
+    // 1. Perform the initial update for the targeted slot
+    const updated = await tx.defenseCouncil.update({
+      where: { id: defenseCouncilId },
+      data,
+    });
+
+    // 2. Ripple Effect: Update subsequent topics in the same board if time changed
+    // Only trigger if startTime or endTime is modified, and the record belongs to a board
+    if ((data.startTime || data.endTime) && updated.councilBoardId) {
+      // Fetch all slots in this board, ordered by startTime
+      const allSlots = await tx.defenseCouncil.findMany({
+        where: { councilBoardId: updated.councilBoardId },
+        orderBy: { startTime: "asc" },
+      });
+
+      // Find the index of the slot we just updated
+      const updatedIndex = allSlots.findIndex((s) => s.id === updated.id);
+
+      if (updatedIndex !== -1 && updatedIndex < allSlots.length - 1) {
+        let previousEndTime = updated.endTime;
+
+        // Iterate through all subsequent slots
+        for (let i = updatedIndex + 1; i < allSlots.length; i++) {
+          const slot = allSlots[i];
+          if (!slot.startTime || !slot.endTime || !previousEndTime) continue;
+
+          // Calculate original duration in milliseconds
+          const durationMs = slot.endTime.getTime() - slot.startTime.getTime();
+
+          const newStartTime = new Date(previousEndTime);
+          const newEndTime = new Date(newStartTime.getTime() + durationMs);
+
+          // Update the subsequent slot
+          await tx.defenseCouncil.update({
+            where: { id: slot.id },
+            data: {
+              startTime: newStartTime,
+              endTime: newEndTime,
+            },
+          });
+
+          // Carry forward the new end time for the next iteration
+          previousEndTime = newEndTime;
+        }
+      }
+    }
+
+    return updated;
   });
 };
+
 
 export const updateCouncilBoard = async (
   councilBoardId: number,
