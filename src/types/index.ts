@@ -683,6 +683,8 @@ export type CapacityAnalysis = {
   workHoursPerDay: number;
   councilBoardSize: number;
   totalConfiguredCouncils: number;
+  minTopicsPerLecturer: number;
+  maxTopicsPerLecturer: number;
   days: DayCapacityAnalysis[];
 };
 
