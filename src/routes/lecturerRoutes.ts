@@ -4,8 +4,8 @@
 
 import express from "express";
 import * as lecturerController from "../controllers/lecturerController.js";
-
 import * as lecturerDashboardController from "../controllers/lecturerDashboardController.js";
+import * as lecturerRoleSuitabilityController from "../controllers/lecturerRoleSuitabilityController.js";
 import { requireRole } from "../middleware/auth.js";
 
 const router: express.Router = express.Router();
@@ -51,5 +51,11 @@ router.post("/:id/qualifications", requireRole("admin"), lecturerController.addL
 
 // DELETE /api/lecturers/:id/qualifications/:qualificationId - Remove qualification
 router.delete("/:id/qualifications/:qualificationId", requireRole("admin"), lecturerController.deleteLecturerQualification);
+
+// GET /api/lecturers/:id/role-suitabilities - Get role suitability scores
+router.get("/:id/role-suitabilities", lecturerRoleSuitabilityController.getLecturerRoleSuitabilities);
+
+// PUT /api/lecturers/:id/role-suitabilities - Set role suitability scores (Monitor/Admin only)
+router.put("/:id/role-suitabilities", requireRole("admin"), lecturerRoleSuitabilityController.setLecturerRoleSuitabilities);
 
 export default router;

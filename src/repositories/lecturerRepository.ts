@@ -1,8 +1,9 @@
 import { prisma } from "../config/prisma.js";
-import { Prisma, SemesterStatus } from "../../generated/prisma/client.js";
+import { CouncilRole, Prisma, SemesterStatus } from "../../generated/prisma/client.js";
 import type {
   Lecturer,
   LecturerQualification,
+  LecturerRoleSuitability,
   PaginatedResult,
   LecturerFilters,
   LecturerWithQualifications,
@@ -556,4 +557,42 @@ export const qualificationExists = async (qualificationId: number): Promise<bool
     where: { id: qualificationId },
   });
   return count > 0;
+};
+
+/**
+ * Upsert a lecturer's suitability score for a specific council role
+ */
+export const upsertLecturerRoleSuitability = async (
+  lecturerId: number,
+  role: CouncilRole,
+  suitability: number,
+): Promise<LecturerRoleSuitability> => {
+  return await prisma.lecturerRoleSuitability.upsert({
+    where: { lecturerId_role: { lecturerId, role } },
+    update: { suitability },
+    create: { lecturerId, role, suitability },
+  });
+};
+
+/**
+ * Get all role suitability scores for a lecturer
+ */
+export const getLecturerRoleSuitabilities = async (
+  lecturerId: number,
+): Promise<LecturerRoleSuitability[]> => {
+  return await prisma.lecturerRoleSuitability.findMany({
+    where: { lecturerId },
+    orderBy: { role: "asc" },
+  });
+};
+
+/**
+ * Get role suitability scores for multiple lecturers (batch)
+ */
+export const getManyLecturerRoleSuitabilities = async (
+  lecturerIds: number[],
+): Promise<LecturerRoleSuitability[]> => {
+  return await prisma.lecturerRoleSuitability.findMany({
+    where: { lecturerId: { in: lecturerIds } },
+  });
 };

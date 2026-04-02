@@ -39,19 +39,20 @@ model Qualification {
 }
 
 model Lecturer {
-  id                      Int                       @id @default(autoincrement())
-  lecturerCode            String                    @unique @map("lecturer_code") @db.VarChar(50)
-  fullName                String?                   @map("full_name") @db.VarChar(100)
-  email                   String?                   @db.VarChar(100)
-  authId                  String?                   @unique @map("auth_id") @db.Uuid
-  seniorityLevel          SeniorityLevel            @default(Rookie) @map("seniority_level")
-  isLecturer              Boolean                   @default(true) @map("is_lecturer")
-  isAdmin                 Boolean                   @default(false) @map("is_admin")
-  councilBoardMembers     CouncilBoardMember[]
-  lecturerDayAvailability LecturerDayAvailability[]
-  lecturerDefenseConfigs  LecturerDefenseConfig[]
-  lecturerQualifications  LecturerQualification[]
-  topicSupervisors        TopicSupervisor[]
+  id                        Int                         @id @default(autoincrement())
+  lecturerCode              String                      @unique @map("lecturer_code") @db.VarChar(50)
+  fullName                  String?                     @map("full_name") @db.VarChar(100)
+  email                     String?                     @db.VarChar(100)
+  authId                    String?                     @unique @map("auth_id") @db.Uuid
+  seniorityLevel            SeniorityLevel              @default(Rookie) @map("seniority_level")
+  isLecturer                Boolean                     @default(true) @map("is_lecturer")
+  isAdmin                   Boolean                     @default(false) @map("is_admin")
+  councilBoardMembers       CouncilBoardMember[]
+  lecturerDayAvailability   LecturerDayAvailability[]
+  lecturerDefenseConfigs    LecturerDefenseConfig[]
+  lecturerQualifications    LecturerQualification[]
+  lecturerRoleSuitabilities LecturerRoleSuitability[]
+  topicSupervisors          TopicSupervisor[]
 
   @@map("Lecturers")
 }
@@ -215,6 +216,17 @@ model LecturerQualification {
   @@map("Lecturer_Qualifications")
 }
 
+model LecturerRoleSuitability {
+  id          Int         @id @default(autoincrement())
+  lecturerId  Int         @map("lecturer_id")
+  role        CouncilRole
+  suitability Int         @default(0)
+  lecturer    Lecturer    @relation(fields: [lecturerId], references: [id])
+
+  @@unique([lecturerId, role])
+  @@map("Lecturer_Role_Suitabilities")
+}
+
 model TopicSupervisor {
   id         Int      @id @default(autoincrement())
   topicId    Int      @map("topic_id")
@@ -265,6 +277,9 @@ enum CouncilRole {
   President
   Secretary
   Member
+  ReqReviewer
+  TechReviewer
+  AlgorithmReviewer
 
   @@map("council_role")
 }

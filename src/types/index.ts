@@ -14,6 +14,7 @@ import type {
   CouncilBoard,
   Lecturer,
   LecturerQualification,
+  LecturerRoleSuitability,
   Qualification,
   LecturerDayAvailability,
   LecturerDefenseConfig,
@@ -22,6 +23,7 @@ import type {
   TopicType,
   TopicDefense,
   CouncilBoardMember,
+  CouncilRole,
   TopicSupervisor,
   DefenseCouncil,
   DefenseStatus,
@@ -38,6 +40,7 @@ export type {
   CouncilBoard,
   Lecturer,
   LecturerQualification,
+  LecturerRoleSuitability,
   Qualification,
   LecturerDayAvailability,
   LecturerDefenseConfig,
@@ -46,6 +49,7 @@ export type {
   TopicType,
   TopicDefense,
   CouncilBoardMember,
+  CouncilRole,
   TopicSupervisor,
   DefenseCouncil,
   DefenseStatus,
@@ -746,3 +750,16 @@ export type LecturerDashboardStats = {
 
 export type Nullable<T> = T | null;
 export type Optional<T> = T | undefined;
+
+// ============================================================================
+// Lecturer Role Suitability Types
+// ============================================================================
+
+export type LecturerRoleSuitabilityItem = {
+  role: CouncilRole;
+  suitability: number; // 0-100
+};
+
+export type SetLecturerRoleSuitabilitiesInput = {
+  suitabilities: LecturerRoleSuitabilityItem[];
+};
