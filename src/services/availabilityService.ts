@@ -29,7 +29,8 @@ export const getDefenseDays = async (
   }
 
   // Get enhanced defense days with counts
-  const days = await availabilityRepository.getEnhancedDefenseDaysByDefenseId(defenseId);
+  const days =
+    await availabilityRepository.getEnhancedDefenseDaysByDefenseId(defenseId);
 
   return days.map((day) => calculateEnhancedDefenseDay(day));
 };
@@ -40,6 +41,7 @@ export const getDefenseDays = async (
 export const getDefenseDaysWithAvailability = async (
   defenseId: number,
   lecturerId: number,
+  isAdmin = false,
 ): Promise<DefenseDayWithAvailability[]> => {
   // Verify defense exists
   const defense = await availabilityRepository.getDefenseById(defenseId);
@@ -47,13 +49,17 @@ export const getDefenseDaysWithAvailability = async (
     throw new Error(`Không tìm thấy đợt bảo vệ với ID ${defenseId}`);
   }
 
-  // Check if availability has been published by admin
-  if (!defense.isAvailabilityPublished) {
-    throw new Error("Lịch bảo vệ chưa được công bố. Vui lòng chờ admin mở đợt đăng ký.");
+  // Admin can bypass publication/window checks
+  if (!isAdmin && !defense.isAvailabilityPublished) {
+    throw new Error(
+      "Lịch bảo vệ chưa được công bố. Vui lòng chờ admin mở đợt đăng ký.",
+    );
   }
 
   // Check if current time is within the availability registration window
-  validateAvailabilityWindow(defense);
+  if (!isAdmin) {
+    validateAvailabilityWindow(defense);
+  }
 
   // Verify lecturer exists
   const lecturer = await availabilityRepository.getLecturerById(lecturerId);
@@ -65,9 +71,8 @@ export const getDefenseDaysWithAvailability = async (
   await validateLecturerConfigured(lecturerId, defenseId);
 
   // Get defense days with availability
-  const dayData = await availabilityRepository.getDefenseDaysWithAvailability(
-    defenseId,
-  );
+  const dayData =
+    await availabilityRepository.getDefenseDaysWithAvailability(defenseId);
 
   return dayData.map((day: DefenseDayWithRelations) => {
     const enhanced = calculateEnhancedDefenseDay(day);
@@ -106,7 +111,9 @@ export const getLecturerStatus = async (
   );
 
   if (!defenseConfig) {
-    throw new Error("Bạn không có tên trong danh sách tham gia đợt bảo vệ này.");
+    throw new Error(
+      "Bạn không có tên trong danh sách tham gia đợt bảo vệ này.",
+    );
   }
 
   // Get lecturer's availability records
@@ -134,6 +141,7 @@ export const updateAvailability = async (
   lecturerId: number,
   defenseDayId: number,
   status: AvailabilityStatus,
+  isAdmin = false,
 ): Promise<LecturerDayAvailability> => {
   // Verify lecturer exists
   const lecturer = await availabilityRepository.getLecturerById(lecturerId);
@@ -159,11 +167,15 @@ export const updateAvailability = async (
   // Check if defense is locked
   await ensureDefenseNotLocked(defenseDay.defenseId);
 
-  if (!defense.isAvailabilityPublished) {
-    throw new Error("Lịch bảo vệ chưa được công bố. Vui lòng chờ admin mở đợt đăng ký.");
+  if (!isAdmin && !defense.isAvailabilityPublished) {
+    throw new Error(
+      "Lịch bảo vệ chưa được công bố. Vui lòng chờ admin mở đợt đăng ký.",
+    );
   }
 
-  validateAvailabilityWindow(defense);
+  if (!isAdmin) {
+    validateAvailabilityWindow(defense);
+  }
   await validateLecturerConfigured(lecturerId, defenseDay.defenseId);
 
   // Upsert the availability record
@@ -180,6 +192,7 @@ export const updateAvailability = async (
 export const batchUpdateAvailability = async (
   lecturerId: number,
   data: BatchUpdateAvailabilityInput,
+  isAdmin = false,
 ): Promise<LecturerDayAvailability[]> => {
   // Verify lecturer exists
   const lecturer = await availabilityRepository.getLecturerById(lecturerId);
@@ -212,11 +225,15 @@ export const batchUpdateAvailability = async (
       throw new Error(`Không tìm thấy đợt bảo vệ`);
     }
 
-    if (!defense.isAvailabilityPublished) {
-      throw new Error("Lịch bảo vệ chưa được công bố. Vui lòng chờ admin mở đợt đăng ký.");
+    if (!isAdmin && !defense.isAvailabilityPublished) {
+      throw new Error(
+        "Lịch bảo vệ chưa được công bố. Vui lòng chờ admin mở đợt đăng ký.",
+      );
     }
 
-    validateAvailabilityWindow(defense);
+    if (!isAdmin) {
+      validateAvailabilityWindow(defense);
+    }
     await validateLecturerConfigured(lecturerId, defenseId);
   }
 
@@ -233,6 +250,7 @@ export const batchUpdateAvailability = async (
 export const removeAvailability = async (
   lecturerId: number,
   defenseDayId: number,
+  isAdmin = false,
 ): Promise<void> => {
   // Verify lecturer exists
   const lecturer = await availabilityRepository.getLecturerById(lecturerId);
@@ -258,11 +276,15 @@ export const removeAvailability = async (
   // Check if defense is locked
   await ensureDefenseNotLocked(defenseDay.defenseId);
 
-  if (!defense.isAvailabilityPublished) {
-    throw new Error("Lịch bảo vệ chưa được công bố. Vui lòng chờ admin mở đợt đăng ký.");
+  if (!isAdmin && !defense.isAvailabilityPublished) {
+    throw new Error(
+      "Lịch bảo vệ chưa được công bố. Vui lòng chờ admin mở đợt đăng ký.",
+    );
   }
 
-  validateAvailabilityWindow(defense);
+  if (!isAdmin) {
+    validateAvailabilityWindow(defense);
+  }
   await validateLecturerConfigured(lecturerId, defenseDay.defenseId);
 
   // Delete the availability record
@@ -272,8 +294,12 @@ export const removeAvailability = async (
 const validateAvailabilityWindow = (defense: any) => {
   const now = new Date();
 
-  const start = defense.availabilityStartDate ? new Date(defense.availabilityStartDate) : null;
-  const end = defense.availabilityEndDate ? new Date(defense.availabilityEndDate) : null;
+  const start = defense.availabilityStartDate
+    ? new Date(defense.availabilityStartDate)
+    : null;
+  const end = defense.availabilityEndDate
+    ? new Date(defense.availabilityEndDate)
+    : null;
 
   // If neither date is set, no window restriction — skip
   if (!start && !end) return;
@@ -282,7 +308,9 @@ const validateAvailabilityWindow = (defense: any) => {
     start.setHours(0, 0, 0, 0);
     if (now < start) {
       const dateStr = start.toLocaleDateString("vi-VN");
-      throw new Error(`Thời gian đăng ký nguyện vọng chưa bắt đầu. Hệ thống sẽ mở vào ${dateStr}.`);
+      throw new Error(
+        `Thời gian đăng ký nguyện vọng chưa bắt đầu. Hệ thống sẽ mở vào ${dateStr}.`,
+      );
     }
   }
 
@@ -290,15 +318,25 @@ const validateAvailabilityWindow = (defense: any) => {
     end.setHours(23, 59, 59, 999);
     if (now > end) {
       const dateStr = end.toLocaleDateString("vi-VN");
-      throw new Error(`Thời gian đăng ký nguyện vọng đã kết thúc (đóng vào ngày ${dateStr}).`);
+      throw new Error(
+        `Thời gian đăng ký nguyện vọng đã kết thúc (đóng vào ngày ${dateStr}).`,
+      );
     }
   }
 };
 
-const validateLecturerConfigured = async (lecturerId: number, defenseId: number) => {
-  const config = await availabilityRepository.getLecturerDefenseConfig(lecturerId, defenseId);
+const validateLecturerConfigured = async (
+  lecturerId: number,
+  defenseId: number,
+) => {
+  const config = await availabilityRepository.getLecturerDefenseConfig(
+    lecturerId,
+    defenseId,
+  );
   if (!config) {
-    throw new Error("Bạn không có tên trong danh sách tham gia đợt bảo vệ này.");
+    throw new Error(
+      "Bạn không có tên trong danh sách tham gia đợt bảo vệ này.",
+    );
   }
 };
 /**
@@ -306,7 +344,8 @@ const validateLecturerConfigured = async (lecturerId: number, defenseId: number)
  */
 export const getAvailableLecturers = async (defenseDayId: number) => {
   // Verify defense day exists
-  const defenseDay = await availabilityRepository.getDefenseDayById(defenseDayId);
+  const defenseDay =
+    await availabilityRepository.getDefenseDayById(defenseDayId);
   if (!defenseDay) {
     throw new Error(`Không tìm thấy ngày bảo vệ với ID ${defenseDayId}`);
   }

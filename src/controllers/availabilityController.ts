@@ -155,12 +155,17 @@ export const getDefenseDaysWithAvailability = async (
     const lecturerId = req.query.lecturerId
       ? parseInt(req.query.lecturerId, 10)
       : undefined;
+    const isAdmin = !!req.user?.app_metadata?.roles?.includes("admin");
 
     // Authorization: Lecturers can only access their own availability
     const user = req.user;
-    if (user && !user.app_metadata?.roles?.includes("admin")) {
+    if (user && !isAdmin) {
       if (lecturerId !== user.app_metadata?.lecturerId) {
-        errorResponse(res, "Forbidden: You can only view your own availability", 403);
+        errorResponse(
+          res,
+          "Forbidden: You can only view your own availability",
+          403,
+        );
         return;
       }
     }
@@ -175,10 +180,12 @@ export const getDefenseDaysWithAvailability = async (
       return;
     }
 
-    const defenseDays = await availabilityService.getDefenseDaysWithAvailability(
-      defenseId,
-      lecturerId,
-    );
+    const defenseDays =
+      await availabilityService.getDefenseDaysWithAvailability(
+        defenseId,
+        lecturerId,
+        isAdmin,
+      );
     successResponse(
       res,
       defenseDays,
@@ -369,12 +376,17 @@ export const updateAvailability = async (
   try {
     const lecturerId = parseInt(req.params.lecturerId, 10);
     const { defenseDayId, status } = req.body;
+    const isAdmin = !!req.user?.app_metadata?.roles?.includes("admin");
 
     // Authorization: Lecturers can only update their own availability
     const user = req.user;
-    if (user && !user.app_metadata?.roles?.includes("admin")) {
+    if (user && !isAdmin) {
       if (lecturerId !== user.app_metadata?.lecturerId) {
-        errorResponse(res, "Forbidden: You can only modify your own availability", 403);
+        errorResponse(
+          res,
+          "Forbidden: You can only modify your own availability",
+          403,
+        );
         return;
       }
     }
@@ -398,6 +410,7 @@ export const updateAvailability = async (
       lecturerId,
       defenseDayId,
       status,
+      isAdmin,
     );
     successResponse(res, availability, "Availability updated successfully");
   } catch (error) {
@@ -491,12 +504,17 @@ export const batchUpdateAvailability = async (
   try {
     const lecturerId = parseInt(req.params.lecturerId, 10);
     const data = req.body;
+    const isAdmin = !!req.user?.app_metadata?.roles?.includes("admin");
 
     // Authorization: Lecturers can only update their own availability
     const user = req.user;
-    if (user && !user.app_metadata?.roles?.includes("admin")) {
+    if (user && !isAdmin) {
       if (lecturerId !== user.app_metadata?.lecturerId) {
-        errorResponse(res, "Forbidden: You can only modify your own availability", 403);
+        errorResponse(
+          res,
+          "Forbidden: You can only modify your own availability",
+          403,
+        );
         return;
       }
     }
@@ -530,6 +548,7 @@ export const batchUpdateAvailability = async (
     const availabilities = await availabilityService.batchUpdateAvailability(
       lecturerId,
       data,
+      isAdmin,
     );
     successResponse(
       res,
@@ -621,12 +640,17 @@ export const removeAvailability = async (
   try {
     const lecturerId = parseInt(req.params.lecturerId, 10);
     const defenseDayId = parseInt(req.params.defenseDayId, 10);
+    const isAdmin = !!req.user?.app_metadata?.roles?.includes("admin");
 
     // Authorization: Lecturers can only update their own availability
     const user = req.user;
-    if (user && !user.app_metadata?.roles?.includes("admin")) {
+    if (user && !isAdmin) {
       if (lecturerId !== user.app_metadata?.lecturerId) {
-        errorResponse(res, "Forbidden: You can only modify your own availability", 403);
+        errorResponse(
+          res,
+          "Forbidden: You can only modify your own availability",
+          403,
+        );
         return;
       }
     }
@@ -641,7 +665,11 @@ export const removeAvailability = async (
       return;
     }
 
-    await availabilityService.removeAvailability(lecturerId, defenseDayId);
+    await availabilityService.removeAvailability(
+      lecturerId,
+      defenseDayId,
+      isAdmin,
+    );
     successResponse(
       res,
       null,
@@ -706,8 +734,13 @@ export const getAvailableLecturers = async (
       return;
     }
 
-    const lecturers = await availabilityService.getAvailableLecturers(defenseDayId);
-    successResponse(res, lecturers, "Available lecturers retrieved successfully");
+    const lecturers =
+      await availabilityService.getAvailableLecturers(defenseDayId);
+    successResponse(
+      res,
+      lecturers,
+      "Available lecturers retrieved successfully",
+    );
   } catch (error) {
     const message = getErrorMessage(error);
     if (message.includes("not found") || message.includes("Không tìm thấy")) {
