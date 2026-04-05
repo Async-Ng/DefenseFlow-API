@@ -137,11 +137,6 @@ export const findById = async (id: number) => {
             include: {
               councilBoard: {
                 include: {
-                  room: {
-                    select: {
-                      name: true,
-                    },
-                  },
                   defenseDay: {
                     select: {
                       dayDate: true,

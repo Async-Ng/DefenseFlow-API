@@ -248,11 +248,6 @@ export const findSupervisedTopics = async (
             include: {
               councilBoard: {
                 include: {
-                  room: {
-                    select: {
-                      name: true,
-                    },
-                  },
                   defenseDay: {
                     select: {
                       dayDate: true,
