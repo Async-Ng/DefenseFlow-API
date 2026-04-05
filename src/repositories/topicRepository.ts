@@ -88,7 +88,11 @@ export const create = async (data: CreateTopicInput): Promise<Topic> => {
     data: {
       ...topicData,
       topicSupervisors: supervisorIds?.length
-        ? { createMany: { data: supervisorIds.map((lecturerId) => ({ lecturerId })) } }
+        ? {
+            createMany: {
+              data: supervisorIds.map((lecturerId) => ({ lecturerId })),
+            },
+          }
         : undefined,
     },
     include: {
@@ -106,6 +110,69 @@ export const findById = async (id: number) => {
     where: { id },
     include: {
       semester: true,
+      topicType: {
+        select: {
+          id: true,
+          name: true,
+        },
+      },
+      topicDefenses: {
+        orderBy: {
+          id: "desc",
+        },
+        include: {
+          defense: {
+            select: {
+              id: true,
+              defenseCode: true,
+              name: true,
+              type: true,
+              status: true,
+            },
+          },
+          defenseCouncils: {
+            orderBy: {
+              startTime: "asc",
+            },
+            include: {
+              councilBoard: {
+                include: {
+                  room: {
+                    select: {
+                      name: true,
+                    },
+                  },
+                  defenseDay: {
+                    select: {
+                      dayDate: true,
+                      defense: {
+                        select: {
+                          name: true,
+                          defenseCode: true,
+                        },
+                      },
+                    },
+                  },
+                  councilBoardMembers: {
+                    include: {
+                      lecturer: {
+                        select: {
+                          id: true,
+                          fullName: true,
+                          lecturerCode: true,
+                        },
+                      },
+                    },
+                    orderBy: {
+                      id: "asc",
+                    },
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
       topicSupervisors: {
         include: {
           lecturer: true,
@@ -197,7 +264,9 @@ export const deleteTopic = async (topicId: number): Promise<void> => {
 /**
  * Remove a topic from its latest defense session registration
  */
-export const removeTopicFromDefense = async (topicId: number): Promise<void> => {
+export const removeTopicFromDefense = async (
+  topicId: number,
+): Promise<void> => {
   await prisma.$transaction(async (tx) => {
     // 1. Get the latest topic defense for this topic
     const topicDefense = await tx.topicDefense.findFirst({
@@ -209,12 +278,12 @@ export const removeTopicFromDefense = async (topicId: number): Promise<void> => 
 
     // 2. Delete DefenseCouncil records associated with this registration
     await tx.defenseCouncil.deleteMany({
-      where: { registrationId: topicDefense.id }
+      where: { registrationId: topicDefense.id },
     });
 
     // 3. Delete TopicDefense record
     await tx.topicDefense.delete({
-      where: { id: topicDefense.id }
+      where: { id: topicDefense.id },
     });
   });
 };
@@ -255,56 +324,59 @@ export const updateTopicDefenseResult = async (
  */
 export const updateTopicDefenseResultByCodes = async (
   defenseId: number,
-  topicResults: { topicCode: string; result: DefenseResult }[]
+  topicResults: { topicCode: string; result: DefenseResult }[],
 ): Promise<{ count: number }> => {
-  return await prisma.$transaction(async (tx) => {
-    let count = 0;
-    
-    // 1. Fetch all matching registrations in one query
-    const topicCodes = topicResults.map(r => r.topicCode);
-    const registrations = await tx.topicDefense.findMany({
-      where: {
-        defenseId,
-        topic: { topicCode: { in: topicCodes } }
-      },
-      include: { topic: true },
-      orderBy: { id: "asc" }
-    });
+  return await prisma.$transaction(
+    async (tx) => {
+      let count = 0;
 
-    // 2. Map topicCode to registration id
-    const regMap = new Map<string, number>();
-    for (const reg of registrations) {
-      if (reg.topic) {
-        regMap.set(reg.topic.topicCode, reg.id);
-      }
-    }
+      // 1. Fetch all matching registrations in one query
+      const topicCodes = topicResults.map((r) => r.topicCode);
+      const registrations = await tx.topicDefense.findMany({
+        where: {
+          defenseId,
+          topic: { topicCode: { in: topicCodes } },
+        },
+        include: { topic: true },
+        orderBy: { id: "asc" },
+      });
 
-    // 3. Update sequentially but much faster since we don't query each time
-    const updatedTopicIds = new Set<number>();
-    
-    for (const item of topicResults) {
-      const regId = regMap.get(item.topicCode);
-      if (regId) {
-        const updated = await tx.topicDefense.update({
-          where: { id: regId },
-          data: { finalResult: item.result },
-        });
-        if (updated.topicId) {
-          updatedTopicIds.add(updated.topicId);
+      // 2. Map topicCode to registration id
+      const regMap = new Map<string, number>();
+      for (const reg of registrations) {
+        if (reg.topic) {
+          regMap.set(reg.topic.topicCode, reg.id);
         }
-        count++;
       }
-    }
 
-    // 4. Sync global status for all affected topics
-    for (const topicId of updatedTopicIds) {
-      await syncTopicStatus(topicId, tx);
-    }
-    
-    return { count };
-  }, {
-    timeout: 30000, // 30 seconds timeout for bulk operations
-  });
+      // 3. Update sequentially but much faster since we don't query each time
+      const updatedTopicIds = new Set<number>();
+
+      for (const item of topicResults) {
+        const regId = regMap.get(item.topicCode);
+        if (regId) {
+          const updated = await tx.topicDefense.update({
+            where: { id: regId },
+            data: { finalResult: item.result },
+          });
+          if (updated.topicId) {
+            updatedTopicIds.add(updated.topicId);
+          }
+          count++;
+        }
+      }
+
+      // 4. Sync global status for all affected topics
+      for (const topicId of updatedTopicIds) {
+        await syncTopicStatus(topicId, tx);
+      }
+
+      return { count };
+    },
+    {
+      timeout: 30000, // 30 seconds timeout for bulk operations
+    },
+  );
 };
 
 /**

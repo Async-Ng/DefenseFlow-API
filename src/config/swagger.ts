@@ -33,8 +33,14 @@ const options: swaggerJsdoc.Options = {
       { name: "Availability", description: "Lecturer Availability Tracking" },
       { name: "Capacity", description: "Scheduling Capacity Calculations" },
       { name: "Lecturers", description: "Lecturer Profiles and Assignments" },
-      { name: "Lecturer Defense Configs", description: "Lecturer Defense Configurations" },
-      { name: "Qualifications", description: "Lecturer Qualifications and Qualification Groups" },
+      {
+        name: "Lecturer Defense Configs",
+        description: "Lecturer Defense Configurations",
+      },
+      {
+        name: "Qualifications",
+        description: "Lecturer Qualifications and Qualification Groups",
+      },
       { name: "Topics", description: "Thesis Topic Management" },
       { name: "TopicTypes", description: "Topic Categorization" },
       { name: "TopicDefense", description: "Topic Defense Assignments" },
@@ -57,7 +63,12 @@ const options: swaggerJsdoc.Options = {
           properties: {
             id: { type: "integer", example: 1 },
             topicCode: { type: "string", maxLength: 50, example: "TOPIC_001" },
-            groupCode: { type: "string", maxLength: 50, nullable: true, example: "SE1701" },
+            groupCode: {
+              type: "string",
+              maxLength: 50,
+              nullable: true,
+              example: "SE1701",
+            },
             semesterId: { type: "integer", example: 1 },
             title: {
               type: "string",
@@ -84,12 +95,22 @@ const options: swaggerJsdoc.Options = {
             },
 
             topicType: { $ref: "#/components/schemas/TopicType" },
+            topicDefenses: {
+              type: "array",
+              items: { $ref: "#/components/schemas/TopicDefenseDetail" },
+            },
             status: { $ref: "#/components/schemas/TopicStatus" },
           },
         },
         TopicStatus: {
           type: "string",
-          enum: ["Pending", "Passed_Main", "Passed_Resit", "Failed_Main", "Failed_Final"],
+          enum: [
+            "Pending",
+            "Passed_Main",
+            "Passed_Resit",
+            "Failed_Main",
+            "Failed_Final",
+          ],
           example: "Passed_Main",
           description: "Trạng thái tổng của đề tài trong học kỳ",
         },
@@ -119,7 +140,8 @@ const options: swaggerJsdoc.Options = {
             },
             qualifications: {
               type: "array",
-              description: "Danh sách các kỹ năng (chuyên môn cá nhân) thuộc nhóm này",
+              description:
+                "Danh sách các kỹ năng (chuyên môn cá nhân) thuộc nhóm này",
               items: {
                 type: "object",
                 properties: {
@@ -151,7 +173,8 @@ const options: swaggerJsdoc.Options = {
               type: "string",
               maxLength: 50,
               example: "AI",
-              description: "Mã nhóm (viết hoa, không dấu, duy nhất trong hệ thống)",
+              description:
+                "Mã nhóm (viết hoa, không dấu, duy nhất trong hệ thống)",
             },
             name: {
               type: "string",
@@ -194,7 +217,8 @@ const options: swaggerJsdoc.Options = {
             },
             qualificationIds: {
               type: "array",
-              description: "Danh sách ID các kỹ năng mới (sẽ thay thế toàn bộ danh sách cũ của nhóm)",
+              description:
+                "Danh sách ID các kỹ năng mới (sẽ thay thế toàn bộ danh sách cũ của nhóm)",
               items: { type: "integer" },
               example: [1, 3],
             },
@@ -202,7 +226,8 @@ const options: swaggerJsdoc.Options = {
         },
         QualificationGroupTopicType: {
           type: "object",
-          description: "Liên kết giữa loại đề tài và nhóm chuyên môn, kèm trọng số ưu tiên",
+          description:
+            "Liên kết giữa loại đề tài và nhóm chuyên môn, kèm trọng số ưu tiên",
           properties: {
             id: { type: "integer", example: 1 },
             qualificationGroupId: { type: "integer", example: 2 },
@@ -212,9 +237,12 @@ const options: swaggerJsdoc.Options = {
               minimum: 1,
               maximum: 100,
               example: 60,
-              description: "Trọng số ưu tiên của nhóm cho loại đề tài này (số nguyên 1-100). Tổng tất cả trọng số của một loại đề tài phải bằng đúng 100.",
+              description:
+                "Trọng số ưu tiên của nhóm cho loại đề tài này (số nguyên 1-100). Tổng tất cả trọng số của một loại đề tài phải bằng đúng 100.",
             },
-            qualificationGroup: { $ref: "#/components/schemas/QualificationGroup" },
+            qualificationGroup: {
+              $ref: "#/components/schemas/QualificationGroup",
+            },
           },
         },
         // ─── TopicType schemas ────────────────────────────────────────────────
@@ -231,8 +259,11 @@ const options: swaggerJsdoc.Options = {
             },
             qualificationGroupTopicTypes: {
               type: "array",
-              description: "Danh sách các nhóm chuyên môn yêu cầu kèm trọng số ưu tiên. Tổng tất cả trọng số phải bằng 100.",
-              items: { $ref: "#/components/schemas/QualificationGroupTopicType" },
+              description:
+                "Danh sách các nhóm chuyên môn yêu cầu kèm trọng số ưu tiên. Tổng tất cả trọng số phải bằng 100.",
+              items: {
+                $ref: "#/components/schemas/QualificationGroupTopicType",
+              },
             },
           },
         },
@@ -247,7 +278,8 @@ const options: swaggerJsdoc.Options = {
             },
             groups: {
               type: "array",
-              description: "Danh sách nhóm chuyên môn cần liên kết. Nếu cung cấp, tổng priorityWeight phải bằng đúng 100.",
+              description:
+                "Danh sách nhóm chuyên môn cần liên kết. Nếu cung cấp, tổng priorityWeight phải bằng đúng 100.",
               items: {
                 type: "object",
                 required: ["groupId", "priorityWeight"],
@@ -255,14 +287,16 @@ const options: swaggerJsdoc.Options = {
                   groupId: {
                     type: "integer",
                     example: 1,
-                    description: "ID của nhóm chuyên môn (QualificationGroup.id)",
+                    description:
+                      "ID của nhóm chuyên môn (QualificationGroup.id)",
                   },
                   priorityWeight: {
                     type: "integer",
                     minimum: 1,
                     maximum: 100,
                     example: 60,
-                    description: "Trọng số ưu tiên (số nguyên 1-100). Tổng tất cả trọng số phải bằng 100.",
+                    description:
+                      "Trọng số ưu tiên (số nguyên 1-100). Tổng tất cả trọng số phải bằng 100.",
                   },
                 },
               },
@@ -283,7 +317,8 @@ const options: swaggerJsdoc.Options = {
             },
             groups: {
               type: "array",
-              description: "Danh sách nhóm chuyên môn mới (sẽ thay thế TOÀN BỘ danh sách cũ). Tổng priorityWeight phải bằng đúng 100.",
+              description:
+                "Danh sách nhóm chuyên môn mới (sẽ thay thế TOÀN BỘ danh sách cũ). Tổng priorityWeight phải bằng đúng 100.",
               items: {
                 type: "object",
                 required: ["groupId", "priorityWeight"],
@@ -298,7 +333,8 @@ const options: swaggerJsdoc.Options = {
                     minimum: 1,
                     maximum: 100,
                     example: 70,
-                    description: "Trọng số ưu tiên (1-100). Tổng phải bằng 100.",
+                    description:
+                      "Trọng số ưu tiên (1-100). Tổng phải bằng 100.",
                   },
                 },
               },
@@ -315,7 +351,11 @@ const options: swaggerJsdoc.Options = {
             topicCode: { type: "string", maxLength: 50, example: "TOPIC_001" },
             groupCode: { type: "string", maxLength: 50, example: "SE1701" },
             title: { type: "string", maxLength: 255, example: "AI Research" },
-            vietnameseTitle: { type: "string", maxLength: 255, example: "Nghiên cứu AI" },
+            vietnameseTitle: {
+              type: "string",
+              maxLength: 255,
+              example: "Nghiên cứu AI",
+            },
             supervisorIds: {
               type: "array",
               items: { type: "integer" },
@@ -435,13 +475,15 @@ const options: swaggerJsdoc.Options = {
               type: "boolean",
               default: false,
               example: false,
-              description: "Whether the admin has published availability days for lecturers to register",
+              description:
+                "Whether the admin has published availability days for lecturers to register",
             },
             isSchedulePublished: {
               type: "boolean",
               default: false,
               example: false,
-              description: "Whether the final defense schedule has been published",
+              description:
+                "Whether the final defense schedule has been published",
             },
             availabilityStartDate: {
               type: "string",
@@ -597,6 +639,9 @@ const options: swaggerJsdoc.Options = {
               type: "integer",
               example: 1,
             },
+            defense: {
+              $ref: "#/components/schemas/DefenseSummary",
+            },
           },
         },
         DefenseDayStatus: {
@@ -607,9 +652,9 @@ const options: swaggerJsdoc.Options = {
             "Hết hạn đăng ký",
             "Đã khóa đăng ký",
             "Đã xếp lịch nháp",
-            "Đã công bố lịch"
+            "Đã công bố lịch",
           ],
-          example: "Đang nhận đăng ký"
+          example: "Đang nhận đăng ký",
         },
         EnhancedDefenseDay: {
           allOf: [
@@ -622,9 +667,9 @@ const options: swaggerJsdoc.Options = {
                 availableLecturerCount: { type: "integer", example: 15 },
                 busyLecturerCount: { type: "integer", example: 5 },
                 totalConfiguredLecturers: { type: "integer", example: 30 },
-              }
-            }
-          ]
+              },
+            },
+          ],
         },
         CreateDefenseDayInput: {
           type: "object",
@@ -673,7 +718,8 @@ const options: swaggerJsdoc.Options = {
               type: "string",
               enum: ["Senior", "MidLevel", "Junior", "Rookie"],
               default: "Rookie",
-              description: "[Chỉ dành cho Admin] Cấp bậc kinh nghiệm của giảng viên. Không hiển thị cho giảng viên.",
+              description:
+                "[Chỉ dành cho Admin] Cấp bậc kinh nghiệm của giảng viên. Không hiển thị cho giảng viên.",
               example: "MidLevel",
             },
             isLecturer: {
@@ -699,7 +745,11 @@ const options: swaggerJsdoc.Options = {
           required: ["lecturerCode"],
           properties: {
             lecturerCode: { type: "string", maxLength: 50, example: "LEC001" },
-            fullName: { type: "string", maxLength: 100, example: "Nguyen Van A" },
+            fullName: {
+              type: "string",
+              maxLength: 100,
+              example: "Nguyen Van A",
+            },
             email: {
               type: "string",
               maxLength: 100,
@@ -708,7 +758,8 @@ const options: swaggerJsdoc.Options = {
             seniorityLevel: {
               type: "string",
               enum: ["Senior", "MidLevel", "Junior", "Rookie"],
-              description: "[Chỉ dành cho Admin] Cấp bậc kinh nghiệm của giảng viên.",
+              description:
+                "[Chỉ dành cho Admin] Cấp bậc kinh nghiệm của giảng viên.",
               example: "Rookie",
             },
             isLecturer: {
@@ -725,7 +776,11 @@ const options: swaggerJsdoc.Options = {
           type: "object",
           properties: {
             lecturerCode: { type: "string", maxLength: 50, example: "LEC001" },
-            fullName: { type: "string", maxLength: 100, example: "Nguyen Van A" },
+            fullName: {
+              type: "string",
+              maxLength: 100,
+              example: "Nguyen Van A",
+            },
             email: {
               type: "string",
               maxLength: 100,
@@ -734,7 +789,8 @@ const options: swaggerJsdoc.Options = {
             seniorityLevel: {
               type: "string",
               enum: ["Senior", "MidLevel", "Junior", "Rookie"],
-              description: "[Chỉ dành cho Admin] Cập nhật cấp bậc kinh nghiệm. Không hiển thị cho giảng viên.",
+              description:
+                "[Chỉ dành cho Admin] Cập nhật cấp bậc kinh nghiệm. Không hiển thị cho giảng viên.",
               example: "Senior",
             },
             isLecturer: {
@@ -765,7 +821,7 @@ const options: swaggerJsdoc.Options = {
               type: "string",
               enum: ["Product", "Document", "Presentation"],
               nullable: true,
-              example: "Product"
+              example: "Product",
             },
             descHigh: { type: "string", nullable: true },
             descGood: { type: "string", nullable: true },
@@ -779,10 +835,14 @@ const options: swaggerJsdoc.Options = {
                 properties: {
                   id: { type: "integer", example: 1 },
                   topicTypeId: { type: "integer", example: 1 },
-                  priorityWeight: { type: "number", format: "float", example: 1.0 },
+                  priorityWeight: {
+                    type: "number",
+                    format: "float",
+                    example: 1.0,
+                  },
                   topicType: { $ref: "#/components/schemas/TopicType" },
-                }
-              }
+                },
+              },
             },
           },
         },
@@ -799,7 +859,7 @@ const options: swaggerJsdoc.Options = {
             component: {
               type: "string",
               enum: ["Product", "Document", "Presentation"],
-              example: "Product"
+              example: "Product",
             },
             descHigh: { type: "string" },
             descGood: { type: "string" },
@@ -825,7 +885,7 @@ const options: swaggerJsdoc.Options = {
             component: {
               type: "string",
               enum: ["Product", "Document", "Presentation"],
-              example: "Product"
+              example: "Product",
             },
             descHigh: { type: "string" },
             descGood: { type: "string" },
@@ -836,7 +896,8 @@ const options: swaggerJsdoc.Options = {
               type: "integer",
               nullable: true,
               example: 1,
-              description: "ID của nhóm chuyên môn (Gửi null nếu muốn gỡ khỏi nhóm)",
+              description:
+                "ID của nhóm chuyên môn (Gửi null nếu muốn gỡ khỏi nhóm)",
             },
           },
         },
@@ -900,14 +961,15 @@ const options: swaggerJsdoc.Options = {
           },
         },
 
-
         UpdateLecturerQualificationsInput: {
           type: "object",
           required: ["qualifications"],
           properties: {
             qualifications: {
               type: "array",
-              items: { $ref: "#/components/schemas/LecturerQualificationInput" },
+              items: {
+                $ref: "#/components/schemas/LecturerQualificationInput",
+              },
               example: [
                 { qualificationId: 1, score: 5 },
                 { qualificationId: 2, score: 3 },
@@ -1123,6 +1185,39 @@ const options: swaggerJsdoc.Options = {
           enum: ["President", "Secretary", "Member"],
           example: "President",
         },
+        RoomSummary: {
+          type: "object",
+          properties: {
+            name: { type: "string", example: "A101" },
+          },
+        },
+        LecturerSummary: {
+          type: "object",
+          properties: {
+            id: { type: "integer", example: 5 },
+            lecturerCode: { type: "string", example: "LEC005" },
+            fullName: {
+              type: "string",
+              nullable: true,
+              example: "Nguyen Van A",
+            },
+          },
+        },
+        DefenseSummary: {
+          type: "object",
+          properties: {
+            id: { type: "integer", example: 1 },
+            defenseCode: { type: "string", example: "DEF_001" },
+            name: { type: "string", nullable: true, example: "Main defense" },
+            type: {
+              type: "string",
+              enum: ["Main", "Resit"],
+              nullable: true,
+              example: "Main",
+            },
+            status: { type: "string", nullable: true, example: "Open" },
+          },
+        },
         CouncilBoardMember: {
           type: "object",
           required: ["id", "councilBoardId", "lecturerId", "role"],
@@ -1134,6 +1229,15 @@ const options: swaggerJsdoc.Options = {
             lecturer: { $ref: "#/components/schemas/Lecturer" },
           },
         },
+        CouncilBoardMemberSummary: {
+          type: "object",
+          required: ["id", "role", "lecturer"],
+          properties: {
+            id: { type: "integer", example: 1 },
+            role: { $ref: "#/components/schemas/CouncilRole" },
+            lecturer: { $ref: "#/components/schemas/LecturerSummary" },
+          },
+        },
         CouncilBoard: {
           type: "object",
           required: ["id", "boardCode", "defenseDayId", "semesterId"],
@@ -1143,9 +1247,11 @@ const options: swaggerJsdoc.Options = {
             name: { type: "string", example: "Defense Council Board 1" },
             defenseDayId: { type: "integer", example: 2 },
             semesterId: { type: "integer", example: 1 },
+            room: { $ref: "#/components/schemas/RoomSummary" },
+            defenseDay: { $ref: "#/components/schemas/DefenseDay" },
             councilBoardMembers: {
               type: "array",
-              items: { $ref: "#/components/schemas/CouncilBoardMember" },
+              items: { $ref: "#/components/schemas/CouncilBoardMemberSummary" },
             },
             defenseCouncils: {
               type: "array",
@@ -1155,7 +1261,12 @@ const options: swaggerJsdoc.Options = {
         },
         DefenseCouncil: {
           type: "object",
-          required: ["id", "defenseCouncilCode", "topicDefenseId", "councilBoardId"],
+          required: [
+            "id",
+            "defenseCouncilCode",
+            "topicDefenseId",
+            "councilBoardId",
+          ],
           properties: {
             id: { type: "integer", example: 50 },
             defenseCouncilCode: { type: "string", example: "DC-TOPIC001-123" },
@@ -1166,6 +1277,42 @@ const options: swaggerJsdoc.Options = {
             councilBoard: { $ref: "#/components/schemas/CouncilBoard" },
             topicDefense: {
               $ref: "#/components/schemas/TopicDefense",
+            },
+          },
+        },
+        TopicDefenseCouncil: {
+          type: "object",
+          properties: {
+            id: { type: "integer", example: 100 },
+            startTime: {
+              type: "string",
+              format: "time",
+              nullable: true,
+              example: "08:00:00",
+            },
+            endTime: {
+              type: "string",
+              format: "time",
+              nullable: true,
+              example: "08:45:00",
+            },
+            councilBoard: { $ref: "#/components/schemas/CouncilBoard" },
+          },
+        },
+        TopicDefenseDetail: {
+          type: "object",
+          properties: {
+            id: { type: "integer", example: 5 },
+            topicDefenseCode: { type: "string", example: "TD-001" },
+            finalResult: {
+              type: "string",
+              enum: ["Pending", "Passed", "Failed"],
+              example: "Pending",
+            },
+            defense: { $ref: "#/components/schemas/DefenseSummary" },
+            defenseCouncils: {
+              type: "array",
+              items: { $ref: "#/components/schemas/TopicDefenseCouncil" },
             },
           },
         },
@@ -1191,7 +1338,9 @@ const options: swaggerJsdoc.Options = {
               type: "array",
               items: { type: "string" },
               description: "Councils that did not meet seniority requirements",
-              example: ["CouncilBoard CB-001: No Senior or MidLevel lecturer available. Scheduled with best available."],
+              example: [
+                "CouncilBoard CB-001: No Senior or MidLevel lecturer available. Scheduled with best available.",
+              ],
             },
           },
         },
@@ -1205,6 +1354,20 @@ const options: swaggerJsdoc.Options = {
               example: "Topic retrieved successfully",
             },
             data: { $ref: "#/components/schemas/Topic" },
+          },
+        },
+        LecturerSupervisedTopicsResponse: {
+          type: "object",
+          properties: {
+            success: { type: "boolean", example: true },
+            message: {
+              type: "string",
+              example: "Supervised topics retrieved successfully",
+            },
+            data: {
+              type: "array",
+              items: { $ref: "#/components/schemas/Topic" },
+            },
           },
         },
         TopicListResponse: {
@@ -1293,7 +1456,10 @@ const options: swaggerJsdoc.Options = {
           type: "object",
           properties: {
             success: { type: "boolean", example: true },
-            message: { type: "string", example: "Defense days retrieved successfully" },
+            message: {
+              type: "string",
+              example: "Defense days retrieved successfully",
+            },
             data: {
               type: "array",
               items: { $ref: "#/components/schemas/EnhancedDefenseDay" },
@@ -1304,7 +1470,10 @@ const options: swaggerJsdoc.Options = {
           type: "object",
           properties: {
             success: { type: "boolean", example: true },
-            message: { type: "string", example: "Defense days with availability retrieved successfully" },
+            message: {
+              type: "string",
+              example: "Defense days with availability retrieved successfully",
+            },
             data: {
               type: "array",
               items: {
@@ -1313,7 +1482,9 @@ const options: swaggerJsdoc.Options = {
                   {
                     type: "object",
                     properties: {
-                      availabilityStatus: { $ref: "#/components/schemas/AvailabilityStatus" },
+                      availabilityStatus: {
+                        $ref: "#/components/schemas/AvailabilityStatus",
+                      },
                       isRegistered: { type: "boolean", example: true },
                     },
                   },
@@ -1326,7 +1497,10 @@ const options: swaggerJsdoc.Options = {
           type: "object",
           properties: {
             success: { type: "boolean", example: true },
-            message: { type: "string", example: "Lecturer status retrieved successfully" },
+            message: {
+              type: "string",
+              example: "Lecturer status retrieved successfully",
+            },
             data: { $ref: "#/components/schemas/LecturerStatusResult" },
           },
         },
@@ -1334,7 +1508,10 @@ const options: swaggerJsdoc.Options = {
           type: "object",
           properties: {
             success: { type: "boolean", example: true },
-            message: { type: "string", example: "Availability updated successfully" },
+            message: {
+              type: "string",
+              example: "Availability updated successfully",
+            },
             data: { $ref: "#/components/schemas/Availability" },
           },
         },
@@ -1342,7 +1519,10 @@ const options: swaggerJsdoc.Options = {
           type: "object",
           properties: {
             success: { type: "boolean", example: true },
-            message: { type: "string", example: "Availability updated successfully" },
+            message: {
+              type: "string",
+              example: "Availability updated successfully",
+            },
             data: {
               type: "array",
               items: { $ref: "#/components/schemas/Availability" },
@@ -1424,7 +1604,10 @@ const options: swaggerJsdoc.Options = {
           type: "object",
           properties: {
             success: { type: "boolean", example: true },
-            message: { type: "string", example: "Lấy danh sách giảng viên thành công" },
+            message: {
+              type: "string",
+              example: "Lấy danh sách giảng viên thành công",
+            },
             data: {
               type: "array",
               items: { $ref: "#/components/schemas/Lecturer" },
@@ -1476,7 +1659,10 @@ const options: swaggerJsdoc.Options = {
           type: "object",
           properties: {
             success: { type: "boolean", example: true },
-            message: { type: "string", example: "Lấy thông tin loại đề tài thành công" },
+            message: {
+              type: "string",
+              example: "Lấy thông tin loại đề tài thành công",
+            },
             data: { $ref: "#/components/schemas/TopicType" },
           },
         },
@@ -1484,7 +1670,10 @@ const options: swaggerJsdoc.Options = {
           type: "object",
           properties: {
             success: { type: "boolean", example: true },
-            message: { type: "string", example: "Lấy danh sách loại đề tài thành công" },
+            message: {
+              type: "string",
+              example: "Lấy danh sách loại đề tài thành công",
+            },
             data: {
               type: "array",
               items: { $ref: "#/components/schemas/TopicType" },
@@ -1548,7 +1737,10 @@ const options: swaggerJsdoc.Options = {
           type: "object",
           properties: {
             success: { type: "boolean", example: true },
-            message: { type: "string", example: "Schedule retrieved successfully" },
+            message: {
+              type: "string",
+              example: "Schedule retrieved successfully",
+            },
             data: {
               type: "object",
               properties: {
@@ -1567,7 +1759,10 @@ const options: swaggerJsdoc.Options = {
           type: "object",
           properties: {
             success: { type: "boolean", example: true },
-            message: { type: "string", example: "Council board retrieved successfully" },
+            message: {
+              type: "string",
+              example: "Council board retrieved successfully",
+            },
             data: { $ref: "#/components/schemas/CouncilBoard" },
           },
         },
@@ -1575,7 +1770,10 @@ const options: swaggerJsdoc.Options = {
           type: "object",
           properties: {
             success: { type: "boolean", example: true },
-            message: { type: "string", example: "Defense council retrieved successfully" },
+            message: {
+              type: "string",
+              example: "Defense council retrieved successfully",
+            },
             data: { $ref: "#/components/schemas/DefenseCouncil" },
           },
         },
@@ -1583,7 +1781,10 @@ const options: swaggerJsdoc.Options = {
           type: "object",
           properties: {
             success: { type: "boolean", example: true },
-            message: { type: "string", example: "Configuration retrieved successfully" },
+            message: {
+              type: "string",
+              example: "Configuration retrieved successfully",
+            },
             data: { $ref: "#/components/schemas/LecturerDefenseConfig" },
           },
         },
@@ -1591,7 +1792,10 @@ const options: swaggerJsdoc.Options = {
           type: "object",
           properties: {
             success: { type: "boolean", example: true },
-            message: { type: "string", example: "Configurations retrieved successfully" },
+            message: {
+              type: "string",
+              example: "Configurations retrieved successfully",
+            },
             data: {
               type: "array",
               items: { $ref: "#/components/schemas/LecturerDefenseConfig" },

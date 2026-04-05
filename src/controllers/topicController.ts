@@ -9,7 +9,11 @@ import {
   createdResponse,
 } from "../utils/apiResponse.js";
 import { getErrorMessage } from "../utils/typeGuards.js";
-import { getIdParam, getPaginationParams, getTopicFilters } from "../utils/requestHelpers.js";
+import {
+  getIdParam,
+  getPaginationParams,
+  getTopicFilters,
+} from "../utils/requestHelpers.js";
 import {
   UpdateTopicResultInput,
   UpdateTopicInput,
@@ -60,12 +64,12 @@ export const createTopic = async (
   }
 };
 
-
 /**
  * @swagger
  * /api/topics:
  *   get:
  *     summary: "[ADMIN, LECTURER] Get all topics"
+ *     description: Returns paginated topics with supervisors, semester, topic type, and status.
  *     tags: [Topics]
  *     parameters:
  *       - in: query
@@ -102,6 +106,8 @@ export const createTopic = async (
  *         schema:
  *           $ref: '#/components/schemas/TopicStatus'
  *         description: Filter by global topic status in the semester
+ *     security:
+ *       - bearerAuth: []
  *     responses:
  *       200:
  *         description: List of topics retrieved successfully
@@ -143,6 +149,9 @@ export const getAllTopics = async (
  * /api/topics/{id}:
  *   get:
  *     summary: "[ADMIN, LECTURER] Get topic by ID"
+ *     description: |
+ *       Returns the full topic detail including semester, supervisors, topic defenses,
+ *       and any council assignments linked to each defense registration.
  *     tags: [Topics]
  *     parameters:
  *       - in: path
@@ -150,6 +159,9 @@ export const getAllTopics = async (
  *         required: true
  *         schema:
  *           type: integer
+ *         description: Topic ID
+ *     security:
+ *       - bearerAuth: []
  *     responses:
  *       200:
  *         description: Topic details retrieved successfully
@@ -370,7 +382,8 @@ export const updateTopicResult = async (
       !["Pending", "Passed", "Failed"].includes(data.result)
     ) {
       return validationErrorResponse(res, {
-        message: "Kết quả (Result) phải là một trong các giá trị: Pending, Passed, Failed",
+        message:
+          "Kết quả (Result) phải là một trong các giá trị: Pending, Passed, Failed",
       });
     }
 

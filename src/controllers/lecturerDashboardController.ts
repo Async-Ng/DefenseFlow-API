@@ -1,6 +1,10 @@
-;import { Request, Response } from "express";
+import { Request, Response } from "express";
 import * as lecturerService from "../services/lecturerService.js";
-import { successResponse, errorResponse, notFoundResponse } from "../utils/apiResponse.js";
+import {
+  successResponse,
+  errorResponse,
+  notFoundResponse,
+} from "../utils/apiResponse.js";
 import { getErrorMessage } from "../utils/typeGuards.js";
 import { getIdParam, getActiveRole } from "../utils/requestHelpers.js";
 
@@ -159,22 +163,33 @@ import { getIdParam, getActiveRole } from "../utils/requestHelpers.js";
  *       500:
  *         description: Server Error
  */
-export const getLecturerDashboard = async (req: Request, res: Response): Promise<Response> => {
+export const getLecturerDashboard = async (
+  req: Request,
+  res: Response,
+): Promise<Response> => {
   try {
     const id = getIdParam(req);
 
     // Authorization: Lecturers can only access their own dashboard
     const user = req.user;
     const activeRole = getActiveRole(req);
-    
+
     if (user && activeRole !== "admin") {
       if (user.app_metadata?.lecturerId !== id) {
-        return errorResponse(res, "Forbidden: You can only access your own dashboard", 403);
+        return errorResponse(
+          res,
+          "Forbidden: You can only access your own dashboard",
+          403,
+        );
       }
     }
 
     const stats = await lecturerService.getLecturerDashboard(id);
-    return successResponse(res, stats, "Lecturer dashboard retrieved successfully");
+    return successResponse(
+      res,
+      stats,
+      "Lecturer dashboard retrieved successfully",
+    );
   } catch (error: unknown) {
     const message = getErrorMessage(error);
     if (message.includes("not found")) return notFoundResponse(res, message);
@@ -187,7 +202,10 @@ export const getLecturerDashboard = async (req: Request, res: Response): Promise
  * /api/lecturers/{id}/supervised-topics:
  *   get:
  *     summary: "[ADMIN, LECTURER] Get topics supervised by lecturer"
- *     description: Returns a full list of topics where the specified lecturer is a supervisor.
+ *     description: |
+ *       Returns the topics supervised by the lecturer, including the latest defense record
+ *       and any council assignment created for that defense. This is the primary endpoint
+ *       for lecturer-facing "which council will judge my topic" screens.
  *     tags: [Lecturers]
  *     parameters:
  *       - in: path
@@ -201,44 +219,54 @@ export const getLecturerDashboard = async (req: Request, res: Response): Promise
  *         schema:
  *           type: integer
  *         description: Optional semester ID to filter the topics.
+ *     security:
+ *       - bearerAuth: []
  *     responses:
  *       200:
- *         description: List of supervised topics
+ *         description: List of supervised topics with defense/council details
  *         content:
  *           application/json:
  *             schema:
- *               type: object
- *               properties:
- *                 success:
- *                   type: boolean
- *                 message:
- *                   type: string
- *                 data:
- *                   type: array
- *                   items:
- *                     $ref: '#/components/schemas/Topic'
+ *               $ref: '#/components/schemas/LecturerSupervisedTopicsResponse'
  *       404:
  *         description: Lecturer not found
+ *       403:
+ *         description: Forbidden - Lecturers can only access their own supervised topics
  *       500:
  *         description: Server Error
  */
-export const getSupervisedTopics = async (req: Request, res: Response): Promise<Response> => {
+export const getSupervisedTopics = async (
+  req: Request,
+  res: Response,
+): Promise<Response> => {
   try {
     const id = getIdParam(req);
 
     // Authorization: Lecturers can only access their own supervised topics
     const user = req.user;
     const activeRole = getActiveRole(req);
-    
+
     if (user && activeRole !== "admin") {
       if (user.app_metadata?.lecturerId !== id) {
-        return errorResponse(res, "Forbidden: You can only access your own supervised topics", 403);
+        return errorResponse(
+          res,
+          "Forbidden: You can only access your own supervised topics",
+          403,
+        );
       }
     }
 
-    const semesterId = req.query.semesterId ? parseInt(req.query.semesterId as string) : undefined;
-    const topics = await lecturerService.getSupervisedTopics(id, { semesterId });
-    return successResponse(res, topics, "Supervised topics retrieved successfully");
+    const semesterId = req.query.semesterId
+      ? parseInt(req.query.semesterId as string)
+      : undefined;
+    const topics = await lecturerService.getSupervisedTopics(id, {
+      semesterId,
+    });
+    return successResponse(
+      res,
+      topics,
+      "Supervised topics retrieved successfully",
+    );
   } catch (error: unknown) {
     const message = getErrorMessage(error);
     if (message.includes("not found")) return notFoundResponse(res, message);
@@ -356,28 +384,42 @@ export const getSupervisedTopics = async (req: Request, res: Response): Promise<
  *       500:
  *         description: Server Error
  */
-export const getSchedule = async (req: Request, res: Response): Promise<Response> => {
+export const getSchedule = async (
+  req: Request,
+  res: Response,
+): Promise<Response> => {
   try {
     const id = getIdParam(req);
 
     // Authorization: Lecturers can only access their own schedule
     const user = req.user;
     const activeRole = getActiveRole(req);
-    
+
     if (user && activeRole !== "admin") {
       if (user.app_metadata?.lecturerId !== id) {
-        return errorResponse(res, "Forbidden: You can only access your own schedule", 403);
+        return errorResponse(
+          res,
+          "Forbidden: You can only access your own schedule",
+          403,
+        );
       }
     }
 
-    const semesterId = req.query.semesterId ? parseInt(req.query.semesterId as string) : undefined;
+    const semesterId = req.query.semesterId
+      ? parseInt(req.query.semesterId as string)
+      : undefined;
 
-    const schedule = await lecturerService.getPersonalSchedule(id, { semesterId });
-    return successResponse(res, schedule, "Lecturer defense schedule retrieved successfully");
+    const schedule = await lecturerService.getPersonalSchedule(id, {
+      semesterId,
+    });
+    return successResponse(
+      res,
+      schedule,
+      "Lecturer defense schedule retrieved successfully",
+    );
   } catch (error: unknown) {
     const message = getErrorMessage(error);
     if (message.includes("not found")) return notFoundResponse(res, message);
     return errorResponse(res, message, 500);
   }
 };
-

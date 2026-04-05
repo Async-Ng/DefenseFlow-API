@@ -1,5 +1,9 @@
 import { prisma } from "../config/prisma.js";
-import { CouncilRole, Prisma, SemesterStatus } from "../../generated/prisma/client.js";
+import {
+  CouncilRole,
+  Prisma,
+  SemesterStatus,
+} from "../../generated/prisma/client.js";
 import type {
   Lecturer,
   LecturerQualification,
@@ -56,7 +60,10 @@ export const findAll = async (
 
   // Apply filters
   if (filters.lecturerCode) {
-    where.lecturerCode = { contains: filters.lecturerCode, mode: "insensitive" };
+    where.lecturerCode = {
+      contains: filters.lecturerCode,
+      mode: "insensitive",
+    };
   }
   if (filters.fullName) {
     where.fullName = { contains: filters.fullName, mode: "insensitive" };
@@ -93,7 +100,9 @@ export const findAll = async (
 /**
  * Find lecturer by code
  */
-export const findByCode = async (lecturerCode: string): Promise<Lecturer | null> => {
+export const findByCode = async (
+  lecturerCode: string,
+): Promise<Lecturer | null> => {
   return await prisma.lecturer.findUnique({
     where: { lecturerCode },
   });
@@ -111,7 +120,10 @@ export const create = async (data: CreateLecturerInput): Promise<Lecturer> => {
 /**
  * Update a lecturer
  */
-export const update = async (id: number, data: UpdateLecturerInput): Promise<Lecturer> => {
+export const update = async (
+  id: number,
+  data: UpdateLecturerInput,
+): Promise<Lecturer> => {
   return await prisma.lecturer.update({
     where: { id },
     data,
@@ -126,8 +138,6 @@ export const deleteLecturer = async (id: number): Promise<Lecturer> => {
     where: { id },
   });
 };
-
-
 
 /**
  * Upsert lecturer qualification (create or update)
@@ -217,6 +227,63 @@ export const findSupervisedTopics = async (
       topicType: {
         select: { name: true },
       },
+      topicDefenses: {
+        orderBy: {
+          id: "desc",
+        },
+        include: {
+          defense: {
+            select: {
+              id: true,
+              defenseCode: true,
+              name: true,
+              type: true,
+              status: true,
+            },
+          },
+          defenseCouncils: {
+            orderBy: {
+              startTime: "asc",
+            },
+            include: {
+              councilBoard: {
+                include: {
+                  room: {
+                    select: {
+                      name: true,
+                    },
+                  },
+                  defenseDay: {
+                    select: {
+                      dayDate: true,
+                      defense: {
+                        select: {
+                          name: true,
+                          defenseCode: true,
+                        },
+                      },
+                    },
+                  },
+                  councilBoardMembers: {
+                    include: {
+                      lecturer: {
+                        select: {
+                          id: true,
+                          fullName: true,
+                          lecturerCode: true,
+                        },
+                      },
+                    },
+                    orderBy: {
+                      id: "asc",
+                    },
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
       topicSupervisors: {
         include: {
           lecturer: {
@@ -235,7 +302,9 @@ export const findSupervisedTopics = async (
 /**
  * Get dashboard stats for a lecturer — redesigned for at-a-glance actionability
  */
-export const getLecturerDashboardStats = async (lecturerId: number): Promise<any> => {
+export const getLecturerDashboardStats = async (
+  lecturerId: number,
+): Promise<any> => {
   const now = new Date();
   const todayStart = new Date(now);
   todayStart.setHours(0, 0, 0, 0);
@@ -373,11 +442,13 @@ export const getLecturerDashboardStats = async (lecturerId: number): Promise<any
   const pendingAvailability = openDefenses
     .map((defense) => {
       const unregisteredDays = defense.defenseDays.filter(
-        (day) => day.lecturerDayAvailability.length === 0
+        (day) => day.lecturerDayAvailability.length === 0,
       );
       if (unregisteredDays.length === 0) return null;
 
-      const endDate = defense.availabilityEndDate ? new Date(defense.availabilityEndDate) : null;
+      const endDate = defense.availabilityEndDate
+        ? new Date(defense.availabilityEndDate)
+        : null;
       const daysLeft = endDate
         ? Math.ceil((endDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24))
         : null;
@@ -397,29 +468,41 @@ export const getLecturerDashboardStats = async (lecturerId: number): Promise<any
     .filter(Boolean);
 
   // ── 5. Stats (scoped to current semester) ───────────────────────────────
-  const semesterFilter = currentSemester ? { semesterId: currentSemester.id } : {};
+  const semesterFilter = currentSemester
+    ? { semesterId: currentSemester.id }
+    : {};
 
-  const [totalSupervisedThisSemester, totalBoardsThisSemester, topicResultGroups] =
-    await Promise.all([
-      prisma.topicSupervisor.count({
-        where: { lecturerId, topic: semesterFilter },
-      }),
-      prisma.councilBoardMember.count({
-        where: {
-          lecturerId,
-          councilBoard: currentSemester ? { semesterId: currentSemester.id } : {},
+  const [
+    totalSupervisedThisSemester,
+    totalBoardsThisSemester,
+    topicResultGroups,
+  ] = await Promise.all([
+    prisma.topicSupervisor.count({
+      where: { lecturerId, topic: semesterFilter },
+    }),
+    prisma.councilBoardMember.count({
+      where: {
+        lecturerId,
+        councilBoard: currentSemester ? { semesterId: currentSemester.id } : {},
+      },
+    }),
+    prisma.topicDefense.groupBy({
+      by: ["finalResult"],
+      where: {
+        topic: {
+          topicSupervisors: { some: { lecturerId } },
+          ...semesterFilter,
         },
-      }),
-      prisma.topicDefense.groupBy({
-        by: ["finalResult"],
-        where: {
-          topic: { topicSupervisors: { some: { lecturerId } }, ...semesterFilter },
-        },
-        _count: { id: true },
-      }),
-    ]);
+      },
+      _count: { id: true },
+    }),
+  ]);
 
-  const topicResultSummary: Record<string, number> = { pending: 0, passed: 0, failed: 0 };
+  const topicResultSummary: Record<string, number> = {
+    pending: 0,
+    passed: 0,
+    failed: 0,
+  };
   topicResultGroups.forEach((g) => {
     const key = (g.finalResult ?? "pending").toLowerCase();
     if (key in topicResultSummary) topicResultSummary[key] = g._count.id;
@@ -552,7 +635,9 @@ export const findPersonalSchedule = async (
 /**
  * Check if qualification exists
  */
-export const qualificationExists = async (qualificationId: number): Promise<boolean> => {
+export const qualificationExists = async (
+  qualificationId: number,
+): Promise<boolean> => {
   const count = await prisma.qualification.count({
     where: { id: qualificationId },
   });
