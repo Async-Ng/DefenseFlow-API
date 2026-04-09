@@ -1,5 +1,5 @@
 import { Request, Response } from "express";
-import * as dashboardService from "../services/dashboardService.js";
+import * as dashboardRepository from "../repositories/dashboardRepository.js";
 import { successResponse, errorResponse } from "../utils/apiResponse.js";
 import { getErrorMessage } from "../utils/typeGuards.js";
 
@@ -31,8 +31,12 @@ export const getDashboardStats = async (
   res: Response,
 ): Promise<Response> => {
   try {
-    const stats = await dashboardService.getDashboardStats();
-    return successResponse(res, stats, "Dashboard statistics retrieved successfully");
+    const stats = await dashboardRepository.getDashboardStats();
+    return successResponse(
+      res,
+      stats,
+      "Dashboard statistics retrieved successfully",
+    );
   } catch (error: unknown) {
     return errorResponse(res, getErrorMessage(error), 500);
   }
