@@ -882,7 +882,6 @@ export const updateCouncilBoard = async (
     include: {
       lecturerDayAvailability: { where: { defenseDayId: defenseDayId } },
       lecturerDefenseConfigs: { where: { defenseId: defenseId } },
-      lecturerQualifications: { include: { qualification: true } },
     }
   });
 
@@ -940,7 +939,7 @@ export const updateCouncilBoard = async (
       }
   }
 
-  // 5. Conflict of Interest Check & Expertise Check
+  // 5. Conflict of Interest Check
   const boardTopics = await prisma.defenseCouncil.findMany({
     where: { councilBoardId },
     include: {
@@ -949,39 +948,12 @@ export const updateCouncilBoard = async (
           topic: {
             include: { 
                 topicSupervisors: true,
-                topicType: {
-                    include: {
-                        qualificationGroupTopicTypes: {
-                            include: {
-                                qualificationGroup: {
-                                    include: { qualifications: { select: { id: true } } }
-                                }
-                            }
-                        }
-                    }
-                }
             }
           }
         }
       }
     }
   });
-
-  const requiredQualIds = new Set<number>();
-  boardTopics.forEach(dc => {
-      dc.topicDefense?.topic?.topicType?.qualificationGroupTopicTypes?.forEach(gtt => {
-          gtt.qualificationGroup.qualifications.forEach(q => requiredQualIds.add(q.id));
-      });
-  });
-
-  if (requiredQualIds.size > 0) {
-      const anyMatch = lecturers.some(l => 
-          l.lecturerQualifications.some(lq => requiredQualIds.has(lq.qualificationId))
-      );
-      if (!anyMatch) {
-          throw new AppError(400, "Thiếu chuyên môn: Không có giảng viên nào trong danh sách được chọn có chuyên môn phù hợp với các đề tài của hội đồng này.");
-      }
-  }
 
   const supervisorsInBoardTopics = new Set<number>();
   boardTopics.forEach(dc => {
