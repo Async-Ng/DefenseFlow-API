@@ -147,9 +147,9 @@ export class ExportService {
       "Mã đề tài",
       "Chủ tịch",
       "Thư ký",
-      "Ủy viên 1",
-      "Ủy viên 2",
-      "Ủy viên 3",
+      "PB Nghiệp vụ",
+      "PB Kỹ thuật",
+      "PB Thuật toán",
       "Kết quả (Passed/Failed)"
     ];
     boardSheet.addRow(boardHeaders);
@@ -169,17 +169,13 @@ export class ExportService {
 
       const president = getMemberByRole(board.councilBoardMembers, "President");
       const secretary = getMemberByRole(board.councilBoardMembers, "Secretary");
-      
-      const commissioners = board.councilBoardMembers
-        .filter(m => m.role === "Member")
-        .map(m => m.lecturer?.fullName || "-");
-      const c1 = commissioners[0] || "-";
-      const c2 = commissioners[1] || "-";
-      const c3 = commissioners[2] || "-";
+      const reqReviewer = getMemberByRole(board.councilBoardMembers, "ReqReviewer");
+      const techReviewer = getMemberByRole(board.councilBoardMembers, "TechReviewer");
+      const algoReviewer = getMemberByRole(board.councilBoardMembers, "AlgorithmReviewer");
 
       if (board.defenseCouncils.length === 0) {
         const r = boardSheet.addRow([
-          bStt++, boardName, dayStr, "Chưa xếp lịch", "-", president, secretary, c1, c2, c3, ""
+          bStt++, boardName, dayStr, "Chưa xếp lịch", "-", president, secretary, reqReviewer, techReviewer, algoReviewer, ""
         ]);
         r.alignment = { wrapText: true, vertical: "middle" };
         continue;
@@ -191,7 +187,7 @@ export class ExportService {
         const topicCode = dc.topicDefense?.topic?.topicCode || "-";
 
         const r = boardSheet.addRow([
-          bStt++, boardName, dayStr, `${startTime} - ${endTime}`, topicCode, president, secretary, c1, c2, c3, ""
+          bStt++, boardName, dayStr, `${startTime} - ${endTime}`, topicCode, president, secretary, reqReviewer, techReviewer, algoReviewer, ""
         ]);
         r.alignment = { wrapText: true, vertical: "middle" };
 
@@ -217,9 +213,9 @@ export class ExportService {
     boardSheet.getColumn(5).width = 15; // Mã đề tài
     boardSheet.getColumn(6).width = 25; // Chủ tịch
     boardSheet.getColumn(7).width = 25; // Thư ký
-    boardSheet.getColumn(8).width = 25; // Ủy viên 1
-    boardSheet.getColumn(9).width = 25; // Ủy viên 2
-    boardSheet.getColumn(10).width = 25; // Ủy viên 3
+    boardSheet.getColumn(8).width = 25; // PB Nghiệp vụ
+    boardSheet.getColumn(9).width = 25; // PB Kỹ thuật
+    boardSheet.getColumn(10).width = 25; // PB Thuật toán
     boardSheet.getColumn(11).width = 25; // Kết quả
 
     return (await workbook.xlsx.writeBuffer()) as unknown as Buffer;
