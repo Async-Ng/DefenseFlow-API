@@ -826,9 +826,15 @@ export const updateDefenseCouncil = async (
 
 export const updateCouncilBoard = async (
   councilBoardId: number,
-  data: { presidentId?: number | null; secretaryId?: number | null; memberIds?: number[] }
+  data: { 
+    presidentId?: number | null; 
+    secretaryId?: number | null; 
+    reqReviewerId?: number | null;
+    techReviewerId?: number | null;
+    algorithmReviewerId?: number | null;
+  }
 ) => {
-  const { presidentId, secretaryId, memberIds } = data;
+  const { presidentId, secretaryId, reqReviewerId, techReviewerId, algorithmReviewerId } = data;
 
   const board = await prisma.councilBoard.findUnique({
     where: { id: councilBoardId },
@@ -842,7 +848,7 @@ export const updateCouncilBoard = async (
 
   if (!board) throw new AppError(404, "Không tìm thấy Hội đồng bảo vệ");
 
-  // Check if locked (fix: pass defenseDayId, not councilBoardId)
+  // Check if locked
   await ensureDefenseDayNotLocked(board.defenseDayId);
 
   const defenseId = board.defenseDay?.defenseId;
@@ -852,27 +858,23 @@ export const updateCouncilBoard = async (
   // Snapshot current member IDs before update (for notification diff)
   const oldMemberIds = new Set(board.councilBoardMembers.map(m => m.lecturerId).filter((id): id is number => id != null));
 
-  // 1. Gather all new IDs (explicitly provided or from current state if not provided)
+  // 1. Gather all new IDs
   const current = board.councilBoardMembers;
   const newPresidentId = presidentId !== undefined ? presidentId : current.find(m => m.role === CouncilRole.President)?.lecturerId;
   const newSecretaryId = secretaryId !== undefined ? secretaryId : current.find(m => m.role === CouncilRole.Secretary)?.lecturerId;
-  let newMemberIds = memberIds !== undefined ? memberIds : current.filter(m => m.role === CouncilRole.Member).map(m => m.lecturerId!).filter(id => id != null);
+  const newReqReviewerId = reqReviewerId !== undefined ? reqReviewerId : current.find(m => m.role === CouncilRole.ReqReviewer)?.lecturerId;
+  const newTechReviewerId = techReviewerId !== undefined ? techReviewerId : current.find(m => m.role === CouncilRole.TechReviewer)?.lecturerId;
+  const newAlgorithmReviewerId = algorithmReviewerId !== undefined ? algorithmReviewerId : current.find(m => m.role === CouncilRole.AlgorithmReviewer)?.lecturerId;
+  
+  const specificRolesIdsSet = new Set([newPresidentId, newSecretaryId, newReqReviewerId, newTechReviewerId, newAlgorithmReviewerId].filter(id => id != null));
 
-  // Auto-deduplicate: If someone is promoted to President/Secretary, remove them from Members
-  if (presidentId !== undefined) {
-    newMemberIds = newMemberIds.filter(id => id !== presidentId);
+  const allIds = Array.from(specificRolesIdsSet).filter((id): id is number => id != null);
+
+  // Intra-board uniqueness check check is basically handled by `Set()` now, but we check if multiple specific roles have the same ID.
+  const assignedRolesIds = [newPresidentId, newSecretaryId, newReqReviewerId, newTechReviewerId, newAlgorithmReviewerId].filter(id => id != null);
+  if (new Set(assignedRolesIds).size !== assignedRolesIds.length) {
+    throw new AppError(400, "Một giảng viên không thể đảm nhiệm nhiều vai trò cụ thể trong cùng một hội đồng.");
   }
-  if (secretaryId !== undefined) {
-    newMemberIds = newMemberIds.filter(id => id !== secretaryId);
-  }
-
-  // Ensure President and Secretary are distinct if both are present
-  if (newPresidentId && newSecretaryId && newPresidentId === newSecretaryId) {
-    throw new AppError(400, "Chủ tịch và Thư ký không thể là cùng một người.");
-  }
-
-  const allIds = [newPresidentId, newSecretaryId, ...(newMemberIds || [])].filter((id): id is number => id != null);
-
   
   // 1.5 Fetch detailed info for validation
   const lecturers = await prisma.lecturer.findMany({
@@ -898,12 +900,6 @@ export const updateCouncilBoard = async (
 
   const countMap = new Map(lecturerBoardsCount.map(c => [c.lecturerId, c._count.id]));
 
-  // 2. Intra-board uniqueness check
-  const uniqueIds = new Set(allIds);
-  if (uniqueIds.size !== allIds.length) {
-    throw new AppError(400, "Phát hiện giảng viên bị trùng lặp trong cùng một hội đồng");
-  }
-
   // 3. Cross-board conflict check
   const conflictingAssignments = await prisma.councilBoardMember.findMany({
     where: {
@@ -913,21 +909,10 @@ export const updateCouncilBoard = async (
         id: { not: councilBoardId },
       },
     },
-    include: {
-      lecturer: true,
-      councilBoard: true,
-    },
+    select: { id: true, lecturerId: true }
   });
 
-  if (conflictingAssignments.length > 0) {
-    const conflict = conflictingAssignments[0];
-    throw new AppError(
-      400,
-      `Giảng viên ${conflict.lecturer?.fullName || conflict.lecturerId} đã được phân công vào hội đồng ${conflict.councilBoard?.boardCode} trong ngày này.`
-    );
-  }
-
-  // 4. Availability & Workload & Role Checks
+  // 4. Availability & Workload Check
   for (const lId of allIds) {
       const lecturer = lecturers.find(l => l.id === lId);
       if (!lecturer) continue;
@@ -939,17 +924,23 @@ export const updateCouncilBoard = async (
       }
 
       // 4.2 Workload Check (maxTopics)
-      const config = lecturer.lecturerDefenseConfigs[0];
-      if (config && config.maxTopics) {
-          const currentCount = countMap.get(lId) ?? 0;
-          if (currentCount >= config.maxTopics) {
-              throw new AppError(400, `Giảng viên ${lecturer.fullName} đã đạt giới hạn tối đa số hội đồng (${config.maxTopics}).`);
-          }
+      // Only check if it's a NEW assignment to THIS board (meaning we are actually incrementing their load)
+      if (!oldMemberIds.has(lId)) {
+        const config = lecturer.lecturerDefenseConfigs[0];
+        if (config && config.maxTopics) {
+            // Note: the countMap gives existing boards for this day. 
+            // Also subtract 1 if this lecturer is moving from another board TODAY because they won't increase total workload
+            const isMovingToday = conflictingAssignments.some(ca => ca.lecturerId === lId);
+            const currentCount = (countMap.get(lId) ?? 0) - (isMovingToday ? 1 : 0);
+            
+            if (currentCount >= config.maxTopics) {
+                throw new AppError(400, `Giảng viên ${lecturer.fullName} đã đạt giới hạn tối đa số hội đồng (${config.maxTopics}).`);
+            }
+        }
       }
   }
 
   // 5. Conflict of Interest Check & Expertise Check
-  // Get all topics assigned to this council board
   const boardTopics = await prisma.defenseCouncil.findMany({
     where: { councilBoardId },
     include: {
@@ -976,7 +967,6 @@ export const updateCouncilBoard = async (
     }
   });
 
-  // Expertise (Qualification) Check
   const requiredQualIds = new Set<number>();
   boardTopics.forEach(dc => {
       dc.topicDefense?.topic?.topicType?.qualificationGroupTopicTypes?.forEach(gtt => {
@@ -993,43 +983,41 @@ export const updateCouncilBoard = async (
       }
   }
 
-  // Extract all supervisor IDs for topics assigned to this board
   const supervisorsInBoardTopics = new Set<number>();
   boardTopics.forEach(dc => {
       const supervisors = dc.topicDefense?.topic?.topicSupervisors || [];
       supervisors.forEach(ts => supervisorsInBoardTopics.add(ts.lecturerId));
   });
 
-  // Check if any of the new members are supervisors
   const conflictingSupervisors = allIds.filter(id => supervisorsInBoardTopics.has(id));
   if (conflictingSupervisors.length > 0) {
       throw new AppError(
-          409, // 409 Conflict implies it can be forced later if we add a bypass flag, but for now block it.
+          409,
           "Phát hiện Xung đột: Giảng viên là người hướng dẫn của một đề tài được phân công cho hội đồng này."
       );
   }
 
-  // 6. Update members
+  // 6. Database Updates (Transaction)
   const updatedBoard = await prisma.$transaction(async (tx) => {
+    // 6.1 Remove conflicting assignments from other boards in the same day (Auto-Moving logic)
+    if (conflictingAssignments.length > 0) {
+      await tx.councilBoardMember.deleteMany({
+        where: { id: { in: conflictingAssignments.map(ca => ca.id) } }
+      });
+    }
+
+    // 6.2 Update THIS board
     await tx.councilBoardMember.deleteMany({
       where: { councilBoardId },
     });
 
     const membersToCreate = [];
-    if (newPresidentId) {
-      membersToCreate.push({ councilBoardId, lecturerId: newPresidentId, role: CouncilRole.President });
-    }
-    if (newSecretaryId) {
-      membersToCreate.push({ councilBoardId, lecturerId: newSecretaryId, role: CouncilRole.Secretary });
-    }
-    if (newMemberIds && newMemberIds.length > 0) {
-      membersToCreate.push(...newMemberIds.map(id => ({
-        councilBoardId,
-        lecturerId: id,
-        role: CouncilRole.Member
-      })));
-    }
-
+    if (newPresidentId) membersToCreate.push({ councilBoardId, lecturerId: newPresidentId, role: CouncilRole.President });
+    if (newSecretaryId) membersToCreate.push({ councilBoardId, lecturerId: newSecretaryId, role: CouncilRole.Secretary });
+    if (newReqReviewerId) membersToCreate.push({ councilBoardId, lecturerId: newReqReviewerId, role: CouncilRole.ReqReviewer });
+    if (newTechReviewerId) membersToCreate.push({ councilBoardId, lecturerId: newTechReviewerId, role: CouncilRole.TechReviewer });
+    if (newAlgorithmReviewerId) membersToCreate.push({ councilBoardId, lecturerId: newAlgorithmReviewerId, role: CouncilRole.AlgorithmReviewer });
+    
     if (membersToCreate.length > 0) {
       await tx.councilBoardMember.createMany({
         data: membersToCreate,
@@ -1046,6 +1034,7 @@ export const updateCouncilBoard = async (
 
   // 7. Post-publication adjustment notifications
   if (isSchedulePublished && defenseId) {
+    // ... Notifications remain mostly the same ...
     try {
       const newMemberIdSet = new Set(allIds);
 
@@ -1099,6 +1088,9 @@ export const updateCouncilBoard = async (
         });
       }
 
+      // We should arguably also notify lecturers who were automatically removed from OTHER boards, 
+      // but the above logic handles notifying them as added to the new board.
+      
       if (notifications.length > 0) {
         await notifRepository.createManyNotifications(notifications);
       }
@@ -1265,9 +1257,8 @@ export const getSuitableLecturersForBoard = async (id: number) => {
     const isAvail = l.lecturerDayAvailability.some(
       (a) => a.defenseDayId === defenseDayId && (a.status as string) === "Available"
     );
-    const isNotElsewhere = !excludedIds.includes(l.id);
     const isNotSupervisor = isNotSupervisorForAnyTopic(l.id, topics);
-    return isAvail && isNotElsewhere && isNotSupervisor;
+    return isAvail && isNotSupervisor;
   });
 
   // 4. Return per-role suitability for each candidate
@@ -1279,6 +1270,8 @@ export const getSuitableLecturersForBoard = async (id: number) => {
     const isCurrentlyIn = board.councilBoardMembers.some(
       (m: any) => m.lecturerId === l.id
     );
+    const isCurrentlyInOtherBoard = excludedIds.includes(l.id);
+
     return {
       id: l.id,
       fullName: l.fullName,
@@ -1286,6 +1279,7 @@ export const getSuitableLecturersForBoard = async (id: number) => {
       seniorityLevel: l.seniorityLevel,
       suitabilities,
       isCurrentlyInBoard: isCurrentlyIn,
+      isCurrentlyInOtherBoard: isCurrentlyInOtherBoard,
     };
   });
 };

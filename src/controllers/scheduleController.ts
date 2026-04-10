@@ -592,7 +592,9 @@ export const updateCouncilBoard = async (
     const schema = z.object({
       presidentId: z.number().int().nullable().optional(),
       secretaryId: z.number().int().nullable().optional(),
-      memberIds: z.array(z.number().int()).optional(),
+      reqReviewerId: z.number().int().nullable().optional(),
+      techReviewerId: z.number().int().nullable().optional(),
+      algorithmReviewerId: z.number().int().nullable().optional(),
     });
 
     const validation = schema.safeParse(req.body);
