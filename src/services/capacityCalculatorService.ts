@@ -109,7 +109,7 @@ export async function calculateCapacity(
   }
 
   // --- Per-day analysis ---
-  const topicsPerBoard = Math.floor(workHoursPerDay / timePerTopic);
+  const globalTopicsPerBoard = Math.floor(workHoursPerDay / timePerTopic);
   const days: DayCapacityAnalysis[] = [];
   let totalConfiguredCouncils = 0;
 
@@ -126,6 +126,8 @@ export async function calculateCapacity(
       const maxCouncils = day.maxCouncils ?? 1;
       const potentialCouncils = Math.floor(availableLecturers / councilBoardSize);
       const isUnderstaffed = potentialCouncils < maxCouncils;
+      
+      const dayTopicsPerBoard = day.maxTopicsPerBoard ?? globalTopicsPerBoard;
 
       days.push({
         defenseDayId: day.id,
@@ -134,7 +136,8 @@ export async function calculateCapacity(
         availableLecturers,
         potentialCouncils,
         isUnderstaffed,
-        maxTopics: maxCouncils * topicsPerBoard,
+        maxTopics: maxCouncils * dayTopicsPerBoard,
+        maxTopicsPerBoard: dayTopicsPerBoard,
       });
 
       totalConfiguredCouncils += maxCouncils;
@@ -298,13 +301,11 @@ function generateWarnings(
   }
 
   let totalPracticalCapacity = 0;
-  const topicsPerBoard = days[0]?.maxCouncils > 0
-    ? days[0].maxTopics / days[0].maxCouncils
-    : analysis.workHoursPerDay / analysis.timePerTopic;
 
   for (const day of days) {
     const practicalCouncils = Math.min(day.maxCouncils, day.potentialCouncils);
-    totalPracticalCapacity += practicalCouncils * topicsPerBoard;
+    // Use individual maxTopicsPerBoard of the day
+    totalPracticalCapacity += practicalCouncils * day.maxTopicsPerBoard;
 
     if (day.isUnderstaffed) {
       const dateStr = new Date(day.date).toLocaleDateString("vi-VN");

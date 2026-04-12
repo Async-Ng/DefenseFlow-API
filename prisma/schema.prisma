@@ -136,6 +136,7 @@ model DefenseDay {
   dayDate                 DateTime                  @map("day_date") @db.Date
   note                    String?                   @db.VarChar(255)
   maxCouncils             Int?                      @default(1) @map("max_councils")
+  maxTopicsPerBoard      Int?                      @map("max_topics_per_board")
   councilBoards           CouncilBoard[]
   defense                 Defense                   @relation(fields: [defenseId], references: [id])
   lecturerDayAvailability LecturerDayAvailability[]

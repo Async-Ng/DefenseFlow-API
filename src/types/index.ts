@@ -676,6 +676,7 @@ export type DayCapacityAnalysis = {
   potentialCouncils: number;
   isUnderstaffed: boolean;
   maxTopics: number;
+  maxTopicsPerBoard: number;
 };
 
 /**

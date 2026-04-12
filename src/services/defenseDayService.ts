@@ -8,7 +8,7 @@ import { ensureDefenseNotLocked } from "../utils/lockUtils.js";
  */
 export const updateDefenseDay = async (
   id: number,
-  data: { dayDate?: string; note?: string; maxCouncils?: number },
+  data: { dayDate?: string; note?: string; maxCouncils?: number; maxTopicsPerBoard?: number | null },
 ): Promise<DefenseDay> => {
   const existing = await defenseDayRepository.findById(id);
   if (!existing) {
@@ -21,6 +21,9 @@ export const updateDefenseDay = async (
   const updateData: any = {};
   if (data.dayDate) updateData.dayDate = new Date(data.dayDate);
   if (data.note !== undefined) updateData.note = data.note;
+  if (data.maxTopicsPerBoard !== undefined) {
+    updateData.maxTopicsPerBoard = data.maxTopicsPerBoard;
+  }
   if (data.maxCouncils !== undefined) {
     if (data.maxCouncils < 1) throw new Error("maxCouncils must be at least 1");
     

@@ -134,8 +134,19 @@ export const update = async (
  * Delete a lecturer
  */
 export const deleteLecturer = async (id: number): Promise<Lecturer> => {
-  return await prisma.lecturer.delete({
-    where: { id },
+  return await prisma.$transaction(async (tx) => {
+    // Delete all dependent records first
+    await tx.lecturerRoleSuitability.deleteMany({ where: { lecturerId: id } });
+    await tx.lecturerQualification.deleteMany({ where: { lecturerId: id } });
+    await tx.lecturerDayAvailability.deleteMany({ where: { lecturerId: id } });
+    await tx.lecturerDefenseConfig.deleteMany({ where: { lecturerId: id } });
+    await tx.councilBoardMember.deleteMany({ where: { lecturerId: id } });
+    await tx.topicSupervisor.deleteMany({ where: { lecturerId: id } });
+
+    // Finally delete the lecturer
+    return await tx.lecturer.delete({
+      where: { id },
+    });
   });
 };
 

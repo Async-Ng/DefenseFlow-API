@@ -45,12 +45,7 @@ export const calculateEnhancedDefenseDay = (
   }
 
   return {
-    id: day.id,
-    defenseDayCode: day.defenseDayCode,
-    defenseId: day.defenseId,
-    dayDate: day.dayDate,
-    note: day.note,
-    maxCouncils: day.maxCouncils ?? null,
+    ...day,
     status,
     boardCount: cb.length,
     availableLecturerCount: lda.filter((a) => a.status === "Available").length,

@@ -15,7 +15,7 @@ export const findById = async (id: number): Promise<DefenseDay | null> => {
  */
 export const update = async (
   id: number,
-  data: { dayDate?: Date; note?: string; maxCouncils?: number },
+  data: { dayDate?: Date; note?: string; maxCouncils?: number; maxTopicsPerBoard?: number | null },
 ): Promise<DefenseDay> => {
   return await prisma.defenseDay.update({
     where: { id },
@@ -39,9 +39,9 @@ export const findByDefenseAndDate = async (
   defenseId: number,
   dayDate: Date,
 ): Promise<DefenseDay | null> => {
-  // Reset time part of date for accurate comparison if needed
+  // Ensure we use UTC midnight for accurate date-only comparison
   const searchDate = new Date(dayDate);
-  searchDate.setHours(0, 0, 0, 0);
+  searchDate.setUTCHours(0, 0, 0, 0);
 
   return await prisma.defenseDay.findFirst({
     where: {

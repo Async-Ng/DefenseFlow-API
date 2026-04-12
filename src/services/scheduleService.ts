@@ -288,7 +288,8 @@ const runScheduler = (ctx: SchedulingContext): { boards: PlannedBoard[]; unsched
       if (pending.length === 0) break;
 
       const firstTopicType = pending[0].topicTypeId;
-      const topicChunk = pending.filter(t => t.topicTypeId === firstTopicType).slice(0, topicsPerBoard);
+      const dayTopicsPerBoard = day.maxTopicsPerBoard ?? topicsPerBoard;
+      const topicChunk = pending.filter(t => t.topicTypeId === firstTopicType).slice(0, dayTopicsPerBoard);
 
       const candidates = getEligibleCandidates(lecturers, day.id, state, topicChunk);
       const result = trySchedule(topicChunk, candidates, day.id);

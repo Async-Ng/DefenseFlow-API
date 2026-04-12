@@ -155,9 +155,13 @@ export const deleteLecturer = async (id: number): Promise<void> => {
   if (lecturer.authId) {
     const { error: authError } = await supabase.auth.admin.deleteUser(lecturer.authId);
     if (authError) {
-      console.error(`Failed to delete Supabase Auth user for lecturer ${id}:`, authError.message);
-      // We still map it to a user-friendly error
-      throw new Error(`Lỗi xóa tài khoản Auth: ${authError.message}`);
+      if (authError.message.includes("User not found")) {
+        console.warn(`Supabase Auth user ${lecturer.authId} for lecturer ${id} was already deleted or not found. Proceeding with local deletion.`);
+      } else {
+        console.error(`Failed to delete Supabase Auth user for lecturer ${id}:`, authError.message);
+        // We still map it to a user-friendly error
+        throw new Error(`Lỗi xóa tài khoản Auth: ${authError.message}`);
+      }
     }
   }
 
