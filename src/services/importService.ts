@@ -1,5 +1,6 @@
 import ExcelJS from "exceljs";
 import { prisma } from "../config/prisma.js";
+import { supabase } from "../config/supabase.js";
 
 interface TopicImportRow {
   groupCode: string;
@@ -60,7 +61,13 @@ export class ImportService {
       const title = titleEN || "";
       const vietnameseTitle = titleVI || undefined;
 
-      if (!groupCode || !topicCode || (!title && !vietnameseTitle) || !supervisor1Code) return null;
+      if (
+        !groupCode ||
+        !topicCode ||
+        (!title && !vietnameseTitle) ||
+        !supervisor1Code
+      )
+        return null;
 
       return {
         groupCode,
@@ -75,7 +82,7 @@ export class ImportService {
     // Pre-fetch all topic types to minimize DB calls in loop
     const allTopicTypes = await prisma.topicType.findMany();
     const topicTypeMap = new Map(
-      allTopicTypes.map((t) => [t.name.toLowerCase(), t.id])
+      allTopicTypes.map((t) => [t.name.toLowerCase(), t.id]),
     );
 
     for (let i = 0; i < rawRows.length; i++) {
@@ -120,8 +127,8 @@ export class ImportService {
               fullName: code, // Placeholder, can be updated later
               email: `${code.toLowerCase()}@fe.edu.vn`, // Placeholder email
             },
-          })
-        )
+          }),
+        ),
       );
 
       // 3. Resolve Topic Type
@@ -176,9 +183,13 @@ export class ImportService {
   /**
    * Process and Import Lecturers
    */
+  /**
+   * Import lecturers and auto-create Supabase Auth users
+   */
   async processLecturers(buffer: Buffer) {
     const errors: { row: number; message: string }[] = [];
     const validLecturers: any[] = [];
+    // const lecturerAuthLinks: { email: string; lecturerCode: string; fullName: string; }[] = []; // unused
     const processedEmails = new Set<string>();
     const processedCodes = new Set<string>();
 
@@ -195,7 +206,6 @@ export class ImportService {
     for (let i = 0; i < rawRows.length; i++) {
       const row = rawRows[i];
       const rowNum = i + 2;
-
       const generatedCode = row.lecturerCode || row.email.split("@")[0];
 
       // 0. Check duplicate within file
@@ -220,7 +230,6 @@ export class ImportService {
           OR: [{ email: row.email }, { lecturerCode: generatedCode }],
         },
       });
-
       if (existingLecturer) {
         errors.push({
           row: rowNum,
@@ -229,24 +238,97 @@ export class ImportService {
         continue;
       }
 
+      // 2. Attempt to create Supabase Auth user
+      let authId: string | null = null;
+      try {
+        // Default password: email prefix + "123456" (user must change later)
+        const password = row.email.split("@")[0] + "123456";
+        const { data, error } = await supabase.auth.admin.createUser({
+          email: row.email,
+          password,
+          email_confirm: true,
+          user_metadata: { name: row.name, lecturerCode: generatedCode },
+        });
+        if (error) {
+          // If user already exists, try to fetch their id
+          if (error.message.includes("already registered")) {
+            // Supabase listUsers only supports pagination, so fetch and filter manually
+            let foundUser = null;
+            let page = 1;
+            const perPage = 100;
+            while (!foundUser) {
+              const { data: userData, error: fetchError } =
+                await supabase.auth.admin.listUsers({ page, perPage });
+              if (fetchError) {
+                errors.push({
+                  row: rowNum,
+                  message: `Supabase user exists but cannot fetch: ${fetchError?.message || "Unknown error"}`,
+                });
+                break;
+              }
+              if (!userData?.users?.length) break;
+              foundUser = userData.users.find(
+                (u) => u.email?.toLowerCase() === row.email.toLowerCase(),
+              );
+              if (foundUser) {
+                authId = foundUser.id;
+                break;
+              }
+              if (userData.users.length < perPage) break; // No more pages
+              page++;
+            }
+            if (!foundUser) {
+              errors.push({
+                row: rowNum,
+                message: `Supabase user exists but cannot find user by email.`,
+              });
+              continue;
+            }
+          } else {
+            errors.push({
+              row: rowNum,
+              message: `Supabase Auth error: ${error.message}`,
+            });
+            continue;
+          }
+        } else {
+          authId = data.user?.id || null;
+        }
+      } catch (e: any) {
+        errors.push({
+          row: rowNum,
+          message: `Supabase Auth exception: ${e.message}`,
+        });
+        continue;
+      }
+
       validLecturers.push({
         fullName: row.name,
         email: row.email,
         lecturerCode: generatedCode,
+        authId,
       });
 
       processedEmails.add(row.email);
       processedCodes.add(generatedCode);
     }
 
+    let successCount = 0;
     if (validLecturers.length > 0) {
-      const result = await prisma.lecturer.createMany({
-        data: validLecturers,
-      });
-      return { successCount: result.count, errors };
+      // Insert each lecturer individually to preserve authId
+      for (const lec of validLecturers) {
+        try {
+          await prisma.lecturer.create({ data: lec });
+          successCount++;
+        } catch (e: any) {
+          errors.push({
+            row: -1,
+            message: `DB error for ${lec.email}: ${e.message}`,
+          });
+        }
+      }
     }
-
-    return { successCount: 0, errors };
+    return { successCount, errors };
   }
 
   /**
@@ -257,41 +339,41 @@ export class ImportService {
     const sheet = workbook.addWorksheet("PROJECTS INFORMATION");
 
     // Add header row with merged cells for title
-    sheet.mergeCells('A1:H1');
-    const titleCell = sheet.getCell('A1');
-    titleCell.value = 'PROJECTS INFORMATION';
-    titleCell.font = { bold: true, size: 14, color: { argb: 'FFFF0000' } }; // Red text
-    titleCell.alignment = { horizontal: 'center', vertical: 'middle' };
+    sheet.mergeCells("A1:H1");
+    const titleCell = sheet.getCell("A1");
+    titleCell.value = "PROJECTS INFORMATION";
+    titleCell.font = { bold: true, size: 14, color: { argb: "FFFF0000" } }; // Red text
+    titleCell.alignment = { horizontal: "center", vertical: "middle" };
     titleCell.fill = {
-      type: 'pattern',
-      pattern: 'solid',
-      fgColor: { argb: 'FFFFFFFF' }, // White background
+      type: "pattern",
+      pattern: "solid",
+      fgColor: { argb: "FFFFFFFF" }, // White background
     };
 
     // Add column headers in row 2
     sheet.getRow(2).values = [
-      'STT',
-      'Mã đề tài',
-      'Mã nhóm',
-      'Tên đề tài Tiếng Anh/ Tiếng Nhật',
-      'Tên đề tài Tiếng Việt',
-      'GVHD',
-      'GVHD1',
-      'GVHD2',
+      "STT",
+      "Mã đề tài",
+      "Mã nhóm",
+      "Tên đề tài Tiếng Anh/ Tiếng Nhật",
+      "Tên đề tài Tiếng Việt",
+      "GVHD",
+      "GVHD1",
+      "GVHD2",
     ];
 
     // Style the header row
     const headerRow = sheet.getRow(2);
     headerRow.font = { bold: true };
-    headerRow.alignment = { horizontal: 'center', vertical: 'middle' };
+    headerRow.alignment = { horizontal: "center", vertical: "middle" };
     headerRow.fill = {
-      type: 'pattern',
-      pattern: 'solid',
-      fgColor: { argb: 'FFD9D9D9' }, // Light gray
+      type: "pattern",
+      pattern: "solid",
+      fgColor: { argb: "FFD9D9D9" }, // Light gray
     };
 
     // Set column widths
-    sheet.getColumn(1).width = 8;  // STT
+    sheet.getColumn(1).width = 8; // STT
     sheet.getColumn(2).width = 15; // Mã đề tài
     sheet.getColumn(3).width = 15; // Mã nhóm
     sheet.getColumn(4).width = 50; // Tên đề tài Tiếng Anh
@@ -304,14 +386,14 @@ export class ImportService {
     for (let col = 1; col <= 8; col++) {
       const cell = headerRow.getCell(col);
       cell.border = {
-        top: { style: 'thin' },
-        left: { style: 'thin' },
-        bottom: { style: 'thin' },
-        right: { style: 'thin' },
+        top: { style: "thin" },
+        left: { style: "thin" },
+        bottom: { style: "thin" },
+        right: { style: "thin" },
       };
     }
 
-    return ((await workbook.xlsx.writeBuffer()) as unknown) as Buffer;
+    return (await workbook.xlsx.writeBuffer()) as unknown as Buffer;
   }
 
   /**
@@ -322,37 +404,32 @@ export class ImportService {
     const sheet = workbook.addWorksheet("LECTURERS INFORMATION");
 
     // Add header row with merged cells for title
-    sheet.mergeCells('A1:D1');
-    const titleCell = sheet.getCell('A1');
-    titleCell.value = 'LECTURERS INFORMATION';
-    titleCell.font = { bold: true, size: 14, color: { argb: 'FFFF0000' } }; // Red text
-    titleCell.alignment = { horizontal: 'center', vertical: 'middle' };
+    sheet.mergeCells("A1:D1");
+    const titleCell = sheet.getCell("A1");
+    titleCell.value = "LECTURERS INFORMATION";
+    titleCell.font = { bold: true, size: 14, color: { argb: "FFFF0000" } }; // Red text
+    titleCell.alignment = { horizontal: "center", vertical: "middle" };
     titleCell.fill = {
-      type: 'pattern',
-      pattern: 'solid',
-      fgColor: { argb: 'FFFFFFFF' }, // White background
+      type: "pattern",
+      pattern: "solid",
+      fgColor: { argb: "FFFFFFFF" }, // White background
     };
 
     // Add column headers in row 2
-    sheet.getRow(2).values = [
-      'STT',
-      'Mã giảng viên',
-      'Họ và tên',
-      'Email',
-    ];
+    sheet.getRow(2).values = ["STT", "Mã giảng viên", "Họ và tên", "Email"];
 
     // Style the header row
     const headerRow = sheet.getRow(2);
     headerRow.font = { bold: true };
-    headerRow.alignment = { horizontal: 'center', vertical: 'middle' };
+    headerRow.alignment = { horizontal: "center", vertical: "middle" };
     headerRow.fill = {
-      type: 'pattern',
-      pattern: 'solid',
-      fgColor: { argb: 'FFD9D9D9' }, // Light gray
+      type: "pattern",
+      pattern: "solid",
+      fgColor: { argb: "FFD9D9D9" }, // Light gray
     };
 
     // Set column widths
-    sheet.getColumn(1).width = 8;  // STT
+    sheet.getColumn(1).width = 8; // STT
     sheet.getColumn(2).width = 20; // Mã giảng viên
     sheet.getColumn(3).width = 30; // Họ và tên
     sheet.getColumn(4).width = 40; // Email
@@ -361,14 +438,14 @@ export class ImportService {
     for (let col = 1; col <= 4; col++) {
       const cell = headerRow.getCell(col);
       cell.border = {
-        top: { style: 'thin' },
-        left: { style: 'thin' },
-        bottom: { style: 'thin' },
-        right: { style: 'thin' },
+        top: { style: "thin" },
+        left: { style: "thin" },
+        bottom: { style: "thin" },
+        right: { style: "thin" },
       };
     }
 
-    return ((await workbook.xlsx.writeBuffer()) as unknown) as Buffer;
+    return (await workbook.xlsx.writeBuffer()) as unknown as Buffer;
   }
 
   /**
@@ -403,7 +480,8 @@ export class ImportService {
       if (!topicCode || topicCode === "-" || !resultText) return;
 
       // Normalize result
-      let result = resultText.charAt(0).toUpperCase() + resultText.slice(1).toLowerCase();
+      let result =
+        resultText.charAt(0).toUpperCase() + resultText.slice(1).toLowerCase();
       if (result === "Pass") result = "Passed";
       if (result === "Fail") result = "Failed";
 
@@ -420,8 +498,11 @@ export class ImportService {
     });
 
     if (validResults.length > 0) {
-      const topicService = (await import("./topicService.js"));
-      const result = await topicService.updateTopicResultsBulk(defenseId, validResults as any);
+      const topicService = await import("./topicService.js");
+      const result = await topicService.updateTopicResultsBulk(
+        defenseId,
+        validResults as any,
+      );
       return { successCount: result.count, errors };
     }
 
