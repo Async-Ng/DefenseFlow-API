@@ -1,6 +1,9 @@
 import { prisma } from "../config/prisma.js";
 import { AppError } from "../middleware/errorHandler.js";
-import { DefenseStatus, SemesterStatus } from "../../generated/prisma/client.js";
+import {
+  DefenseStatus,
+  SemesterStatus,
+} from "../../generated/prisma/client.js";
 
 /**
  * Ensures that a semester is not in 'Finished' status.
@@ -9,7 +12,7 @@ import { DefenseStatus, SemesterStatus } from "../../generated/prisma/client.js"
 export const ensureSemesterNotFinished = async (semesterId: number) => {
   const semester = await prisma.semester.findUnique({
     where: { id: semesterId },
-    select: { status: true, semesterCode: true }
+    select: { status: true, semesterCode: true },
   });
 
   if (!semester) {
@@ -19,7 +22,7 @@ export const ensureSemesterNotFinished = async (semesterId: number) => {
   if (semester.status === SemesterStatus.Finished) {
     throw new AppError(
       403,
-      `Hành động bị từ chối: Học kỳ '${semester.semesterCode}' đã kết thúc và dữ liệu đã được khóa.`
+      `Hành động bị từ chối: Học kỳ '${semester.semesterCode}' đã kết thúc và dữ liệu đã được khóa.`,
     );
   }
 };
@@ -33,9 +36,9 @@ export const ensureDefenseNotLocked = async (defenseId: number) => {
     where: { id: defenseId },
     include: {
       semester: {
-        select: { status: true, semesterCode: true }
-      }
-    }
+        select: { status: true, semesterCode: true },
+      },
+    },
   });
 
   if (!defense) {
@@ -46,7 +49,7 @@ export const ensureDefenseNotLocked = async (defenseId: number) => {
   if (defense.semester?.status === SemesterStatus.Finished) {
     throw new AppError(
       403,
-      `Hành động bị từ chối: Học kỳ '${defense.semester.semesterCode}' đã kết thúc và dữ liệu đã được khóa.`
+      `Hành động bị từ chối: Học kỳ '${defense.semester.semesterCode}' đã kết thúc và dữ liệu đã được khóa.`,
     );
   }
 
@@ -54,7 +57,7 @@ export const ensureDefenseNotLocked = async (defenseId: number) => {
   if (defense.status === DefenseStatus.Locked) {
     throw new AppError(
       403,
-      `Hành động bị từ chối: Đợt bảo vệ '${defense.defenseCode}' đã bị khóa để chuẩn bị xếp lịch.`
+      `Hành động bị từ chối: Đợt bảo vệ '${defense.defenseCode}' đã bị khóa để chuẩn bị xếp lịch.`,
     );
   }
 };
@@ -65,11 +68,14 @@ export const ensureDefenseNotLocked = async (defenseId: number) => {
 export const ensureDefenseDayNotLocked = async (defenseDayId: number) => {
   const day = await prisma.defenseDay.findUnique({
     where: { id: defenseDayId },
-    select: { defenseId: true }
+    select: { defenseId: true },
   });
 
   if (!day) {
-    throw new AppError(404, `Không tìm thấy ngày bảo vệ với ID ${defenseDayId}`);
+    throw new AppError(
+      404,
+      `Không tìm thấy ngày bảo vệ với ID ${defenseDayId}`,
+    );
   }
 
   await ensureDefenseNotLocked(day.defenseId);
@@ -81,11 +87,14 @@ export const ensureDefenseDayNotLocked = async (defenseDayId: number) => {
 export const ensureCouncilBoardNotLocked = async (councilBoardId: number) => {
   const board = await prisma.councilBoard.findUnique({
     where: { id: councilBoardId },
-    select: { defenseDay: { select: { defenseId: true } } }
+    select: { defenseDay: { select: { defenseId: true } } },
   });
 
   if (!board) {
-    throw new AppError(404, `Không tìm thấy Hội đồng bảo vệ với ID ${councilBoardId}`);
+    throw new AppError(
+      404,
+      `Không tìm thấy Hội đồng bảo vệ với ID ${councilBoardId}`,
+    );
   }
 
   await ensureDefenseNotLocked(board.defenseDay.defenseId);
@@ -97,7 +106,7 @@ export const ensureCouncilBoardNotLocked = async (councilBoardId: number) => {
 export const ensureTopicNotLocked = async (topicId: number) => {
   const topic = await prisma.topic.findUnique({
     where: { id: topicId },
-    select: { semesterId: true }
+    select: { semesterId: true },
   });
 
   if (!topic) {
