@@ -61,12 +61,12 @@ export type {
 /**
  * Status of a specific defense day
  */
-export type DefenseDayStatus = 
-  | "Chờ mở đăng ký" 
-  | "Đang nhận đăng ký" 
-  | "Hết hạn đăng ký" 
-  | "Đã khóa đăng ký" 
-  | "Đã xếp lịch nháp" 
+export type DefenseDayStatus =
+  | "Chờ mở đăng ký"
+  | "Đang nhận đăng ký"
+  | "Hết hạn đăng ký"
+  | "Đã khóa đăng ký"
+  | "Đã xếp lịch nháp"
   | "Đã công bố lịch";
 
 /**
@@ -75,9 +75,9 @@ export type DefenseDayStatus =
  */
 export interface DefenseDayWithRelations extends DefenseDay {
   councilBoards?: { id: number }[];
-  lecturerDayAvailability?: { 
+  lecturerDayAvailability?: {
     id: number;
-    lecturerId: number | null; 
+    lecturerId: number | null;
     status: AvailabilityStatus | null;
     defenseDayId: number | null;
   }[];
@@ -300,7 +300,8 @@ export type CreateQualificationGroupInput = {
   qualificationIds?: number[];
 };
 
-export type UpdateQualificationGroupInput = Partial<CreateQualificationGroupInput>;
+export type UpdateQualificationGroupInput =
+  Partial<CreateQualificationGroupInput>;
 
 export type CreateQualificationInput = {
   qualificationCode: string;
@@ -618,7 +619,7 @@ export type DefenseDependencies = {
  */
 export type CapacityCalculationRequest = {
   semesterId: number;
-  defenseId: number; 
+  defenseId: number;
 };
 
 /**
@@ -714,40 +715,40 @@ export type CapacityCalculationResponse = {
 // ============================================================================
 
 export type DashboardStats = {
-  totalSemesters: number,
-  totalLecturers: number,
-  totalTopics: number,
-  totalDefenses: number,
-  totalCouncilBoards: number,
+  totalSemesters: number;
+  totalLecturers: number;
+  totalTopics: number;
+  totalDefenses: number;
+  totalCouncilBoards: number;
   topicsByResult: {
-    pending: number,
-    passed: number,
-    failed: number,
-  },
+    pending: number;
+    passed: number;
+    failed: number;
+  };
   upcomingDefenses: (Defense & {
-    semester: { name: string },
-  })[],
-}
+    semester: { name: string };
+  })[];
+};
 
 export type LecturerDashboardStats = {
-  totalSupervisedTopics: number,
-  totalCouncilBoards: number,
+  totalSupervisedTopics: number;
+  totalCouncilBoards: number;
   upcomingCouncils: (CouncilBoard & {
     defenseDay: {
-      dayDate: Date,
+      dayDate: Date;
       defense: {
-        name: string | null,
-      },
-    },
+        name: string | null;
+      };
+    };
     councilBoardMembers: (CouncilBoardMember & {
-      lecturer: Lecturer | null,
-    })[],
-  })[],
+      lecturer: Lecturer | null;
+    })[];
+  })[];
   supervisedTopics: (Topic & {
-    semester: { name: string },
-    topicType: { name: string } | null,
-  })[],
-}
+    semester: { name: string };
+    topicType: { name: string } | null;
+  })[];
+};
 
 export type Nullable<T> = T | null;
 export type Optional<T> = T | undefined;
@@ -756,9 +757,11 @@ export type Optional<T> = T | undefined;
 // Lecturer Role Suitability Types
 // ============================================================================
 
+import type { RoleSuitabilityLevel } from "../../generated/prisma/enums";
+
 export type LecturerRoleSuitabilityItem = {
   role: CouncilRole;
-  suitability: number; // 0-100
+  suitability: RoleSuitabilityLevel;
 };
 
 export type SetLecturerRoleSuitabilitiesInput = {

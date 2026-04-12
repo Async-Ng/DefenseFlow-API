@@ -217,12 +217,20 @@ model LecturerQualification {
   @@map("Lecturer_Qualifications")
 }
 
+
+enum RoleSuitabilityLevel {
+  NotAllowed
+  Allowed
+  Preferred
+  HighlyPreferred
+}
+
 model LecturerRoleSuitability {
-  id          Int         @id @default(autoincrement())
-  lecturerId  Int         @map("lecturer_id")
+  id          Int                  @id @default(autoincrement())
+  lecturerId  Int                  @map("lecturer_id")
   role        CouncilRole
-  suitability Int         @default(0)
-  lecturer    Lecturer    @relation(fields: [lecturerId], references: [id])
+  suitability RoleSuitabilityLevel @default(Allowed)
+  lecturer    Lecturer             @relation(fields: [lecturerId], references: [id])
 
   @@unique([lecturerId, role])
   @@map("Lecturer_Role_Suitabilities")

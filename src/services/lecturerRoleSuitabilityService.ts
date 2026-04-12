@@ -1,7 +1,10 @@
 import { CouncilRole } from "../../generated/prisma/client.js";
 import { AppError } from "../middleware/errorHandler.js";
 import * as lecturerRepository from "../repositories/lecturerRepository.js";
-import type { LecturerRoleSuitability, LecturerRoleSuitabilityItem } from "../types/index.js";
+import type {
+  LecturerRoleSuitability,
+  LecturerRoleSuitabilityItem,
+} from "../types/index.js";
 
 const VALID_ROLES: CouncilRole[] = [
   CouncilRole.President,
@@ -26,14 +29,23 @@ export const setLecturerSuitabilities = async (
     if (!VALID_ROLES.includes(item.role)) {
       throw new AppError(400, `Role không hợp lệ: ${item.role}`);
     }
-    if (item.suitability < 0 || item.suitability > 100) {
-      throw new AppError(400, `Suitability phải trong khoảng 0-100, nhận được: ${item.suitability}`);
+    // Enum validation: chỉ nhận các giá trị hợp lệ
+    if (
+      !["NotAllowed", "Allowed", "Preferred", "HighlyPreferred"].includes(
+        item.suitability,
+      )
+    ) {
+      throw new AppError(400, `Suitability không hợp lệ: ${item.suitability}`);
     }
   }
 
   await Promise.all(
     items.map((item) =>
-      lecturerRepository.upsertLecturerRoleSuitability(lecturerId, item.role, item.suitability),
+      lecturerRepository.upsertLecturerRoleSuitability(
+        lecturerId,
+        item.role,
+        item.suitability,
+      ),
     ),
   );
 

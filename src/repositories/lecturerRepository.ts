@@ -653,10 +653,11 @@ export const qualificationExists = async (
 /**
  * Upsert a lecturer's suitability score for a specific council role
  */
+import type { RoleSuitabilityLevel } from "../../generated/prisma/enums";
 export const upsertLecturerRoleSuitability = async (
   lecturerId: number,
   role: CouncilRole,
-  suitability: number,
+  suitability: RoleSuitabilityLevel,
 ): Promise<LecturerRoleSuitability> => {
   return await prisma.lecturerRoleSuitability.upsert({
     where: { lecturerId_role: { lecturerId, role } },

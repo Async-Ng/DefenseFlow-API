@@ -14,12 +14,17 @@ import {
   LecturerRoleSuitability,
   CouncilBoard,
 } from "../../generated/prisma/client.js";
+import type { RoleSuitabilityLevel } from "../../generated/prisma/enums";
 import {
   CouncilBoardFilters,
   CouncilBoardSort,
   PaginatedResult,
 } from "../types/index.js";
-import { ensureDefenseNotLocked, ensureDefenseDayNotLocked, ensureCouncilBoardNotLocked } from "../utils/lockUtils.js";
+import {
+  ensureDefenseNotLocked,
+  ensureDefenseDayNotLocked,
+  ensureCouncilBoardNotLocked,
+} from "../utils/lockUtils.js";
 
 // =============================================================================
 // TYPES
@@ -78,7 +83,7 @@ interface PlannedBoard {
 const isNotAlreadyAssignedOnDay = (
   lecturerId: number,
   defenseDayId: number,
-  state: SchedulingState
+  state: SchedulingState,
 ): boolean => {
   const usedOnDay = state.usedLecturersPerDay.get(defenseDayId);
   return !usedOnDay || !usedOnDay.has(lecturerId);
@@ -87,7 +92,10 @@ const isNotAlreadyAssignedOnDay = (
 /**
  * C2 — A lecturer must not exceed their configured maxTopics limit.
  */
-const isUnderTopicLimit = (lecturerId: number, state: SchedulingState): boolean => {
+const isUnderTopicLimit = (
+  lecturerId: number,
+  state: SchedulingState,
+): boolean => {
   const config = state.configByLecturer.get(lecturerId);
   if (!config?.maxTopics) return true;
   return (state.lecturerTopicCount.get(lecturerId) ?? 0) < config.maxTopics;
@@ -96,9 +104,14 @@ const isUnderTopicLimit = (lecturerId: number, state: SchedulingState): boolean 
 /**
  * C3 — A lecturer must not be marked Busy on the given defense day.
  */
-const isAvailableOnDay = (lecturer: FullLecturer, defenseDayId: number): boolean => {
-  const slot = lecturer.lecturerDayAvailability.find(a => a.defenseDayId === defenseDayId);
-  return !!slot && (slot.status as string) === 'Available';
+const isAvailableOnDay = (
+  lecturer: FullLecturer,
+  defenseDayId: number,
+): boolean => {
+  const slot = lecturer.lecturerDayAvailability.find(
+    (a) => a.defenseDayId === defenseDayId,
+  );
+  return !!slot && (slot.status as string) === "Available";
 };
 
 /**
@@ -106,10 +119,10 @@ const isAvailableOnDay = (lecturer: FullLecturer, defenseDayId: number): boolean
  */
 const isNotSupervisorForAnyTopic = (
   lecturerId: number,
-  topicChunk: FullTopic[]
+  topicChunk: FullTopic[],
 ): boolean => {
-  return !topicChunk.some(topic =>
-    topic.topicSupervisors.some(ts => ts.lecturerId === lecturerId)
+  return !topicChunk.some((topic) =>
+    topic.topicSupervisors.some((ts) => ts.lecturerId === lecturerId),
   );
 };
 
@@ -125,8 +138,20 @@ const COUNCIL_ROLES: CouncilRole[] = [
   CouncilRole.AlgorithmReviewer,
 ];
 
-const getRoleSuitability = (lecturer: FullLecturer, role: CouncilRole): number =>
-  lecturer.lecturerRoleSuitabilities.find(s => s.role === role)?.suitability ?? 0;
+const getRoleSuitability = (
+  lecturer: FullLecturer,
+  role: CouncilRole,
+): RoleSuitabilityLevel =>
+  lecturer.lecturerRoleSuitabilities.find((s) => s.role === role)
+    ?.suitability ?? "Allowed";
+
+// Độ ưu tiên enum: HighlyPreferred > Preferred > Allowed > NotAllowed
+const enumPriority: Record<RoleSuitabilityLevel, number> = {
+  HighlyPreferred: 3,
+  Preferred: 2,
+  Allowed: 1,
+  NotAllowed: 0,
+};
 
 /**
  * assignRoles — Position-first greedy assignment.
@@ -137,24 +162,36 @@ const getRoleSuitability = (lecturer: FullLecturer, role: CouncilRole): number =
 const assignRoles = (
   pool: FullLecturer[],
 ): { assignment: Map<CouncilRole, FullLecturer>; warning?: string } => {
-  const getMaxSuitability = (role: CouncilRole) =>
-    Math.max(0, ...pool.map(l => getRoleSuitability(l, role)));
+  // Ưu tiên: HighlyPreferred > Preferred > Allowed > NotAllowed
+  const getMaxPriority = (role: CouncilRole) =>
+    Math.max(
+      ...pool.map((l) => enumPriority[getRoleSuitability(l, role)] ?? 0),
+    );
 
   const sortedRoles = [...COUNCIL_ROLES].sort(
-    (a, b) => getMaxSuitability(a) - getMaxSuitability(b),
+    (a, b) => getMaxPriority(a) - getMaxPriority(b),
   );
 
   const assignment = new Map<CouncilRole, FullLecturer>();
   const used = new Set<number>();
 
   for (const role of sortedRoles) {
-    const best = [...pool]
-      .filter(l => !used.has(l.id))
-      .sort((a, b) => getRoleSuitability(b, role) - getRoleSuitability(a, role))[0];
-
-    if (!best) {
-      return { assignment, warning: `Không đủ ứng viên để điền vị trí ${role}` };
+    // Lọc NotAllowed
+    const candidates = pool.filter(
+      (l) => !used.has(l.id) && getRoleSuitability(l, role) !== "NotAllowed",
+    );
+    if (candidates.length === 0) {
+      return {
+        assignment,
+        warning: `Không đủ ứng viên phù hợp cho vị trí ${role}`,
+      };
     }
+    // Ưu tiên theo enum
+    const best = [...candidates].sort(
+      (a, b) =>
+        enumPriority[getRoleSuitability(b, role)] -
+        enumPriority[getRoleSuitability(a, role)],
+    )[0];
     assignment.set(role, best);
     used.add(best.id);
   }
@@ -170,13 +207,14 @@ const getEligibleCandidates = (
   lecturers: FullLecturer[],
   defenseDayId: number,
   state: SchedulingState,
-  topicChunk: FullTopic[] = []
+  topicChunk: FullTopic[] = [],
 ): FullLecturer[] =>
-  lecturers.filter(l =>
-    isNotAlreadyAssignedOnDay(l.id, defenseDayId, state) &&
-    isUnderTopicLimit(l.id, state) &&
-    isAvailableOnDay(l, defenseDayId) &&
-    isNotSupervisorForAnyTopic(l.id, topicChunk)
+  lecturers.filter(
+    (l) =>
+      isNotAlreadyAssignedOnDay(l.id, defenseDayId, state) &&
+      isUnderTopicLimit(l.id, state) &&
+      isAvailableOnDay(l, defenseDayId) &&
+      isNotSupervisorForAnyTopic(l.id, topicChunk),
   );
 
 // =============================================================================
@@ -187,7 +225,7 @@ const buildPlannedBoard = (
   assignment: Map<CouncilRole, FullLecturer>,
   defenseDayId: number,
   topics: FullTopic[],
-  warning?: string
+  warning?: string,
 ): PlannedBoard => ({
   presidentId: assignment.get(CouncilRole.President)!.id,
   secretaryId: assignment.get(CouncilRole.Secretary)!.id,
@@ -204,18 +242,24 @@ const buildPlannedBoard = (
 // STATE MUTATIONS
 // =============================================================================
 
-const commitBoardToState = (board: PlannedBoard, state: SchedulingState): void => {
+const commitBoardToState = (
+  board: PlannedBoard,
+  state: SchedulingState,
+): void => {
   // Mark each member as used for this specific day (C1)
   if (!state.usedLecturersPerDay.has(board.defenseDayId)) {
     state.usedLecturersPerDay.set(board.defenseDayId, new Set());
   }
   const usedOnDay = state.usedLecturersPerDay.get(board.defenseDayId)!;
 
-  board.members.forEach(l => {
+  board.members.forEach((l) => {
     usedOnDay.add(l.id);
-    state.lecturerTopicCount.set(l.id, (state.lecturerTopicCount.get(l.id) ?? 0) + 1);
+    state.lecturerTopicCount.set(
+      l.id,
+      (state.lecturerTopicCount.get(l.id) ?? 0) + 1,
+    );
   });
-  board.topics.forEach(t => state.scheduledTopicIds.add(t.id));
+  board.topics.forEach((t) => state.scheduledTopicIds.add(t.id));
 };
 
 // =============================================================================
@@ -225,9 +269,11 @@ const commitBoardToState = (board: PlannedBoard, state: SchedulingState): void =
 const getPendingTopics = (
   topics: FullTopic[],
   scheduledIds: Set<number>,
-  deferred: FullTopic[]
+  deferred: FullTopic[],
 ): FullTopic[] =>
-  topics.filter(t => !scheduledIds.has(t.id) && !deferred.some(d => d.id === t.id));
+  topics.filter(
+    (t) => !scheduledIds.has(t.id) && !deferred.some((d) => d.id === t.id),
+  );
 
 const minutesToDate = (totalMinutes: number): Date => {
   const d = new Date(0);
@@ -244,9 +290,10 @@ type ScheduleResult = PlannedBoard | "insufficient_candidates";
 const trySchedule = (
   topicChunk: FullTopic[],
   candidates: FullLecturer[],
-  defenseDayId: number
+  defenseDayId: number,
 ): ScheduleResult => {
-  if (candidates.length < 5 || topicChunk.length === 0) return "insufficient_candidates";
+  if (candidates.length < 5 || topicChunk.length === 0)
+    return "insufficient_candidates";
 
   const { assignment, warning } = assignRoles(candidates);
   if (assignment.size < 5) return "insufficient_candidates";
@@ -254,14 +301,21 @@ const trySchedule = (
   return buildPlannedBoard(assignment, defenseDayId, topicChunk, warning);
 };
 
-
 // =============================================================================
 // MAIN SCHEDULER ORCHESTRATOR
 // Pure two-pass scheduling loop — no business logic here.
 // =============================================================================
 
-const runScheduler = (ctx: SchedulingContext): { boards: PlannedBoard[]; unscheduled: FullTopic[]; warnings: string[] } => {
-  const { defenseDays, lecturers, topics, lecturerDefenseConfigs, topicsPerBoard } = ctx;
+const runScheduler = (
+  ctx: SchedulingContext,
+): { boards: PlannedBoard[]; unscheduled: FullTopic[]; warnings: string[] } => {
+  const {
+    defenseDays,
+    lecturers,
+    topics,
+    lecturerDefenseConfigs,
+    topicsPerBoard,
+  } = ctx;
 
   const state: SchedulingState = {
     usedLecturersPerDay: new Map(),
@@ -269,8 +323,8 @@ const runScheduler = (ctx: SchedulingContext): { boards: PlannedBoard[]; unsched
     scheduledTopicIds: new Set(),
     configByLecturer: new Map(
       lecturerDefenseConfigs
-        .filter(c => c.lecturerId != null)
-        .map(c => [c.lecturerId!, c])
+        .filter((c) => c.lecturerId != null)
+        .map((c) => [c.lecturerId!, c]),
     ),
   };
 
@@ -289,9 +343,16 @@ const runScheduler = (ctx: SchedulingContext): { boards: PlannedBoard[]; unsched
 
       const firstTopicType = pending[0].topicTypeId;
       const dayTopicsPerBoard = day.maxTopicsPerBoard ?? topicsPerBoard;
-      const topicChunk = pending.filter(t => t.topicTypeId === firstTopicType).slice(0, dayTopicsPerBoard);
+      const topicChunk = pending
+        .filter((t) => t.topicTypeId === firstTopicType)
+        .slice(0, dayTopicsPerBoard);
 
-      const candidates = getEligibleCandidates(lecturers, day.id, state, topicChunk);
+      const candidates = getEligibleCandidates(
+        lecturers,
+        day.id,
+        state,
+        topicChunk,
+      );
       const result = trySchedule(topicChunk, candidates, day.id);
 
       if (result === "insufficient_candidates") {
@@ -305,23 +366,29 @@ const runScheduler = (ctx: SchedulingContext): { boards: PlannedBoard[]; unsched
     }
   }
 
-  const unscheduled = topics.filter(t => !state.scheduledTopicIds.has(t.id));
+  const unscheduled = topics.filter((t) => !state.scheduledTopicIds.has(t.id));
 
   // Per-topic warnings with specific diagnosis reason
   for (const topic of unscheduled) {
-    const supervisorIds = new Set(topic.topicSupervisors.map(ts => ts.lecturerId));
+    const supervisorIds = new Set(
+      topic.topicSupervisors.map((ts) => ts.lecturerId),
+    );
 
     // How many lecturers are completely blocked because they supervise this topic?
-    const supervisorBlocked = lecturers.filter(l => supervisorIds.has(l.id)).length;
+    const supervisorBlocked = lecturers.filter((l) =>
+      supervisorIds.has(l.id),
+    ).length;
 
     // How many remain after removing supervisor-blocked ones?
-    const eligible = lecturers.filter(l =>
-      !supervisorIds.has(l.id) &&
-      defenseDays.some(day =>
-        l.lecturerDayAvailability.some(
-          a => a.defenseDayId === day.id && (a.status as string) === 'Available'
-        )
-      )
+    const eligible = lecturers.filter(
+      (l) =>
+        !supervisorIds.has(l.id) &&
+        defenseDays.some((day) =>
+          l.lecturerDayAvailability.some(
+            (a) =>
+              a.defenseDayId === day.id && (a.status as string) === "Available",
+          ),
+        ),
     ).length;
 
     let reason: string;
@@ -338,7 +405,9 @@ const runScheduler = (ctx: SchedulingContext): { boards: PlannedBoard[]; unsched
       reason = `Không tìm được hội đồng phù hợp sau 2 lượt xếp lịch (có thể do vượt giới hạn hội đồng/ngày hoặc không đủ năng lực phù hợp)`;
     }
 
-    warnings.push(`⚠️ [${topic.topicCode}] "${topic.title?.slice(0, 60)}..." — ${reason}`);
+    warnings.push(
+      `⚠️ [${topic.topicCode}] "${topic.title?.slice(0, 60)}..." — ${reason}`,
+    );
   }
 
   return {
@@ -352,44 +421,54 @@ const runScheduler = (ctx: SchedulingContext): { boards: PlannedBoard[]; unsched
 // DATA FETCHING
 // =============================================================================
 
-const fetchSchedulingContext = async (defenseId: number): Promise<SchedulingContext> => {
+const fetchSchedulingContext = async (
+  defenseId: number,
+): Promise<SchedulingContext> => {
   const defense = await prisma.defense.findUnique({ where: { id: defenseId } });
   if (!defense) throw new AppError(404, "Không tìm thấy đợt bảo vệ");
 
-  const [topics, lecturers, defenseDays, lecturerDefenseConfigs] = await Promise.all([
-    prisma.topic.findMany({
-      where: {
-        semesterId: defense.semesterId,
-        topicDefenses: { some: { defenseId } },
-      },
-      include: {
-        topicSupervisors: { include: { lecturer: true } },
-        topicDefenses: { where: { defenseId } },
-        topicType: { select: { id: true, name: true } },
-      },
-    }),
-    prisma.lecturer.findMany({
-      where: {
-        lecturerDefenseConfigs: {
-          some: { defenseId }
-        }
-      },
-      include: {
-        lecturerDayAvailability: true,
-        lecturerRoleSuitabilities: true,
-      },
-    }),
-    prisma.defenseDay.findMany({
-      where: { defenseId },
-      orderBy: { dayDate: "asc" },
-    }),
-    prisma.lecturerDefenseConfig.findMany({ where: { defenseId } }),
-  ]);
+  const [topics, lecturers, defenseDays, lecturerDefenseConfigs] =
+    await Promise.all([
+      prisma.topic.findMany({
+        where: {
+          semesterId: defense.semesterId,
+          topicDefenses: { some: { defenseId } },
+        },
+        include: {
+          topicSupervisors: { include: { lecturer: true } },
+          topicDefenses: { where: { defenseId } },
+          topicType: { select: { id: true, name: true } },
+        },
+      }),
+      prisma.lecturer.findMany({
+        where: {
+          lecturerDefenseConfigs: {
+            some: { defenseId },
+          },
+        },
+        include: {
+          lecturerDayAvailability: true,
+          lecturerRoleSuitabilities: true,
+        },
+      }),
+      prisma.defenseDay.findMany({
+        where: { defenseId },
+        orderBy: { dayDate: "asc" },
+      }),
+      prisma.lecturerDefenseConfig.findMany({ where: { defenseId } }),
+    ]);
 
   const timePerTopic = defense.timePerTopic ?? 45;
   const topicsPerBoard = Math.floor((8 * 60) / timePerTopic);
 
-  return { defense, topics, lecturers, defenseDays, lecturerDefenseConfigs, topicsPerBoard };
+  return {
+    defense,
+    topics,
+    lecturers,
+    defenseDays,
+    lecturerDefenseConfigs,
+    topicsPerBoard,
+  };
 };
 
 // =============================================================================
@@ -398,7 +477,10 @@ const fetchSchedulingContext = async (defenseId: number): Promise<SchedulingCont
 
 const validateDefenseReadiness = (ctx: SchedulingContext): void => {
   if (ctx.defenseDays.length === 0) {
-    throw new AppError(400, "Không có ngày bảo vệ nào được định nghĩa cho đợt bảo vệ này.");
+    throw new AppError(
+      400,
+      "Không có ngày bảo vệ nào được định nghĩa cho đợt bảo vệ này.",
+    );
   }
 };
 
@@ -413,15 +495,22 @@ const validateCapacity = (ctx: SchedulingContext): void => {
   }, 0);
 
   if (totalMinutesNeeded > totalMinutesAvailable) {
-    const totalHoursNeeded = (totalMinutesNeeded / 60).toFixed(1).replace(/\.0$/, "");
-    const totalHoursAvailable = (totalMinutesAvailable / 60).toFixed(1).replace(/\.0$/, "");
-    
+    const totalHoursNeeded = (totalMinutesNeeded / 60)
+      .toFixed(1)
+      .replace(/\.0$/, "");
+    const totalHoursAvailable = (totalMinutesAvailable / 60)
+      .toFixed(1)
+      .replace(/\.0$/, "");
+
     const dayBreakdown = ctx.defenseDays
-      .map(d => `Ngày ${(d.dayDate as Date).toLocaleDateString('vi-VN')}: ${d.maxCouncils ?? 1} HĐ`)
-      .join(', ');
+      .map(
+        (d) =>
+          `Ngày ${(d.dayDate as Date).toLocaleDateString("vi-VN")}: ${d.maxCouncils ?? 1} HĐ`,
+      )
+      .join(", ");
     throw new AppError(
       400,
-      `Không đủ thời gian: Cần ${totalHoursNeeded} giờ, nhưng chỉ có ${totalHoursAvailable} giờ (${dayBreakdown}).`
+      `Không đủ thời gian: Cần ${totalHoursNeeded} giờ, nhưng chỉ có ${totalHoursAvailable} giờ (${dayBreakdown}).`,
     );
   }
 
@@ -430,7 +519,7 @@ const validateCapacity = (ctx: SchedulingContext): void => {
   if (ctx.lecturers.length < MIN_LECTURERS_PER_BOARD) {
     throw new AppError(
       400,
-      `Không đủ giảng viên để xếp lịch: Hiện có ${ctx.lecturers.length} giảng viên được cấu hình, nhưng cần ít nhất ${MIN_LECTURERS_PER_BOARD} giảng viên để thành lập 1 hội đồng. Vui lòng thêm giảng viên vào cấu hình đợt bảo vệ.`
+      `Không đủ giảng viên để xếp lịch: Hiện có ${ctx.lecturers.length} giảng viên được cấu hình, nhưng cần ít nhất ${MIN_LECTURERS_PER_BOARD} giảng viên để thành lập 1 hội đồng. Vui lòng thêm giảng viên vào cấu hình đợt bảo vệ.`,
     );
   }
 };
@@ -439,122 +528,149 @@ const validateCapacity = (ctx: SchedulingContext): void => {
 // PERSISTENCE
 // =============================================================================
 
-const persistSchedule = async (defenseId: number, boards: PlannedBoard[]): Promise<void> => {
+const persistSchedule = async (
+  defenseId: number,
+  boards: PlannedBoard[],
+): Promise<void> => {
   const defense = await prisma.defense.findUnique({ where: { id: defenseId } });
   if (!defense) throw new AppError(404, "Không tìm thấy đợt bảo vệ");
 
   const timePerTopic = defense.timePerTopic ?? 45;
-  const [startH, startM] = (defense.workStartTime ?? "07:30").split(":").map(Number);
+  const [startH, startM] = (defense.workStartTime ?? "07:30")
+    .split(":")
+    .map(Number);
   const startMinutes = startH * 60 + startM;
 
-  await prisma.$transaction(async (tx) => {
-    // Clear old schedule
-    const oldBoards = await tx.councilBoard.findMany({
-      where: { defenseDay: { defenseId: defenseId } },
-      select: { id: true }
-    });
-    const oldBoardIds = oldBoards.map(b => b.id);
+  await prisma.$transaction(
+    async (tx) => {
+      // Clear old schedule
+      const oldBoards = await tx.councilBoard.findMany({
+        where: { defenseDay: { defenseId: defenseId } },
+        select: { id: true },
+      });
+      const oldBoardIds = oldBoards.map((b) => b.id);
 
-    // 1. Delete by boardCode prefix to handle orphaned data or overlapped codes
-    const boardCodePrefix = `HD-${defense.defenseCode}-`;
-    await tx.councilBoardMember.deleteMany({
-      where: { councilBoard: { boardCode: { startsWith: boardCodePrefix } } }
-    });
-    await tx.defenseCouncil.deleteMany({
-      where: { councilBoard: { boardCode: { startsWith: boardCodePrefix } } }
-    });
-    await tx.councilBoard.deleteMany({
-      where: { boardCode: { startsWith: boardCodePrefix } }
-    });
+      // 1. Delete by boardCode prefix to handle orphaned data or overlapped codes
+      const boardCodePrefix = `HD-${defense.defenseCode}-`;
+      await tx.councilBoardMember.deleteMany({
+        where: { councilBoard: { boardCode: { startsWith: boardCodePrefix } } },
+      });
+      await tx.defenseCouncil.deleteMany({
+        where: { councilBoard: { boardCode: { startsWith: boardCodePrefix } } },
+      });
+      await tx.councilBoard.deleteMany({
+        where: { boardCode: { startsWith: boardCodePrefix } },
+      });
 
-    // 2. Delete slots associated with these boards OR with topics in this defense
-    await tx.defenseCouncil.deleteMany({
-      where: {
-        OR: [
-          { councilBoardId: { in: oldBoardIds } },
-          { topicDefense: { defenseId: defenseId } }
-        ]
-      }
-    });
+      // 2. Delete slots associated with these boards OR with topics in this defense
+      await tx.defenseCouncil.deleteMany({
+        where: {
+          OR: [
+            { councilBoardId: { in: oldBoardIds } },
+            { topicDefense: { defenseId: defenseId } },
+          ],
+        },
+      });
 
-    // 2. Delete board members
-    await tx.councilBoardMember.deleteMany({
-      where: { councilBoardId: { in: oldBoardIds } }
-    });
+      // 2. Delete board members
+      await tx.councilBoardMember.deleteMany({
+        where: { councilBoardId: { in: oldBoardIds } },
+      });
 
-    // 3. Delete the boards
-    await tx.councilBoard.deleteMany({
-      where: { id: { in: oldBoardIds } }
-    });
+      // 3. Delete the boards
+      await tx.councilBoard.deleteMany({
+        where: { id: { in: oldBoardIds } },
+      });
 
-    try {
+      try {
+        // Insert new schedule
+        let globalBoardIndex = 1;
+        for (const planned of boards) {
+          // 1. Create the board - use FPT sequence logic (e.g. HD-SP25_MAIN-01)
+          const boardSeq = String(globalBoardIndex).padStart(2, "0");
+          const boardCode = `HD-${defense.defenseCode}-${boardSeq}`;
+          globalBoardIndex++;
 
-      // Insert new schedule
-      let globalBoardIndex = 1;
-      for (const planned of boards) {
-        // 1. Create the board - use FPT sequence logic (e.g. HD-SP25_MAIN-01)
-        const boardSeq = String(globalBoardIndex).padStart(2, '0');
-        const boardCode = `HD-${defense.defenseCode}-${boardSeq}`;
-        globalBoardIndex++;
+          const board = await tx.councilBoard.create({
+            data: {
+              boardCode: boardCode,
+              defenseDayId: planned.defenseDayId,
+              semesterId: planned.topics[0]?.semesterId ?? defense.semesterId,
+              name: `Hội đồng ${boardSeq}`,
+            },
+          });
 
-        const board = await tx.councilBoard.create({
-          data: {
-            boardCode: boardCode,
-            defenseDayId: planned.defenseDayId,
-            semesterId: planned.topics[0]?.semesterId ?? defense.semesterId,
-            name: `Hội đồng ${boardSeq}`,
-          },
-        });
+          // 2. Create board members
+          const membersToCreate = [
+            {
+              councilBoardId: board.id,
+              lecturerId: planned.presidentId,
+              role: CouncilRole.President,
+            },
+            {
+              councilBoardId: board.id,
+              lecturerId: planned.secretaryId,
+              role: CouncilRole.Secretary,
+            },
+            {
+              councilBoardId: board.id,
+              lecturerId: planned.reqReviewerId,
+              role: CouncilRole.ReqReviewer,
+            },
+            {
+              councilBoardId: board.id,
+              lecturerId: planned.techReviewerId,
+              role: CouncilRole.TechReviewer,
+            },
+            {
+              councilBoardId: board.id,
+              lecturerId: planned.algorithmReviewerId,
+              role: CouncilRole.AlgorithmReviewer,
+            },
+          ];
 
-        // 2. Create board members
-        const membersToCreate = [
-          { councilBoardId: board.id, lecturerId: planned.presidentId, role: CouncilRole.President },
-          { councilBoardId: board.id, lecturerId: planned.secretaryId, role: CouncilRole.Secretary },
-          { councilBoardId: board.id, lecturerId: planned.reqReviewerId, role: CouncilRole.ReqReviewer },
-          { councilBoardId: board.id, lecturerId: planned.techReviewerId, role: CouncilRole.TechReviewer },
-          { councilBoardId: board.id, lecturerId: planned.algorithmReviewerId, role: CouncilRole.AlgorithmReviewer },
-        ];
+          await tx.councilBoardMember.createMany({
+            data: membersToCreate,
+          });
 
-        await tx.councilBoardMember.createMany({
-          data: membersToCreate,
-        });
+          // 3. Create defense councils (slots)
+          // reset global day-timer, each board starts from morning again
+          let topicCursor = startMinutes;
+          const councilsToCreate = [];
+          for (const topic of planned.topics) {
+            const registration = topic.topicDefenses?.[0];
+            if (!registration) {
+              continue;
+            }
 
-        // 3. Create defense councils (slots)
-        // reset global day-timer, each board starts from morning again
-        let topicCursor = startMinutes;
-        const councilsToCreate = [];
-        for (const topic of planned.topics) {
-          const registration = topic.topicDefenses?.[0];
-          if (!registration) {
-            continue;
+            // Use the Board Code + Group Code (Topic Code) for the defense council slot
+            const dcCode = `${boardCode}-${topic.topicCode || topic.id}`;
+
+            councilsToCreate.push({
+              defenseCouncilCode: dcCode,
+              registrationId: registration.id,
+              councilBoardId: board.id,
+              startTime: minutesToDate(topicCursor),
+              endTime: minutesToDate(topicCursor + timePerTopic),
+            });
+
+            topicCursor += timePerTopic;
           }
 
-          // Use the Board Code + Group Code (Topic Code) for the defense council slot
-          const dcCode = `${boardCode}-${topic.topicCode || topic.id}`;
-
-          councilsToCreate.push({
-            defenseCouncilCode: dcCode,
-            registrationId: registration.id,
-            councilBoardId: board.id,
-            startTime: minutesToDate(topicCursor),
-            endTime: minutesToDate(topicCursor + timePerTopic),
-          });
-
-          topicCursor += timePerTopic;
+          if (councilsToCreate.length > 0) {
+            await tx.defenseCouncil.createMany({
+              data: councilsToCreate,
+            });
+          }
         }
-
-        if (councilsToCreate.length > 0) {
-          await tx.defenseCouncil.createMany({
-            data: councilsToCreate,
-          });
-        }
+      } catch (err: any) {
+        throw err;
       }
-    } catch (err: any) {
-      throw err;
-    }
-  }, {
-    timeout: 60000, // 60 seconds
-  });
+    },
+    {
+      timeout: 60000, // 60 seconds
+    },
+  );
 };
 
 // =============================================================================
@@ -580,7 +696,7 @@ export const generateSchedule = async (defenseId: number) => {
       unscheduled: unscheduled.length,
     },
     warnings,
-    unscheduledTopics: unscheduled.map(t => t.topicCode),
+    unscheduledTopics: unscheduled.map((t) => t.topicCode),
   };
 };
 
@@ -604,7 +720,9 @@ export const getSchedule = async (
   };
 };
 
-export const getCouncilBoardById = async (id: number): Promise<CouncilBoard> => {
+export const getCouncilBoardById = async (
+  id: number,
+): Promise<CouncilBoard> => {
   const board = await councilBoardRepository.findById(id);
   if (!board) {
     throw new AppError(404, "Không tìm thấy Hội đồng bảo vệ");
@@ -626,8 +744,13 @@ export const publishSchedule = async (defenseId: number) => {
   });
 
   if (unscheduledTopics.length > 0) {
-    const codes = unscheduledTopics.map((t) => t.topic?.topicCode || t.id).join(", ");
-    throw new AppError(400, `Không thể công bố lịch: Các đề tài sau chưa được xếp lịch: ${codes}`);
+    const codes = unscheduledTopics
+      .map((t) => t.topic?.topicCode || t.id)
+      .join(", ");
+    throw new AppError(
+      400,
+      `Không thể công bố lịch: Các đề tài sau chưa được xếp lịch: ${codes}`,
+    );
   }
 
   // 2. Validation: Ensure all council boards for this defense have exactly 5 members
@@ -643,12 +766,15 @@ export const publishSchedule = async (defenseId: number) => {
   });
 
   const invalidBoards = boardsWithInsufficientMembers.filter(
-    (b) => b._count.councilBoardMembers !== 5
+    (b) => b._count.councilBoardMembers !== 5,
   );
 
   if (invalidBoards.length > 0) {
     const codes = invalidBoards.map((b) => b.boardCode).join(", ");
-    throw new AppError(400, `Không thể công bố lịch: Các hội đồng sau không đủ 5 thành viên: ${codes}`);
+    throw new AppError(
+      400,
+      `Không thể công bố lịch: Các hội đồng sau không đủ 5 thành viên: ${codes}`,
+    );
   }
 
   const updatedDefense = await prisma.defense.update({
@@ -663,7 +789,7 @@ export const publishSchedule = async (defenseId: number) => {
       defenseId,
       "Thông báo: Lịch bảo vệ chính thức",
       `Lịch hội đồng cho đợt bảo vệ đã được công bố. Vui lòng kiểm tra hội đồng của bạn.`,
-      "SCHEDULE_PUBLISHED"
+      "SCHEDULE_PUBLISHED",
     );
   } catch (error) {
     console.error("Failed to send SCHEDULE_PUBLISHED notifications", error);
@@ -799,7 +925,9 @@ export const updateDefenseCouncil = async (
         const durationMs =
           (oldDC.endTime?.getTime() || 0) - (oldDC.startTime?.getTime() || 0);
         data.startTime = startTime;
-        data.endTime = new Date(startTime.getTime() + (durationMs || 45 * 60000));
+        data.endTime = new Date(
+          startTime.getTime() + (durationMs || 45 * 60000),
+        );
       }
     }
 
@@ -815,7 +943,10 @@ export const updateDefenseCouncil = async (
     }
 
     // D. Target Board Ripple (Consistency)
-    if ((data.startTime || data.endTime || isMovingBoards) && updated.councilBoardId) {
+    if (
+      (data.startTime || data.endTime || isMovingBoards) &&
+      updated.councilBoardId
+    ) {
       await rippleBoard(tx, updated.councilBoardId);
     }
 
@@ -823,23 +954,27 @@ export const updateDefenseCouncil = async (
   });
 };
 
-
-
 export const updateCouncilBoard = async (
   councilBoardId: number,
-  data: { 
-    presidentId?: number | null; 
-    secretaryId?: number | null; 
+  data: {
+    presidentId?: number | null;
+    secretaryId?: number | null;
     reqReviewerId?: number | null;
     techReviewerId?: number | null;
     algorithmReviewerId?: number | null;
-  }
+  },
 ) => {
-  const { presidentId, secretaryId, reqReviewerId, techReviewerId, algorithmReviewerId } = data;
+  const {
+    presidentId,
+    secretaryId,
+    reqReviewerId,
+    techReviewerId,
+    algorithmReviewerId,
+  } = data;
 
   const board = await prisma.councilBoard.findUnique({
     where: { id: councilBoardId },
-    include: { 
+    include: {
       councilBoardMembers: true,
       defenseDay: {
         include: { defense: true },
@@ -854,51 +989,93 @@ export const updateCouncilBoard = async (
 
   const defenseId = board.defenseDay?.defenseId;
   const defenseDayId = board.defenseDayId;
-  const isSchedulePublished = board.defenseDay?.defense?.isSchedulePublished ?? false;
+  const isSchedulePublished =
+    board.defenseDay?.defense?.isSchedulePublished ?? false;
 
   // Snapshot current member IDs before update (for notification diff)
-  const oldMemberIds = new Set(board.councilBoardMembers.map(m => m.lecturerId).filter((id): id is number => id != null));
+  const oldMemberIds = new Set(
+    board.councilBoardMembers
+      .map((m) => m.lecturerId)
+      .filter((id): id is number => id != null),
+  );
 
   // 1. Gather all new IDs
   const current = board.councilBoardMembers;
-  const newPresidentId = presidentId !== undefined ? presidentId : current.find(m => m.role === CouncilRole.President)?.lecturerId;
-  const newSecretaryId = secretaryId !== undefined ? secretaryId : current.find(m => m.role === CouncilRole.Secretary)?.lecturerId;
-  const newReqReviewerId = reqReviewerId !== undefined ? reqReviewerId : current.find(m => m.role === CouncilRole.ReqReviewer)?.lecturerId;
-  const newTechReviewerId = techReviewerId !== undefined ? techReviewerId : current.find(m => m.role === CouncilRole.TechReviewer)?.lecturerId;
-  const newAlgorithmReviewerId = algorithmReviewerId !== undefined ? algorithmReviewerId : current.find(m => m.role === CouncilRole.AlgorithmReviewer)?.lecturerId;
-  
-  const specificRolesIdsSet = new Set([newPresidentId, newSecretaryId, newReqReviewerId, newTechReviewerId, newAlgorithmReviewerId].filter(id => id != null));
+  const newPresidentId =
+    presidentId !== undefined
+      ? presidentId
+      : current.find((m) => m.role === CouncilRole.President)?.lecturerId;
+  const newSecretaryId =
+    secretaryId !== undefined
+      ? secretaryId
+      : current.find((m) => m.role === CouncilRole.Secretary)?.lecturerId;
+  const newReqReviewerId =
+    reqReviewerId !== undefined
+      ? reqReviewerId
+      : current.find((m) => m.role === CouncilRole.ReqReviewer)?.lecturerId;
+  const newTechReviewerId =
+    techReviewerId !== undefined
+      ? techReviewerId
+      : current.find((m) => m.role === CouncilRole.TechReviewer)?.lecturerId;
+  const newAlgorithmReviewerId =
+    algorithmReviewerId !== undefined
+      ? algorithmReviewerId
+      : current.find((m) => m.role === CouncilRole.AlgorithmReviewer)
+          ?.lecturerId;
 
-  const allIds = Array.from(specificRolesIdsSet).filter((id): id is number => id != null);
+  const specificRolesIdsSet = new Set(
+    [
+      newPresidentId,
+      newSecretaryId,
+      newReqReviewerId,
+      newTechReviewerId,
+      newAlgorithmReviewerId,
+    ].filter((id) => id != null),
+  );
+
+  const allIds = Array.from(specificRolesIdsSet).filter(
+    (id): id is number => id != null,
+  );
 
   // Intra-board uniqueness check check is basically handled by `Set()` now, but we check if multiple specific roles have the same ID.
-  const assignedRolesIds = [newPresidentId, newSecretaryId, newReqReviewerId, newTechReviewerId, newAlgorithmReviewerId].filter(id => id != null);
+  const assignedRolesIds = [
+    newPresidentId,
+    newSecretaryId,
+    newReqReviewerId,
+    newTechReviewerId,
+    newAlgorithmReviewerId,
+  ].filter((id) => id != null);
   if (new Set(assignedRolesIds).size !== assignedRolesIds.length) {
-    throw new AppError(400, "Một giảng viên không thể đảm nhiệm nhiều vai trò cụ thể trong cùng một hội đồng.");
+    throw new AppError(
+      400,
+      "Một giảng viên không thể đảm nhiệm nhiều vai trò cụ thể trong cùng một hội đồng.",
+    );
   }
-  
+
   // 1.5 Fetch detailed info for validation
   const lecturers = await prisma.lecturer.findMany({
     where: { id: { in: allIds } },
     include: {
       lecturerDayAvailability: { where: { defenseDayId: defenseDayId } },
       lecturerDefenseConfigs: { where: { defenseId: defenseId } },
-    }
+    },
   });
 
   const lecturerBoardsCount = await prisma.councilBoardMember.groupBy({
-    by: ['lecturerId'],
+    by: ["lecturerId"],
     where: {
       lecturerId: { in: allIds },
       councilBoard: {
         defenseDay: { defenseId: defenseId },
-        id: { not: councilBoardId }
-      }
+        id: { not: councilBoardId },
+      },
     },
-    _count: { id: true }
+    _count: { id: true },
   });
 
-  const countMap = new Map(lecturerBoardsCount.map(c => [c.lecturerId, c._count.id]));
+  const countMap = new Map(
+    lecturerBoardsCount.map((c) => [c.lecturerId, c._count.id]),
+  );
 
   // 3. Cross-board conflict check
   const conflictingAssignments = await prisma.councilBoardMember.findMany({
@@ -909,35 +1086,43 @@ export const updateCouncilBoard = async (
         id: { not: councilBoardId },
       },
     },
-    select: { id: true, lecturerId: true }
+    select: { id: true, lecturerId: true },
   });
 
   // 4. Availability & Workload Check
   for (const lId of allIds) {
-      const lecturer = lecturers.find(l => l.id === lId);
-      if (!lecturer) continue;
+    const lecturer = lecturers.find((l) => l.id === lId);
+    if (!lecturer) continue;
 
-      // 4.1 Availability Check
-      const availability = lecturer.lecturerDayAvailability[0];
-      if (availability && availability.status === AvailabilityStatus.Busy) {
-          throw new AppError(400, `Giảng viên ${lecturer.fullName} đã đăng ký Bận vào ngày này.`);
-      }
+    // 4.1 Availability Check
+    const availability = lecturer.lecturerDayAvailability[0];
+    if (availability && availability.status === AvailabilityStatus.Busy) {
+      throw new AppError(
+        400,
+        `Giảng viên ${lecturer.fullName} đã đăng ký Bận vào ngày này.`,
+      );
+    }
 
-      // 4.2 Workload Check (maxTopics)
-      // Only check if it's a NEW assignment to THIS board (meaning we are actually incrementing their load)
-      if (!oldMemberIds.has(lId)) {
-        const config = lecturer.lecturerDefenseConfigs[0];
-        if (config && config.maxTopics) {
-            // Note: the countMap gives existing boards for this day. 
-            // Also subtract 1 if this lecturer is moving from another board TODAY because they won't increase total workload
-            const isMovingToday = conflictingAssignments.some(ca => ca.lecturerId === lId);
-            const currentCount = (countMap.get(lId) ?? 0) - (isMovingToday ? 1 : 0);
-            
-            if (currentCount >= config.maxTopics) {
-                throw new AppError(400, `Giảng viên ${lecturer.fullName} đã đạt giới hạn tối đa số hội đồng (${config.maxTopics}).`);
-            }
+    // 4.2 Workload Check (maxTopics)
+    // Only check if it's a NEW assignment to THIS board (meaning we are actually incrementing their load)
+    if (!oldMemberIds.has(lId)) {
+      const config = lecturer.lecturerDefenseConfigs[0];
+      if (config && config.maxTopics) {
+        // Note: the countMap gives existing boards for this day.
+        // Also subtract 1 if this lecturer is moving from another board TODAY because they won't increase total workload
+        const isMovingToday = conflictingAssignments.some(
+          (ca) => ca.lecturerId === lId,
+        );
+        const currentCount = (countMap.get(lId) ?? 0) - (isMovingToday ? 1 : 0);
+
+        if (currentCount >= config.maxTopics) {
+          throw new AppError(
+            400,
+            `Giảng viên ${lecturer.fullName} đã đạt giới hạn tối đa số hội đồng (${config.maxTopics}).`,
+          );
         }
       }
+    }
   }
 
   // 5. Conflict of Interest Check
@@ -947,27 +1132,29 @@ export const updateCouncilBoard = async (
       topicDefense: {
         include: {
           topic: {
-            include: { 
-                topicSupervisors: true,
-            }
-          }
-        }
-      }
-    }
+            include: {
+              topicSupervisors: true,
+            },
+          },
+        },
+      },
+    },
   });
 
   const supervisorsInBoardTopics = new Set<number>();
-  boardTopics.forEach(dc => {
-      const supervisors = dc.topicDefense?.topic?.topicSupervisors || [];
-      supervisors.forEach(ts => supervisorsInBoardTopics.add(ts.lecturerId));
+  boardTopics.forEach((dc) => {
+    const supervisors = dc.topicDefense?.topic?.topicSupervisors || [];
+    supervisors.forEach((ts) => supervisorsInBoardTopics.add(ts.lecturerId));
   });
 
-  const conflictingSupervisors = allIds.filter(id => supervisorsInBoardTopics.has(id));
+  const conflictingSupervisors = allIds.filter((id) =>
+    supervisorsInBoardTopics.has(id),
+  );
   if (conflictingSupervisors.length > 0) {
-      throw new AppError(
-          409,
-          "Phát hiện Xung đột: Giảng viên là người hướng dẫn của một đề tài được phân công cho hội đồng này."
-      );
+    throw new AppError(
+      409,
+      "Phát hiện Xung đột: Giảng viên là người hướng dẫn của một đề tài được phân công cho hội đồng này.",
+    );
   }
 
   // 6. Database Updates (Transaction)
@@ -975,7 +1162,7 @@ export const updateCouncilBoard = async (
     // 6.1 Remove conflicting assignments from other boards in the same day (Auto-Moving logic)
     if (conflictingAssignments.length > 0) {
       await tx.councilBoardMember.deleteMany({
-        where: { id: { in: conflictingAssignments.map(ca => ca.id) } }
+        where: { id: { in: conflictingAssignments.map((ca) => ca.id) } },
       });
     }
 
@@ -985,12 +1172,37 @@ export const updateCouncilBoard = async (
     });
 
     const membersToCreate = [];
-    if (newPresidentId) membersToCreate.push({ councilBoardId, lecturerId: newPresidentId, role: CouncilRole.President });
-    if (newSecretaryId) membersToCreate.push({ councilBoardId, lecturerId: newSecretaryId, role: CouncilRole.Secretary });
-    if (newReqReviewerId) membersToCreate.push({ councilBoardId, lecturerId: newReqReviewerId, role: CouncilRole.ReqReviewer });
-    if (newTechReviewerId) membersToCreate.push({ councilBoardId, lecturerId: newTechReviewerId, role: CouncilRole.TechReviewer });
-    if (newAlgorithmReviewerId) membersToCreate.push({ councilBoardId, lecturerId: newAlgorithmReviewerId, role: CouncilRole.AlgorithmReviewer });
-    
+    if (newPresidentId)
+      membersToCreate.push({
+        councilBoardId,
+        lecturerId: newPresidentId,
+        role: CouncilRole.President,
+      });
+    if (newSecretaryId)
+      membersToCreate.push({
+        councilBoardId,
+        lecturerId: newSecretaryId,
+        role: CouncilRole.Secretary,
+      });
+    if (newReqReviewerId)
+      membersToCreate.push({
+        councilBoardId,
+        lecturerId: newReqReviewerId,
+        role: CouncilRole.ReqReviewer,
+      });
+    if (newTechReviewerId)
+      membersToCreate.push({
+        councilBoardId,
+        lecturerId: newTechReviewerId,
+        role: CouncilRole.TechReviewer,
+      });
+    if (newAlgorithmReviewerId)
+      membersToCreate.push({
+        councilBoardId,
+        lecturerId: newAlgorithmReviewerId,
+        role: CouncilRole.AlgorithmReviewer,
+      });
+
     if (membersToCreate.length > 0) {
       await tx.councilBoardMember.createMany({
         data: membersToCreate,
@@ -1011,9 +1223,11 @@ export const updateCouncilBoard = async (
     try {
       const newMemberIdSet = new Set(allIds);
 
-      const addedIds     = allIds.filter(id => !oldMemberIds.has(id));
-      const removedIds   = Array.from(oldMemberIds).filter(id => !newMemberIdSet.has(id));
-      const remainingIds = allIds.filter(id => oldMemberIds.has(id));
+      const addedIds = allIds.filter((id) => !oldMemberIds.has(id));
+      const removedIds = Array.from(oldMemberIds).filter(
+        (id) => !newMemberIdSet.has(id),
+      );
+      const remainingIds = allIds.filter((id) => oldMemberIds.has(id));
 
       const fetchAuthIds = async (lecturerIds: number[]): Promise<string[]> => {
         if (lecturerIds.length === 0) return [];
@@ -1021,18 +1235,25 @@ export const updateCouncilBoard = async (
           where: { id: { in: lecturerIds }, authId: { not: null } },
           select: { authId: true },
         });
-        return rows.map(r => r.authId as string);
+        return rows.map((r) => r.authId as string);
       };
 
-      const notifRepository = await import("../repositories/notificationRepository.js");
+      const notifRepository =
+        await import("../repositories/notificationRepository.js");
 
-      const [addedAuthIds, removedAuthIds, remainingAuthIds] = await Promise.all([
-        fetchAuthIds(addedIds),
-        fetchAuthIds(removedIds),
-        fetchAuthIds(remainingIds),
-      ]);
+      const [addedAuthIds, removedAuthIds, remainingAuthIds] =
+        await Promise.all([
+          fetchAuthIds(addedIds),
+          fetchAuthIds(removedIds),
+          fetchAuthIds(remainingIds),
+        ]);
 
-      const notifications: { authId: string; title: string; message: string; type: string }[] = [];
+      const notifications: {
+        authId: string;
+        title: string;
+        message: string;
+        type: string;
+      }[] = [];
 
       for (const authId of addedAuthIds) {
         notifications.push({
@@ -1061,27 +1282,29 @@ export const updateCouncilBoard = async (
         });
       }
 
-      // We should arguably also notify lecturers who were automatically removed from OTHER boards, 
+      // We should arguably also notify lecturers who were automatically removed from OTHER boards,
       // but the above logic handles notifying them as added to the new board.
-      
+
       if (notifications.length > 0) {
         await notifRepository.createManyNotifications(notifications);
       }
     } catch (err) {
-      console.error("[updateCouncilBoard] Failed to dispatch post-publication notifications:", err);
+      console.error(
+        "[updateCouncilBoard] Failed to dispatch post-publication notifications:",
+        err,
+      );
     }
   }
 
   return updatedBoard;
 };
 
-
 export const deleteDefenseCouncil = async (id: number) => {
   const dc = await prisma.defenseCouncil.findUnique({
     where: { id },
-    include: { councilBoard: { select: { defenseDayId: true } } }
+    include: { councilBoard: { select: { defenseDayId: true } } },
   });
-  
+
   if (dc?.councilBoard?.defenseDayId) {
     await ensureDefenseDayNotLocked(dc.councilBoard.defenseDayId);
   }
@@ -1112,14 +1335,19 @@ export const createDefenseCouncil = async (data: {
     }),
   ]);
 
-  if (!registration) throw new AppError(404, "Không tìm thấy đăng ký bảo vệ (TopicDefense)");
+  if (!registration)
+    throw new AppError(404, "Không tìm thấy đăng ký bảo vệ (TopicDefense)");
 
   const supervisorIds = new Set(
     registration.topic?.topicSupervisors.map((ts) => ts.lecturerId) ?? [],
   );
-  const conflicting = boardMembers.filter((m) => m.lecturerId !== null && supervisorIds.has(m.lecturerId));
+  const conflicting = boardMembers.filter(
+    (m) => m.lecturerId !== null && supervisorIds.has(m.lecturerId),
+  );
   if (conflicting.length > 0) {
-    const names = conflicting.map((m) => m.lecturer?.fullName || `ID ${m.lecturerId}`).join(", ");
+    const names = conflicting
+      .map((m) => m.lecturer?.fullName || `ID ${m.lecturerId}`)
+      .join(", ");
     throw new AppError(
       409,
       `Xung đột: Giảng viên hướng dẫn của đề tài này (${names}) đang là thành viên chấm của hội đồng được chọn.`,
@@ -1145,15 +1373,21 @@ export const createDefenseCouncil = async (data: {
 
       if (!board) throw new AppError(404, "Không tìm thấy Hội đồng bảo vệ");
       const defense = board.defenseDay?.defense;
-      if (!defense) throw new AppError(404, "Không tìm thấy cấu hình đợt bảo vệ");
+      if (!defense)
+        throw new AppError(404, "Không tìm thấy cấu hình đợt bảo vệ");
 
       const timePerTopic = defense.timePerTopic ?? 45;
 
       if (!startTime) {
-        if (board.defenseCouncils.length > 0 && board.defenseCouncils[0].endTime) {
+        if (
+          board.defenseCouncils.length > 0 &&
+          board.defenseCouncils[0].endTime
+        ) {
           startTime = board.defenseCouncils[0].endTime;
         } else {
-          const [startH, startM] = (defense.workStartTime ?? "07:30").split(":").map(Number);
+          const [startH, startM] = (defense.workStartTime ?? "07:30")
+            .split(":")
+            .map(Number);
           startTime = minutesToDate(startH * 60 + startM);
         }
       }
@@ -1182,10 +1416,8 @@ export const createDefenseCouncil = async (data: {
     }
 
     return created;
-
   });
 };
-
 
 /**
  * getSuitableLecturersForBoard - Find suitable replacements for a council board,
@@ -1223,12 +1455,15 @@ export const getSuitableLecturersForBoard = async (id: number) => {
     },
     select: { lecturerId: true },
   });
-  const excludedIds = otherAssignments.map((a: any) => a.lecturerId).filter((id: any): id is number => id !== null);
+  const excludedIds = otherAssignments
+    .map((a: any) => a.lecturerId)
+    .filter((id: any): id is number => id !== null);
 
   // 3. Filter candidates
   const candidates = lecturers.filter((l) => {
     const isAvail = l.lecturerDayAvailability.some(
-      (a) => a.defenseDayId === defenseDayId && (a.status as string) === "Available"
+      (a) =>
+        a.defenseDayId === defenseDayId && (a.status as string) === "Available",
     );
     const isNotSupervisor = isNotSupervisorForAnyTopic(l.id, topics);
     return isAvail && isNotSupervisor;
@@ -1238,10 +1473,12 @@ export const getSuitableLecturersForBoard = async (id: number) => {
   return candidates.map((l) => {
     const suitabilities: Record<string, number> = {};
     for (const role of COUNCIL_ROLES) {
-      suitabilities[role] = l.lecturerRoleSuitabilities.find(s => s.role === role)?.suitability ?? 0;
+      suitabilities[role] =
+        l.lecturerRoleSuitabilities.find((s) => s.role === role)?.suitability ??
+        "Allowed";
     }
     const isCurrentlyIn = board.councilBoardMembers.some(
-      (m: any) => m.lecturerId === l.id
+      (m: any) => m.lecturerId === l.id,
     );
     const isCurrentlyInOtherBoard = excludedIds.includes(l.id);
 
@@ -1256,4 +1493,3 @@ export const getSuitableLecturersForBoard = async (id: number) => {
     };
   });
 };
-
