@@ -1471,7 +1471,7 @@ export const getSuitableLecturersForBoard = async (id: number) => {
 
   // 4. Return per-role suitability for each candidate
   return candidates.map((l) => {
-    const suitabilities: Record<string, number> = {};
+    const suitabilities: Record<string, string> = {};
     for (const role of COUNCIL_ROLES) {
       suitabilities[role] =
         l.lecturerRoleSuitabilities.find((s) => s.role === role)?.suitability ??
